@@ -1,0 +1,10 @@
+**/*.js
+node_modules
+build
+dist
+**/*webpack.*
+webpack.config.js
+*/webpack.config.js
+package.json
+jest.config.js
+**/*.config.js

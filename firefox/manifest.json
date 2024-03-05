@@ -1,0 +1,38 @@
+{
+    "manifest_version": 2,
+    "name": "Kita Browser",
+    "version": "1.0",
+    "description": "Simple immersion tracker",
+    "browser_action": {
+        "default_popup": "index.html",
+        "default_title": "Kita Browser",
+        "default_icon": {
+            "16": "/icons/icon16.png",
+            "32": "/icons/icon32.png",
+            "192": "/icons/icon192.png",
+            "512": "/icons/icon512.png"
+        }
+    },
+    "icons": {
+        "16": "/icons/icon16.png",
+        "32": "/icons/icon32.png",
+        "192": "/icons/icon192.png",
+        "512": "/icons/icon512.png"
+    },
+    "permissions": [
+        "activeTab",
+        "storage",
+        "unlimitedStorage"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.youtube.com/*",
+                "*://*.crunchyroll.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}

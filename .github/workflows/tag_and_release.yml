@@ -1,0 +1,112 @@
+name: Bump version and create release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Get repository name
+        run: echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - name: Create source code archive
+        run: |
+          # Create a temporary directory
+          mkdir -p ${{ env.REPOSITORY_NAME }}-firefox
+
+          cp -r dist/* ${{ env.REPOSITORY_NAME }}-firefox/
+
+          tar -czvf ${{ env.REPOSITORY_NAME }}-firefox.tar.gz ${{ env.REPOSITORY_NAME }}-firefox
+          zip -r ${{ env.REPOSITORY_NAME }}-firefox.zip ${{ env.REPOSITORY_NAME }}-firefox
+
+          # Calculate checksums
+          CHECKSUM_TAR=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-firefox.tar.gz | cut -d ' ' -f 1)
+          CHECKSUM_ZIP=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-firefox.zip | cut -d ' ' -f 1)
+          echo "CHECKSUM_TAR=${CHECKSUM_TAR}" >> $GITHUB_ENV
+          echo "CHECKSUM_ZIP=${CHECKSUM_ZIP}" >> $GITHUB_ENV
+
+          # Create SHA256SUM.txt file
+          echo "$CHECKSUM_TAR  ${{ env.REPOSITORY_NAME }}-firefox.tar.gz" > SHA256SUM.txt
+          echo "$CHECKSUM_ZIP  ${{ env.REPOSITORY_NAME }}-firefox.zip" >> SHA256SUM.txt
+
+      - name: Bump version and push tag
+        id: tag
+        uses: anothrNick/github-tag-action@1.64.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          INITIAL_VERSION: 1.0.0
+
+      - name: Get PR title and commit hash
+        id: get_pr_info
+        run: |
+          echo "::set-output name=PR_TITLE::$(git log --format=%B -n 1 ${{ github.event.before }}..${{ github.sha }} | head -n 1)"
+          echo "::set-output name=COMMIT_HASH::$(git rev-parse ${{ github.sha }})"
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: "Release ${{ steps.tag.outputs.tag }}"
+          body: |
+            ${{ steps.get_pr_info.outputs.PR_TITLE }} ${{ steps.get_pr_info.outputs.COMMIT_HASH }}
+            ```
+            ${{ env.CHECKSUM_TAR }} ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
+            ${{ env.CHECKSUM_ZIP }} ${{ env.REPOSITORY_NAME }}-firefox.zip
+            ```
+
+      - name: Upload release assets (tar.gz)
+        id: upload_assets_tar
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.REPOSITORY_NAME }}-firefox.tar.gz
+          asset_name: ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload release assets (zip)
+        id: upload_assets_zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.REPOSITORY_NAME }}-firefox.zip
+          asset_name: ${{ env.REPOSITORY_NAME }}-firefox.zip
+          asset_content_type: application/zip
+
+      - name: Upload release assets (SHA256SUM.txt)
+        id: upload_assets_checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SHA256SUM.txt
+          asset_name: SHA256SUM.txt
+          asset_content_type: text/plain
