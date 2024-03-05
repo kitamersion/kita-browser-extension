@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
+import application from "./api";
 
 export type IVideo = {
-  id: string;
+  id: string; // TODO: readonly
   video_title: string;
   video_duration: number;
   video_url: string;
@@ -123,18 +124,13 @@ const videoTracker = {
 
     const origin = this._getOrigin();
     const site = siteConfig[origin];
-    console.log(site);
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);
-    console.log("videoDurationElement: ", videoDurationElement);
     const videoDurationText = videoDurationElement?.textContent;
     const timestamp = Date.now();
 
-    console.log("videoDurationText: ", videoDurationText);
-    // Convert the duration text to seconds
     const identifyDuration = videoDurationText ? this.getTotalDuration(videoDurationText) : "0:00";
-    console.log("identifyDuration: ", identifyDuration);
     const videoDuration = this.convertDurationToSeconds(identifyDuration);
 
     // Create the video data object
@@ -230,7 +226,13 @@ const videoTracker = {
     document.body.appendChild(indicatorDiv);
   },
 
+  async initializeApi() {
+    console.log("isReady?");
+    console.log(application.getIsReady());
+    console.log(application.getVideos());
+  },
   initialize() {
+    this.initializeApi();
     this.renderButton();
     this.setupKeyboardShortcut();
     this.isReady();
