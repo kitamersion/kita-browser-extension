@@ -1,56 +1,45 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { IVideo } from "@/content"; // Ensure correct import path for IVideo
-import { Box, Button, Editable, EditableInput, EditablePreview, Flex, Link, Text } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
+import { deleteAllVideos, deleteVideoById, getVideos } from "@/api";
 
 const HomePage = () => {
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
   const [totalDuration, setTotalDuration] = useState<number>(0);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const calcualteTotalDuration = useCallback(() => {
     const totalTimeInSeconds = totalVideos.reduce((total, video) => total + video.video_duration, 0);
     setTotalDuration(totalTimeInSeconds);
   }, [totalVideos]);
 
-  useEffect(() => {
-    chrome.storage.local.get("video_items", function (data) {
-      const videoData: IVideo[] = data.video_items || [];
-      setTotalVideos(videoData);
+  const handleGetVideos = useCallback(() => {
+    getVideos((data) => {
+      setTotalVideos(data);
       calcualteTotalDuration();
     });
   }, [calcualteTotalDuration]);
 
-  const deleteVideoById = (id: string) => {
-    const updatedVideos = totalVideos.filter((video) => video.id !== id);
-    updateVideoData(updatedVideos);
-  };
+  useEffect(() => {
+    if (!isInitialized) {
+      handleGetVideos();
+      return () => {
+        setIsInitialized(true);
+      };
+    }
+  }, [calcualteTotalDuration, handleGetVideos, isInitialized]);
 
-  const updateVideoData = (updatedVideos: IVideo[]) => {
-    chrome.storage.local.set({ video_items: updatedVideos }, function () {
-      setTotalVideos(updatedVideos);
+  const handleDeleteById = (id: string) => {
+    deleteVideoById(id, totalVideos, (data) => {
+      setTotalVideos(data);
       calcualteTotalDuration();
     });
   };
 
-  const deleteAllVideos = () => {
-    chrome.storage.local.remove("video_items", function () {
+  const handleDeleteAllVideos = () => {
+    deleteAllVideos(() => {
       setTotalVideos([]);
       setTotalDuration(0);
-    });
-  };
-
-  const updateVideoById = (id: string, nextValue: string) => {
-    const updatedVideos = totalVideos.map((video) => {
-      if (video.id === id) {
-        const duration = nextValue.split(" ")[0].trim();
-        return { ...video, video_duration: Number(duration) };
-      }
-      return video;
-    });
-
-    chrome.storage.local.set({ video_items: updatedVideos }, function () {
-      setTotalVideos(updatedVideos);
-      calcualteTotalDuration();
     });
   };
 
@@ -64,52 +53,31 @@ const HomePage = () => {
   return (
     <Box px={16} pb={6}>
       <Flex flexDirection={"column"} alignItems={"center"} gap={2}>
-        <Button onClick={deleteAllVideos}>Delete All Video Data</Button>
+        <Button onClick={handleGetVideos}>Refetch Videos</Button>
+        <Button onClick={handleDeleteAllVideos}>Delete All Video Data</Button>
         <Text>Total Items: {totalVideos.length}</Text>
         <Text>Total Duration: {formatTime(totalDuration)}</Text>
       </Flex>
-      <Flex flexDirection={"column"} gap={"4"}>
-        {totalVideos.map((video) => (
-          <Flex flexDirection={"column"} key={video.id} border={"1px"} rounded={"2xl"} p="4">
-            <Text>ID: {video.id}</Text>
-            <Flex gap={1}>
-              <Text>Title:</Text>
-              <Box title={video.video_title} maxWidth="650px" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-                {video.video_title}
-              </Box>
-            </Flex>
-            <Flex gap={1}>
-              <Text>Duration:</Text>
-              <Editable
-                onChange={(nextValue) => updateVideoById(video.id, nextValue)}
-                defaultValue={video.video_duration.toString() + " seconds"}
-              >
-                <EditablePreview />
-                <EditableInput />
-              </Editable>
-            </Flex>
-            <Flex gap={1}>
-              <Text>URL:</Text>
-              <Link
-                maxWidth="650px"
-                overflow="hidden"
-                textOverflow="ellipsis"
-                whiteSpace="nowrap"
-                href={video.video_url}
-                isExternal
-                target="_blank"
-              >
-                <ExternalLinkIcon mx="2px" /> {video.video_url}
-              </Link>
-            </Flex>
-            <Text>ORIGIN: {video.origin}</Text>
-            <Text>Created At: {video.created_at}</Text>
-            <Button onClick={() => deleteVideoById(video.id)}>Delete</Button>
-          </Flex>
-        ))}
-      </Flex>
+      {totalVideos.map((video) => (
+        <Box key={video.id} border={"1px"} rounded={"2xl"} p="4" mb="4">
+          <Text>ID: {video.id}</Text>
+          <Text>Title: {video.video_title}</Text>
+          <Text>Duration: {formatTime(video.video_duration)}</Text>
+          <Text>URL: {video.video_url}</Text>
+          <Text>Origin: {video.origin}</Text>
+          <Text>Created At: {video.created_at}</Text>
+          <Button onClick={() => handleDeleteById(video.id)}>Delete</Button>
+        </Box>
+      ))}
     </Box>
   );
 };
 
 export default HomePage;
+function setTotalVideos(data: any) {
+  throw new Error("Function not implemented.");
+}
+
+function setTotalDuration(arg0: number) {
+  throw new Error("Function not implemented.");
+}

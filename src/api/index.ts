@@ -18,88 +18,84 @@ type KitaSchema = {
   ApplicationSettings: ApplicationSettings;
 };
 
-const API = {
-  kitaSchema: {
-    UserItems: {
-      Videos: [],
+const kitaSchema: KitaSchema = {
+  UserItems: {
+    Videos: [],
+  },
+  ApplicationSettings: {
+    IsReady: false,
+    StorageKeys: {
+      VideoKey: "kita_video_logs",
     },
-    ApplicationSettings: {
-      IsReady: false,
-      StorageKeys: {
-        VideoKey: "kita_video_logs",
-      },
-    },
-  } as KitaSchema,
-
-  // initalize
-
-  _initalize() {
-    this._initalizeVideos();
-    this._initalizeApplication();
-  },
-
-  _initalizeVideos() {
-    const key = this._getStorageVideoKey();
-    chrome.storage.local.get(key, (data) => {
-      const existingVideos: IVideo[] = data.video_items || [];
-      this.setVideos(existingVideos);
-      console.log(existingVideos);
-    });
-  },
-
-  _initalizeApplication() {
-    this.kitaSchema.ApplicationSettings.IsReady = true;
-  },
-
-  getIsReady() {
-    return this.kitaSchema.ApplicationSettings.IsReady;
-  },
-
-  // storage keys
-  _getStorageVideoKey() {
-    return this.kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
-  },
-
-  // crud
-  getVideos() {
-    return this.kitaSchema.UserItems.Videos;
-  },
-
-  setVideos(videos: IVideo[]) {
-    this.kitaSchema.UserItems.Videos.push(...videos);
-    const key = this._getStorageVideoKey();
-    chrome.storage.local.set({ [key]: this.kitaSchema.UserItems.Videos }, () => {
-      console.log(this.kitaSchema.UserItems.Videos);
-    });
-  },
-
-  getVideoById(id: string) {
-    return this.getVideos().find((v) => v.id === id) ?? null;
-  },
-
-  updateVideoById(id: string, videoNext: IVideo) {
-    const updatedVideos = this.kitaSchema.UserItems.Videos.map((v) => {
-      if (v.id === id) {
-        return { ...v, ...videoNext };
-      }
-      return v;
-    });
-    this.kitaSchema.UserItems.Videos = updatedVideos;
-    const key = this._getStorageVideoKey();
-    chrome.storage.local.set({ [key]: updatedVideos });
-    return updatedVideos;
-  },
-
-  deleteVideoById(id: string) {
-    const index = this.kitaSchema.UserItems.Videos.findIndex((v) => v.id === id);
-    if (index === -1) {
-      console.warn(`Video with ID ${id} not found.`);
-    }
-    this.kitaSchema.UserItems.Videos.splice(index, 1);
-    chrome.storage.local.set({ video_items: this.kitaSchema.UserItems.Videos });
   },
 };
 
-const application = API;
-application._initalize();
-export default application;
+const VIDEO_KEY = kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
+
+// GET
+const getVideoById = (id: string, videos: IVideo[]) => {
+  return videos.find((v) => v.id === id) ?? null;
+};
+
+const getVideos = (callback: (data: IVideo[]) => void) => {
+  chrome.storage.local.get(VIDEO_KEY, (data) => {
+    console.log("fetching videos");
+    const items = data?.[VIDEO_KEY] || [];
+    callback(items);
+  });
+};
+
+// SET
+const setVideo = (video: IVideo, callback: (data: IVideo) => void) => {
+  getVideos((data) => {
+    const localVideos = data;
+    localVideos.push(video);
+    chrome.storage.local.set({ [VIDEO_KEY]: localVideos }, () => {
+      console.log("setting single video");
+      callback(video);
+    });
+  });
+};
+
+const setVideos = (videos: IVideo[], callback: () => void) => {
+  chrome.storage.local.set({ [VIDEO_KEY]: videos }, () => {
+    console.log("setting videos");
+    callback();
+  });
+};
+
+const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callback: (updatedVideos: IVideo[]) => void) => {
+  const updatedVideos = videos.map((v) => {
+    if (v.id === id) {
+      return { ...v, ...videoNext };
+    }
+    return v;
+  });
+  chrome.storage.local.set({ [VIDEO_KEY]: updatedVideos }, () => {
+    console.log("updating video with id: ", id);
+    callback(updatedVideos);
+  });
+};
+
+const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]) => void) => {
+  const localVideos = videos;
+  const index = localVideos.findIndex((v) => v.id === id);
+  if (index === -1) {
+    console.warn(`video with id ${id} not found.`);
+  }
+  localVideos.splice(index, 1);
+  chrome.storage.local.set({ video_items: localVideos }, () => {
+    console.log("delete video index: ", index);
+    callback(localVideos);
+  });
+};
+
+// DELETE
+const deleteAllVideos = (callback: () => void) => {
+  chrome.storage.local.remove(VIDEO_KEY, () => {
+    console.log("deleting all videos");
+    callback();
+  });
+};
+
+export { kitaSchema, getVideos, setVideo, setVideos, getVideoById, updateVideoById, deleteVideoById, deleteAllVideos };

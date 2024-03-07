@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import application from "./api";
+import { setVideo } from "./api";
 
 export type IVideo = {
   id: string; // TODO: readonly
@@ -134,7 +134,7 @@ const videoTracker = {
     const videoDuration = this.convertDurationToSeconds(identifyDuration);
 
     // Create the video data object
-    const videoData: IVideo = {
+    const newRecord: IVideo = {
       id: uuidv4(),
       video_title: videoTitle,
       video_duration: videoDuration,
@@ -142,12 +142,8 @@ const videoTracker = {
       origin: origin,
       created_at: timestamp,
     };
-
-    // Retrieve existing video items
-    chrome.storage.local.get("video_items", (data) => {
-      const existingVideos: IVideo[] = data.video_items || [];
-      const updatedVideos = [...existingVideos, videoData];
-      chrome.storage.local.set({ video_items: updatedVideos });
+    setVideo(newRecord, (data) => {
+      console.log("video added from content", data);
     });
   },
 
@@ -209,7 +205,7 @@ const videoTracker = {
     }, BUTTON_RESET_DELAY_MS);
   },
 
-  isReady() {
+  isContentLoaded() {
     const indicatorDiv = document.createElement("div");
     indicatorDiv.innerText = "Kita Browser ON";
     indicatorDiv.style.position = "fixed";
@@ -224,18 +220,14 @@ const videoTracker = {
     indicatorDiv.style.fontSize = "10px";
     indicatorDiv.style.textAlign = "center";
     document.body.appendChild(indicatorDiv);
+    return true;
   },
 
-  async initializeApi() {
-    console.log("isReady?");
-    console.log(application.getIsReady());
-    console.log(application.getVideos());
-  },
   initialize() {
-    this.initializeApi();
-    this.renderButton();
-    this.setupKeyboardShortcut();
-    this.isReady();
+    if (this.isContentLoaded()) {
+      this.renderButton();
+      this.setupKeyboardShortcut();
+    }
   },
 };
 
