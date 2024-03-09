@@ -35,6 +35,7 @@
       "warn"
     ],
     "unused-imports/no-unused-imports": "error",
+    "@typescript-eslint/no-empty-function": "off",
     "react/react-in-jsx-scope": "off",
     "react/jsx-filename-extension": [
       1,

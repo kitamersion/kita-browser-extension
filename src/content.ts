@@ -1,37 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-
-export type IVideo = {
-  id: string;
-  video_title: string;
-  video_duration: number;
-  video_url: string;
-  origin: SiteKey;
-  created_at: number;
-};
-
-export type ITotal = {
-  total_watched: number;
-  total_duration: number;
-};
-
-enum SiteKey {
-  YOUTUBE = "YOUTUBE",
-  YOUTUBE_MUSIC = "YOUTUBE_MUSIC",
-  CRUNCHYROLL = "CRUNCHYROLL",
-}
-
-type TitleLookup = "DOCUMENT_TITLE" | "QUERY_SELECT";
-
-type SiteConfig = {
-  titleLookup: TitleLookup;
-  replaceString: string;
-  originUrl: string;
-  durationKey: string;
-};
-
-type SiteConfigDictionary = {
-  [key in SiteKey]: SiteConfig;
-};
+import { setVideo } from "./api";
+import { SiteConfigDictionary, SiteKey, IVideo } from "./types/video";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -123,22 +92,17 @@ const videoTracker = {
 
     const origin = this._getOrigin();
     const site = siteConfig[origin];
-    console.log(site);
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);
-    console.log("videoDurationElement: ", videoDurationElement);
     const videoDurationText = videoDurationElement?.textContent;
     const timestamp = Date.now();
 
-    console.log("videoDurationText: ", videoDurationText);
-    // Convert the duration text to seconds
     const identifyDuration = videoDurationText ? this.getTotalDuration(videoDurationText) : "0:00";
-    console.log("identifyDuration: ", identifyDuration);
     const videoDuration = this.convertDurationToSeconds(identifyDuration);
 
     // Create the video data object
-    const videoData: IVideo = {
+    const newRecord: IVideo = {
       id: uuidv4(),
       video_title: videoTitle,
       video_duration: videoDuration,
@@ -146,12 +110,8 @@ const videoTracker = {
       origin: origin,
       created_at: timestamp,
     };
-
-    // Retrieve existing video items
-    chrome.storage.local.get("video_items", (data) => {
-      const existingVideos: IVideo[] = data.video_items || [];
-      const updatedVideos = [...existingVideos, videoData];
-      chrome.storage.local.set({ video_items: updatedVideos });
+    setVideo(newRecord, (data) => {
+      console.log("video added from content", data);
     });
   },
 
@@ -213,7 +173,7 @@ const videoTracker = {
     }, BUTTON_RESET_DELAY_MS);
   },
 
-  isReady() {
+  isContentLoaded() {
     const indicatorDiv = document.createElement("div");
     indicatorDiv.innerText = "Kita Browser ON";
     indicatorDiv.style.position = "fixed";
@@ -228,12 +188,14 @@ const videoTracker = {
     indicatorDiv.style.fontSize = "10px";
     indicatorDiv.style.textAlign = "center";
     document.body.appendChild(indicatorDiv);
+    return true;
   },
 
   initialize() {
-    this.renderButton();
-    this.setupKeyboardShortcut();
-    this.isReady();
+    if (this.isContentLoaded()) {
+      this.renderButton();
+      this.setupKeyboardShortcut();
+    }
   },
 };
 

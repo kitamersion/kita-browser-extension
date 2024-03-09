@@ -10,7 +10,7 @@ module.exports = {
   },
 
   entry: {
-    main: path.join(__dirname, '/src/index.ts'),
+    main: path.join(__dirname, "/src/index.ts"),
     content: path.join(__dirname, "/src/content.ts"),
   },
 
@@ -50,7 +50,7 @@ module.exports = {
   },
 
   plugins: [
-    new Dotenv({ systemvars: true }), 
+    // new Dotenv({ systemvars: true }), 
     new HWP({template: path.join(__dirname,'/src/index.html'), chunks: ['main']}),
   ],
 };
