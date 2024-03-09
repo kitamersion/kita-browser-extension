@@ -1,4 +1,4 @@
-import { IVideo, SiteKey } from "../types/video";
+import { IVideo, SiteKey } from "../../types/video";
 import { deleteVideoById, getVideoById, getVideos, setVideos, updateVideoById } from ".";
 
 const mockVideos: IVideo[] = [

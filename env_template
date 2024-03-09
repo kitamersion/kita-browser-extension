@@ -1,0 +1,3 @@
+# for local development keep as dev. This will use localStorage instead of extension storage
+# for building and testing as extension, remove or change value to anything
+APPLICATION_ENVIRONMENT=dev

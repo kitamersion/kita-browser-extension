@@ -1,13 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { ColorModeScript, ChakraProvider } from "@chakra-ui/react";
-import theme from "@/config/theme";
-
-import Navigation from "@/components/navigation";
-import PageLayoutWrapper from "@/components/layouts/PageLayoutWrapper";
+import { ColorModeScript, ChakraProvider, theme } from "@chakra-ui/react";
 import GlobalLayoutWrapper from "@/components/layouts/GlobalLayoutWrapper";
+import PageLayoutWrapper from "@/components/layouts/PageLayoutWrapper";
+import Navigation from "@/components/navigation";
 
-const HomePage = React.lazy(() => import("@/pages/homePage"));
+const PopUp = React.lazy(() => import("@/pages/popup/popup"));
 
 const App = () => {
   return (
@@ -16,12 +14,12 @@ const App = () => {
       <GlobalLayoutWrapper>
         <Navigation />
         <PageLayoutWrapper>
-          <HomePage />
+          <PopUp />
         </PageLayoutWrapper>
       </GlobalLayoutWrapper>
     </ChakraProvider>
   );
 };
 
-const root = createRoot(document.getElementById("app") as HTMLElement);
+const root = createRoot(document.getElementById("popup") as HTMLElement);
 root.render(<App />);

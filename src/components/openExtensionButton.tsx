@@ -5,10 +5,10 @@ import React from "react";
 const OpenExtensionButton = () => {
   const openExtensionWindow = () => {
     chrome.windows.create({
-      url: "index.html",
+      url: "popup.html",
       type: "popup",
-      width: 800,
-      height: 600,
+      width: 900,
+      height: 640,
     });
   };
 
