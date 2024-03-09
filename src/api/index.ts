@@ -1,37 +1,7 @@
-import { IVideo } from "@/content";
-
-type StorageKeys = {
-  VideoKey: string;
-};
-
-type ApplicationSettings = {
-  IsReady: boolean;
-  StorageKeys: StorageKeys;
-};
-
-type UserItems = {
-  Videos: IVideo[];
-};
-
-type KitaSchema = {
-  UserItems: UserItems;
-  ApplicationSettings: ApplicationSettings;
-};
-
-const kitaSchema: KitaSchema = {
-  UserItems: {
-    Videos: [],
-  },
-  ApplicationSettings: {
-    IsReady: false,
-    StorageKeys: {
-      VideoKey: "kita_video_logs",
-    },
-  },
-};
+import { kitaSchema } from "../data/kitaschema";
+import { IVideo } from "../types/video";
 
 const VIDEO_KEY = kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
-
 // GET
 const getVideoById = (id: string, videos: IVideo[]) => {
   return videos.find((v) => v.id === id) ?? null;
@@ -80,8 +50,9 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
 const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]) => void) => {
   const localVideos = videos;
   const index = localVideos.findIndex((v) => v.id === id);
-  if (index === -1) {
+  if (index === -1 || !index) {
     console.warn(`video with id ${id} not found.`);
+    return;
   }
   localVideos.splice(index, 1);
   chrome.storage.local.set({ video_items: localVideos }, () => {

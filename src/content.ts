@@ -1,38 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "./api";
-
-export type IVideo = {
-  id: string; // TODO: readonly
-  video_title: string;
-  video_duration: number;
-  video_url: string;
-  origin: SiteKey;
-  created_at: number;
-};
-
-export type ITotal = {
-  total_watched: number;
-  total_duration: number;
-};
-
-enum SiteKey {
-  YOUTUBE = "YOUTUBE",
-  YOUTUBE_MUSIC = "YOUTUBE_MUSIC",
-  CRUNCHYROLL = "CRUNCHYROLL",
-}
-
-type TitleLookup = "DOCUMENT_TITLE" | "QUERY_SELECT";
-
-type SiteConfig = {
-  titleLookup: TitleLookup;
-  replaceString: string;
-  originUrl: string;
-  durationKey: string;
-};
-
-type SiteConfigDictionary = {
-  [key in SiteKey]: SiteConfig;
-};
+import { SiteConfigDictionary, SiteKey, IVideo } from "./types/video";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {

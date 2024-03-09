@@ -1,43 +1,27 @@
-import { handleWithQuotes, handleWithBlockCopy, handleArrayToString } from ".";
+import { formatTime } from ".";
 
-describe("handleWithQuotes", () => {
-  test("should wrap each string with double quotes when withQuotes is true", () => {
-    const ids = ["apple", "banana", "orange"];
-    const result = handleWithQuotes(true, ids);
-    expect(result).toEqual(['"apple"', '"banana"', '"orange"']);
+describe("formatTime function", () => {
+  test("formats seconds less than a minute correctly", () => {
+    expect(formatTime(30)).toEqual("0h 0m 30s");
   });
 
-  test("should not wrap strings with double quotes when withQuotes is false", () => {
-    const ids = ["apple", "banana", "orange"];
-    const result = handleWithQuotes(false, ids);
-    expect(result).toEqual(["apple", "banana", "orange"]);
-  });
-});
-
-describe("handleWithBlockCopy", () => {
-  test('should add ",\n" to each string when withBlockCopy is true', () => {
-    const ids = ["apple", "banana", "orange"];
-    const result = handleWithBlockCopy(true, ids);
-    expect(result).toEqual(["apple,\n", "banana,\n", "orange,\n"]);
+  test("formats seconds less than an hour correctly", () => {
+    expect(formatTime(1500)).toEqual("0h 25m 0s");
   });
 
-  test('should add "," to each string when withBlockCopy is false', () => {
-    const ids = ["apple", "banana", "orange"];
-    const result = handleWithBlockCopy(false, ids);
-    expect(result).toEqual(["apple,", "banana,", "orange,"]);
-  });
-});
-
-describe("handleArrayToString", () => {
-  test('should join array elements with a space and remove ",\n" from the last item', () => {
-    const ids = ["apple", "banana", "orange"];
-    const result = handleArrayToString(ids);
-    expect(result).toBe("apple banana orange");
+  test("formats seconds more than an hour correctly", () => {
+    expect(formatTime(3720)).toEqual("1h 2m 0s");
   });
 
-  test("should handle empty array case", () => {
-    const ids: string[] = [];
-    const result = handleArrayToString(ids);
-    expect(result).toBe("");
+  test("formats seconds equal to an hour correctly", () => {
+    expect(formatTime(3600)).toEqual("1h 0m 0s");
+  });
+
+  test("formats seconds equal to a day correctly", () => {
+    expect(formatTime(86400)).toEqual("24h 0m 0s");
+  });
+
+  test("formats seconds greater than a day correctly", () => {
+    expect(formatTime(93720)).toEqual("26h 2m 0s");
   });
 });

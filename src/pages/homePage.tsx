@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { IVideo } from "@/content"; // Ensure correct import path for IVideo
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { deleteAllVideos, deleteVideoById, getVideos } from "@/api";
+import { formatTime } from "@/utils";
+import { IVideo } from "@/types/video";
 
 const HomePage = () => {
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
@@ -43,13 +44,6 @@ const HomePage = () => {
     });
   };
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    return `${hours}h ${minutes}m ${remainingSeconds}s`;
-  };
-
   return (
     <Box px={16} pb={6}>
       <Flex flexDirection={"column"} alignItems={"center"} gap={2}>
@@ -74,10 +68,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-function setTotalVideos(data: any) {
-  throw new Error("Function not implemented.");
-}
-
-function setTotalDuration(arg0: number) {
-  throw new Error("Function not implemented.");
-}
