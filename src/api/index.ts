@@ -50,12 +50,13 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
 const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]) => void) => {
   const localVideos = videos;
   const index = localVideos.findIndex((v) => v.id === id);
-  if (index === -1 || !index) {
+  if (index === -1) {
     console.warn(`video with id ${id} not found.`);
+    callback(localVideos);
     return;
   }
   localVideos.splice(index, 1);
-  chrome.storage.local.set({ video_items: localVideos }, () => {
+  chrome.storage.local.set({ [VIDEO_KEY]: localVideos }, () => {
     console.log("delete video index: ", index);
     callback(localVideos);
   });
