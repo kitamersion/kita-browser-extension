@@ -38,7 +38,7 @@ const setVideo = (video: IVideo, callback: (data: IVideo) => void) => {
 
     if (env === "dev") {
       console.log("setting single video");
-      localStorage.set(VIDEO_KEY, JSON.stringify(localVideos));
+      localStorage.setItem(VIDEO_KEY, JSON.stringify(localVideos));
       callback(video);
       return;
     }
@@ -53,7 +53,7 @@ const setVideo = (video: IVideo, callback: (data: IVideo) => void) => {
 const setVideos = (videos: IVideo[], callback: () => void) => {
   if (env === "dev") {
     console.log("setting videos");
-    localStorage.set(VIDEO_KEY, JSON.stringify(videos));
+    localStorage.setItem(VIDEO_KEY, JSON.stringify(videos));
     callback();
     return;
   }
@@ -74,7 +74,7 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
 
   if (env === "dev") {
     console.log("updating video with id: ", id);
-    localStorage.set(VIDEO_KEY, JSON.stringify(updatedVideos));
+    localStorage.setItem(VIDEO_KEY, JSON.stringify(updatedVideos));
     callback(updatedVideos);
     return;
   }
@@ -97,7 +97,7 @@ const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]
 
   if (env === "dev") {
     console.log("delete video index: ", index);
-    localStorage.set(VIDEO_KEY, JSON.stringify(localVideos));
+    localStorage.setItem(VIDEO_KEY, JSON.stringify(localVideos));
     callback(localVideos);
     return;
   }

@@ -1,6 +1,7 @@
 import { SiteKey } from "@/types/video";
 import React from "react";
-import { SiAtandt, SiCrunchyroll, SiYoutube, SiYoutubemusic } from "react-icons/si";
+import { SiCrunchyroll, SiYoutube, SiYoutubemusic } from "react-icons/si";
+import { FaGlobe } from "react-icons/fa";
 
 type OriginToIcon = {
   siteKey: SiteKey;
@@ -16,7 +17,7 @@ const OriginToIcon = ({ siteKey }: OriginToIcon) => {
     [SiteKey.CRUNCHYROLL]: <SiCrunchyroll size={ICON_SIZE} />,
   };
 
-  const icon = siteKeyToIconMap[siteKey] || <SiAtandt size={ICON_SIZE} />;
+  const icon = siteKeyToIconMap[siteKey] || <FaGlobe size={ICON_SIZE} />;
 
   return <>{icon}</>;
 };
