@@ -10,8 +10,8 @@ module.exports = {
   },
 
   entry: {
-    main: path.join(__dirname, "/src/index.ts"),
-    content: path.join(__dirname, "/src/content.ts"),
+    popup: path.join(__dirname, "/src/pages/popup/index.ts"),
+    content: path.join(__dirname, "/src/pages/content/index.ts"),
   },
 
   resolve: {
@@ -50,7 +50,7 @@ module.exports = {
   },
 
   plugins: [
-    // new Dotenv({ systemvars: true }), 
-    new HWP({template: path.join(__dirname,'/src/index.html'), chunks: ['main']}),
+    new Dotenv({ systemvars: true }), 
+    new HWP({template: path.join(__dirname,"/src/pages/popup/popup.html"), chunks: ["popup"], filename: "popup.html"}),
   ],
 };

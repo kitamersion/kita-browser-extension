@@ -5,17 +5,17 @@ import React from "react";
 const OpenExtensionButton = () => {
   const openExtensionWindow = () => {
     chrome.windows.create({
-      url: "index.html",
+      url: "popup.html",
       type: "popup",
-      width: 800,
-      height: 600,
+      width: 900,
+      height: 640,
     });
   };
 
   return (
     <IconButton
       icon={<LuExternalLink />}
-      aria-label="GitHub"
+      aria-label="Popout extension window"
       variant="ghost"
       rounded="full"
       title="Popout extension window"

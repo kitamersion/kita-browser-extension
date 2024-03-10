@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import { setVideo } from "./api";
-import { SiteConfigDictionary, SiteKey, IVideo } from "./types/video";
+import { setVideo } from "../../api/videostorage";
+import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -10,7 +10,7 @@ const siteConfig: SiteConfigDictionary = {
     durationKey: ".ytp-time-duration",
   },
   [SiteKey.YOUTUBE_MUSIC]: {
-    titleLookup: "QUERY_SELECT",
+    titleLookup: "DOCUMENT_TITLE",
     replaceString: "- YouTube",
     originUrl: "music.youtube.com",
     durationKey: ".time-info",

@@ -1,27 +1,27 @@
-import { formatTime } from ".";
+import { formatDuration, formatTimestamp } from ".";
 
-describe("formatTime function", () => {
-  test("formats seconds less than a minute correctly", () => {
-    expect(formatTime(30)).toEqual("0h 0m 30s");
+describe("formatDuration function", () => {
+  test.each([
+    [30, "0h 0m 30s"],
+    [1500, "0h 25m 0s"],
+    [3720, "1h 2m 0s"],
+    [3600, "1h 0m 0s"],
+    [86400, "24h 0m 0s"],
+    [93720, "26h 2m 0s"],
+  ])("formats %s seconds => %i", (seconds, expected) => {
+    expect(formatDuration(seconds)).toEqual(expected);
   });
+});
 
-  test("formats seconds less than an hour correctly", () => {
-    expect(formatTime(1500)).toEqual("0h 25m 0s");
-  });
+describe("formatTimestamp function", () => {
+  test.each([
+    [1709958630709, "09-03-2024"],
+    [1646402400000, "05-03-2022"],
+    [1664371200000, "29-09-2022"],
+    [1686105600000, "07-06-2023"],
+  ])("should return formatted date from %i to => %s", (timestamp, expectedDate) => {
+    const formattedDate = formatTimestamp(timestamp);
 
-  test("formats seconds more than an hour correctly", () => {
-    expect(formatTime(3720)).toEqual("1h 2m 0s");
-  });
-
-  test("formats seconds equal to an hour correctly", () => {
-    expect(formatTime(3600)).toEqual("1h 0m 0s");
-  });
-
-  test("formats seconds equal to a day correctly", () => {
-    expect(formatTime(86400)).toEqual("24h 0m 0s");
-  });
-
-  test("formats seconds greater than a day correctly", () => {
-    expect(formatTime(93720)).toEqual("26h 2m 0s");
+    expect(formattedDate).toBe(expectedDate);
   });
 });

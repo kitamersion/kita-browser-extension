@@ -2,8 +2,8 @@ import { useMediaQuery } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
 function useScreenSize() {
-  const [isMobile] = useMediaQuery("(max-width: 880px)");
-  const [isSmallerScreen] = useMediaQuery("(max-width: 1280px)");
+  const [isMobile] = useMediaQuery("(max-width: 966px)");
+  const [isSmallerScreen] = useMediaQuery("(max-width: 1380px)");
   const [columns, setColumns] = useState(3); // Default to 3 columns
 
   useEffect(() => {
