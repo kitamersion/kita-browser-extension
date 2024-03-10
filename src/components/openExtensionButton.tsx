@@ -15,7 +15,7 @@ const OpenExtensionButton = () => {
   return (
     <IconButton
       icon={<LuExternalLink />}
-      aria-label="GitHub"
+      aria-label="Popout extension window"
       variant="ghost"
       rounded="full"
       title="Popout extension window"
