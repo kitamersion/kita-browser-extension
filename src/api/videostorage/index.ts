@@ -1,18 +1,17 @@
+import { Callback } from "@/types/callback";
 import { kitaSchema } from "../../data/kitaschema";
 import { IVideo } from "../../types/video";
 
 const VIDEO_KEY = kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
-const env = process.env.APPLICATION_ENVIRONMENT;
-
-console.log("ENV: ", env);
+const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 // GET
 const getVideoById = (id: string, videos: IVideo[]) => {
   return videos.find((v) => v.id === id) ?? null;
 };
 
-const getVideos = (callback: (data: IVideo[]) => void) => {
-  if (env === "dev") {
+const getVideos = (callback: Callback<IVideo[]>) => {
+  if (ENV === "dev") {
     console.log("fetching videos");
     const items = localStorage.getItem(VIDEO_KEY);
     if (!items) {
@@ -31,12 +30,12 @@ const getVideos = (callback: (data: IVideo[]) => void) => {
 };
 
 // SET
-const setVideo = (video: IVideo, callback: (data: IVideo) => void) => {
+const setVideo = (video: IVideo, callback: Callback<IVideo>) => {
   getVideos((data) => {
     const localVideos = data;
     localVideos.push(video);
 
-    if (env === "dev") {
+    if (ENV === "dev") {
       console.log("setting single video");
       localStorage.setItem(VIDEO_KEY, JSON.stringify(localVideos));
       callback(video);
@@ -50,21 +49,21 @@ const setVideo = (video: IVideo, callback: (data: IVideo) => void) => {
   });
 };
 
-const setVideos = (videos: IVideo[], callback: () => void) => {
-  if (env === "dev") {
+const setVideos = (videos: IVideo[], callback: Callback<null>) => {
+  if (ENV === "dev") {
     console.log("setting videos");
     localStorage.setItem(VIDEO_KEY, JSON.stringify(videos));
-    callback();
+    callback(null);
     return;
   }
 
   chrome.storage.local.set({ [VIDEO_KEY]: videos }, () => {
     console.log("setting videos");
-    callback();
+    callback(null);
   });
 };
 
-const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callback: (updatedVideos: IVideo[]) => void) => {
+const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callback: Callback<IVideo[]>) => {
   const updatedVideos = videos.map((v) => {
     if (v.id === id) {
       return { ...v, ...videoNext };
@@ -72,7 +71,7 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
     return v;
   });
 
-  if (env === "dev") {
+  if (ENV === "dev") {
     console.log("updating video with id: ", id);
     localStorage.setItem(VIDEO_KEY, JSON.stringify(updatedVideos));
     callback(updatedVideos);
@@ -85,7 +84,7 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
   });
 };
 
-const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]) => void) => {
+const deleteVideoById = (id: string, videos: IVideo[], callback: Callback<IVideo[]>) => {
   const localVideos = videos;
   const index = localVideos.findIndex((v) => v.id === id);
   if (index === -1) {
@@ -95,7 +94,7 @@ const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]
   }
   localVideos.splice(index, 1);
 
-  if (env === "dev") {
+  if (ENV === "dev") {
     console.log("delete video index: ", index);
     localStorage.setItem(VIDEO_KEY, JSON.stringify(localVideos));
     callback(localVideos);
@@ -109,17 +108,17 @@ const deleteVideoById = (id: string, videos: IVideo[], callback: (data: IVideo[]
 };
 
 // DELETE
-const deleteAllVideos = (callback: () => void) => {
-  if (env === "dev") {
+const deleteAllVideos = (callback: Callback<null>) => {
+  if (ENV === "dev") {
     console.log("deleting all videos");
     localStorage.removeItem(VIDEO_KEY);
-    callback();
+    callback(null);
     return;
   }
 
   chrome.storage.local.remove(VIDEO_KEY, () => {
     console.log("deleting all videos");
-    callback();
+    callback(null);
   });
 };
 

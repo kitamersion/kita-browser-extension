@@ -4,13 +4,13 @@ import { Box, Text, Flex, IconButton, Link } from "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
 import React from "react";
 import eventbus from "@/api/eventbus";
-import { VIDEO_DELETED_BY_ID_EVENT } from "@/data/events";
+import { VIDEO_DELETED_BY_ID } from "@/data/events";
 import OriginToIcon from "./originToIcon";
 import { IoMdLink } from "react-icons/io";
 
 const VideoItem = ({ id, created_at, origin, video_duration, video_title, video_url }: IVideo) => {
   const handleDeleteById = (id: string) => {
-    eventbus.publish(VIDEO_DELETED_BY_ID_EVENT, { message: `Delete video ${id}`, value: { id: id } });
+    eventbus.publish(VIDEO_DELETED_BY_ID, { message: `Delete video ${id}`, value: { id: id } });
   };
 
   return (

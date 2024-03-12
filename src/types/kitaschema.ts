@@ -2,6 +2,7 @@ import { IVideo } from "./video";
 
 export type StorageKeys = {
   VideoKey: string;
+  TagKey: string;
 };
 
 export type ApplicationSettings = {

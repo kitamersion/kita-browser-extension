@@ -8,6 +8,7 @@ export const kitaSchema: KitaSchema = {
     IsReady: false,
     StorageKeys: {
       VideoKey: "kita_video_logs",
+      TagKey: "kita_tag",
     },
   },
 };
