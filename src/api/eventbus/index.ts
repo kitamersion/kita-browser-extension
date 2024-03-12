@@ -7,10 +7,18 @@ export type PublishData = {
 };
 
 class EventBus {
+  private static instance: EventBus;
   private events: { [eventName: string]: CallbackFunction[] };
 
   constructor() {
     this.events = {};
+  }
+
+  static getInstance(): EventBus {
+    if (!EventBus.instance) {
+      EventBus.instance = new EventBus();
+    }
+    return EventBus.instance;
   }
 
   subscribe(eventName: string, callback: CallbackFunction): void {
@@ -38,4 +46,4 @@ class EventBus {
   }
 }
 
-export default new EventBus();
+export default EventBus.getInstance();
