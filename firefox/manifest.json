@@ -19,6 +19,10 @@
         "192": "/icons/icon192.png",
         "512": "/icons/icon512.png"
     },
+    "options_ui": {
+        "page": "settings.html",
+        "open_in_tab": true
+    },
     "permissions": [
         "activeTab",
         "storage",

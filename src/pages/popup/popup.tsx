@@ -18,7 +18,7 @@ const PopUp = () => {
   }
 
   return (
-    <Box width={"full"} px={16} pb={6}>
+    <Box as="main">
       <Flex justifyContent={"space-between"} alignItems={"center"} gap={2}>
         <Summary duration={totalDuration} total={totalVideos.length} />
         <Flex gap={"2"}>

@@ -10,8 +10,9 @@ module.exports = {
   },
 
   entry: {
-    popup: path.join(__dirname, "/src/pages/popup/index.ts"),
     content: path.join(__dirname, "/src/pages/content/index.ts"),
+    popup: path.join(__dirname, "/src/pages/popup/index.ts"),
+    settings: path.join(__dirname, "/src/pages/settings/index.ts"),
   },
 
   resolve: {
@@ -52,5 +53,6 @@ module.exports = {
   plugins: [
     new Dotenv({ systemvars: true }), 
     new HWP({template: path.join(__dirname,"/src/pages/popup/popup.html"), chunks: ["popup"], filename: "popup.html"}),
+    new HWP({template: path.join(__dirname,"/src/pages/settings/settings.html"), chunks: ["settings"], filename: "settings.html"}),
   ],
 };

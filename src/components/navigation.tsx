@@ -10,7 +10,7 @@ const Navigation = () => {
   };
 
   return (
-    <Flex as="header" align="center" alignContent="center" justify="space-between" px={8} py={4}>
+    <Flex as="nav" align="center" alignContent="center" justify="space-between" px={8} py={4}>
       <Heading fontSize="medium">{TITLE}</Heading>
 
       <Flex>{renderActionItems()}</Flex>
