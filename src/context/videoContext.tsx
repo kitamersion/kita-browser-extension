@@ -60,6 +60,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     if (!isInitialized) {
       handleGetVideos();
       setIsInitialized(true);
+      return () => {};
     }
   }, [handleGetVideos, isInitialized]);
 

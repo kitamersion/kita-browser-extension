@@ -13,6 +13,18 @@ const getTagById = (id: string, tags: ITag[]) => {
 
 // GET_ALL
 const getTags = (callback: Callback<ITag[]>) => {
+  if (ENV === "dev") {
+    console.log("fetching tags");
+    const items = localStorage.getItem(TAG_KEY);
+    if (!items) {
+      callback([]);
+      return;
+    }
+    const value: ITag[] = JSON.parse(items);
+    callback(value);
+    return;
+  }
+
   chrome.storage.local.get(TAG_KEY, (data) => {
     const items: ITag[] = data?.[TAG_KEY] || [];
     console.log(`Get all tags: ${items.length}`);
