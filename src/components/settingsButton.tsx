@@ -32,10 +32,10 @@ const SettingsButton = () => {
   return (
     <IconButton
       icon={<IoMdSettings />}
-      aria-label="GitHub"
+      aria-label="Settings"
       variant="ghost"
       rounded="full"
-      title="View project on GitHub"
+      title="View settings page"
       onClick={settingsNavigation}
     />
   );
