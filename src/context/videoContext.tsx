@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, PropsWithChildr
 import { IVideo } from "@/types/video";
 import { deleteAllVideos, deleteVideoById, getVideos } from "@/api/videostorage";
 import eventBus from "@/api/eventbus";
-import { VIDEO_DELETED_BY_ID_EVENT, VIDEO_DELETE_ALL, VIDEO_REFRESH } from "@/data/events";
+import { VIDEO_DELETED_BY_ID, VIDEO_DELETE_ALL, VIDEO_REFRESH } from "@/data/events";
 
 interface VideoContextType {
   totalVideos: IVideo[];
@@ -60,6 +60,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     if (!isInitialized) {
       handleGetVideos();
       setIsInitialized(true);
+      return () => {};
     }
   }, [handleGetVideos, isInitialized]);
 
@@ -67,11 +68,11 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   // ======================     EVENT HANDLERS      =================================
   // ================================================================================
 
-  // handle VIDEO_DELETED_BY_ID_EVENT
+  // handle VIDEO_DELETED_BY_ID
   useEffect(() => {
-    eventBus.subscribe(VIDEO_DELETED_BY_ID_EVENT, handleDeleteById);
+    eventBus.subscribe(VIDEO_DELETED_BY_ID, handleDeleteById);
     return () => {
-      eventBus.unsubscribe(VIDEO_DELETED_BY_ID_EVENT, handleDeleteById);
+      eventBus.unsubscribe(VIDEO_DELETED_BY_ID, handleDeleteById);
     };
   }, [handleDeleteById]);
 
