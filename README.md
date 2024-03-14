@@ -11,7 +11,7 @@
   <h1 align="center">Kita browser extension</h1>
 
   <p align="center">
-    A user-friendly tool for tracking immersion across different platforms.
+    A user-friendly tool for tracking immersion across mutiple platforms.
   </p>
 </div>
 
