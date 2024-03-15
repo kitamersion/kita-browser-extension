@@ -1,6 +1,10 @@
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/kitamersion/kita-browser-extension?style=for-the-badge)
 ![GitHub Release](https://img.shields.io/github/v/release/kitamersion/kita-browser-extension?style=for-the-badge)
 ![GitHub License](https://img.shields.io/github/license/kitamersion/kita-browser-extension?style=for-the-badge)
+[![][firefox-shield]][firefox-addon-url]
+
+[firefox-addon-url]: https://addons.mozilla.org/en-US/firefox/addon/kita-browser/
+[firefox-shield]: https://img.shields.io/badge/Firefox-Install-blue?style=for-the-badge
 
 
 <div align="center">
@@ -18,6 +22,16 @@
 **View all application images ➡️  [/image/README.md](/images/README.md)**
 
 ---
+
+## Installation
+
+**Mozilla Firefox**
+
+[![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
+
+TODO
+
+- [ ] Chromium support
 
 ## Start dev environment
 
