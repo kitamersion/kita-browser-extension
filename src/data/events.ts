@@ -2,6 +2,7 @@
 export const VIDEO_REFRESH = "VIDEO_REFRESH";
 export const VIDEO_DELETE_ALL = "VIDEO_DELETE_ALL";
 export const VIDEO_DELETED_BY_ID = "VIDEO_DELETED_BY_ID";
+export const VIDEO_UPDATED_BY_ID = "VIDEO_UPDATED_BY_ID";
 
 // TAG_EVENTS
 export const TAG_SET = "TAG_SET";

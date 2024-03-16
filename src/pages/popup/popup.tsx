@@ -8,6 +8,7 @@ import Summary from "./components/summary";
 import FetchVideos from "./components/fetchVideos";
 import DeleteAll from "./components/deleteAll";
 import { useVideoContext } from "@/context/videoContext";
+import UpdateVideo from "./components/updateVideo";
 
 const PopUp = () => {
   const { isInitialized, totalDuration, totalVideos } = useVideoContext();
@@ -30,7 +31,10 @@ const PopUp = () => {
       {totalVideos.length > 0 ? (
         <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
           {totalVideos.map((item) => (
-            <VideoItem key={item.id} {...item} />
+            <Flex key={item.id} flexDirection={"column"} gap="2">
+              <VideoItem {...item} />
+              <UpdateVideo {...item} />
+            </Flex>
           ))}
         </Grid>
       ) : (

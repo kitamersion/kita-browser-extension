@@ -8,7 +8,8 @@ const mockVideos: IVideo[] = [
     video_duration: 120, // duration in seconds
     video_url: "http://example.com/video1",
     origin: SiteKey.YOUTUBE,
-    created_at: Date.now() - 3600 * 1000, // 1 hour ago
+    created_at: Date.now() - 3600 * 1000, // 1 hour ago,
+    tags: [],
   },
   {
     id: "22f72ece-dde7-4b5f-a325-d27c3eeb1d22",
@@ -17,6 +18,7 @@ const mockVideos: IVideo[] = [
     video_url: "http://example.com/video2",
     origin: SiteKey.YOUTUBE_MUSIC,
     created_at: Date.now() - 7200 * 1000, // 2 hours ago
+    tags: [],
   },
   {
     id: "84f73ea9-316d-43d6-876b-3b39495d9743",
@@ -25,6 +27,7 @@ const mockVideos: IVideo[] = [
     video_url: "http://example.com/video3",
     origin: SiteKey.CRUNCHYROLL,
     created_at: Date.now() - 86400 * 1000, // 1 day ago
+    tags: [],
   },
 ];
 
@@ -79,7 +82,8 @@ describe("Video storage tests", () => {
         video_duration: 200,
         video_url: "http://example.com/updatedvideo",
         origin: SiteKey.YOUTUBE_MUSIC,
-        created_at: Date.now() - 7200 * 1000, // 2 hours ago
+        created_at: Date.now() - 7200 * 1000, // 2 hours ago,
+        tags: [],
       };
 
       updateVideoById("22f72ece-dde7-4b5f-a325-d27c3eeb1d22", updatedVideo, mockVideos, callback);

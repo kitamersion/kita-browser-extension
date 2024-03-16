@@ -72,14 +72,14 @@ const updateVideoById = (id: string, videoNext: IVideo, videos: IVideo[], callba
   });
 
   if (ENV === "dev") {
-    console.log("updating video with id: ", id);
+    console.log("updating video id: ", id);
     localStorage.setItem(VIDEO_KEY, JSON.stringify(updatedVideos));
     callback(updatedVideos);
     return;
   }
 
   chrome.storage.local.set({ [VIDEO_KEY]: updatedVideos }, () => {
-    console.log("updating video with id: ", id);
+    console.log("updating video id: ", id);
     callback(updatedVideos);
   });
 };
