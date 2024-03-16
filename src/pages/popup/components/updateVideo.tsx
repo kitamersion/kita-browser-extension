@@ -15,6 +15,7 @@ import {
   IconButton,
   Input,
   Select,
+  useColorMode,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useState, useEffect, useMemo } from "react";
@@ -32,6 +33,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
       tags,
     };
   }, [created_at, id, origin, tags, video_duration, video_title, video_url]);
+  const { colorMode } = useColorMode();
   const [video, setVideo] = useState(initialState);
   const [isChanged, setIsChanged] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
@@ -71,7 +73,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
       <IconButton icon={<MdEdit />} aria-label="Edit item" variant="ghost" rounded="full" title="Edit item" onClick={onOpen} />
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
         <DrawerOverlay />
-        <DrawerContent p="6" background={"gray.800"}>
+        <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
           <DrawerCloseButton />
           <DrawerHeader>Editing</DrawerHeader>
           <DrawerBody>

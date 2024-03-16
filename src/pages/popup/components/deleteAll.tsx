@@ -12,11 +12,13 @@ import {
   useDisclosure,
   Text,
   Button,
+  useColorMode,
 } from "@chakra-ui/react";
 import React from "react";
 import { MdDelete } from "react-icons/md";
 
 const DeleteAll = () => {
+  const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleDeleteAll = () => {
@@ -36,11 +38,11 @@ const DeleteAll = () => {
       />
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
         <DrawerOverlay />
-        <DrawerContent p="6" background={"gray.800"}>
+        <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
           <DrawerCloseButton />
           <DrawerHeader>Are you sure?</DrawerHeader>
           <DrawerBody>
-            <Flex gap="10" flexDirection={"column"}>
+            <Flex gap="6" flexDirection={"column"}>
               <Text>This will delete all items! You will not be able to recover any items that are currently added.</Text>
 
               <Flex gap="2">
