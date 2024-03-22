@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Kita Browser",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Simple immersion tracker",
     "browser_action": {
         "default_popup": "popup.html",
