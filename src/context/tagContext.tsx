@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, PropsWithChildr
 import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
 import { deleteAllTags, deleteTagById, getTags, setTag } from "@/api/tags";
-import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET } from "@/data/events";
+import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID } from "@/data/events";
 
 interface TagContextType {
   tags: ITag[];
@@ -43,6 +43,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
         return;
       }
       deleteTagById(id, tags, (data) => {
+        eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, { message: "remove tag from video", value: { id: id } });
         setTags([...data]);
       });
     },

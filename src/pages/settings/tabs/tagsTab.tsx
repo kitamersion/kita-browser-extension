@@ -17,9 +17,9 @@ const TagTab = () => {
       <Suspense fallback={<LoadingState />}>
         <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
           <AddTag />
-          <Flex gap={2}>
+          <Flex gap={2} flexWrap={"wrap"}>
             {tags.map((tag) => (
-              <TagItem key={tag.id} id={tag.id} name={tag.name} />
+              <TagItem key={tag.id} tag={tag} showDelete />
             ))}
           </Flex>
         </Flex>

@@ -109,6 +109,7 @@ const videoTracker = {
       video_url: url,
       origin: origin,
       created_at: timestamp,
+      tags: [],
     };
     setVideo(newRecord, (data) => {
       console.log("video added from content", data);

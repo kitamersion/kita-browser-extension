@@ -1,8 +1,14 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import { IVideo } from "@/types/video";
-import { deleteAllVideos, deleteVideoById, getVideos } from "@/api/videostorage";
-import eventBus from "@/api/eventbus";
-import { VIDEO_DELETED_BY_ID, VIDEO_DELETE_ALL, VIDEO_REFRESH } from "@/data/events";
+import { deleteAllVideos, deleteVideoById, getVideos, setVideos, updateVideoById } from "@/api/videostorage";
+import eventBus, { PublishData } from "@/api/eventbus";
+import {
+  CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID,
+  VIDEO_DELETED_BY_ID,
+  VIDEO_DELETE_ALL,
+  VIDEO_REFRESH,
+  VIDEO_UPDATED_BY_ID,
+} from "@/data/events";
 
 interface VideoContextType {
   totalVideos: IVideo[];
@@ -56,6 +62,48 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     [totalVideos]
   );
 
+  const handleUpdateVideoById = useCallback(
+    (eventData: PublishData) => {
+      if (!eventData) {
+        console.warn("No video data found from event handler");
+        return;
+      }
+
+      const updatedVideo = eventData.value as IVideo;
+
+      updateVideoById(updatedVideo.id, updatedVideo, totalVideos, (data) => {
+        setTotalVideos(data);
+        const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
+        setTotalDuration(totalTimeInSeconds);
+      });
+    },
+    [totalVideos]
+  );
+
+  const handleRemoveTagFromVideoById = useCallback(
+    (eventData: any) => {
+      const id = eventData.value.id as string;
+      if (!id) {
+        console.warn("No tag id found from event handler");
+        return;
+      }
+      // check totalVideos for videos with tag id and remove the tag from the video tags property the record then call setVideos to update storage
+      const updatedVideos = totalVideos.map((video) => {
+        const index = video.tags.findIndex((t) => t === id);
+        if (index !== -1) {
+          video.tags.splice(index, 1);
+        }
+        return video;
+      });
+      setVideos(updatedVideos, () => {
+        setTotalVideos(updatedVideos);
+        const totalTimeInSeconds = updatedVideos.reduce((total, video) => total + video.video_duration, 0);
+        setTotalDuration(totalTimeInSeconds);
+      });
+    },
+    [totalVideos]
+  );
+
   useEffect(() => {
     if (!isInitialized) {
       handleGetVideos();
@@ -91,6 +139,22 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       eventBus.unsubscribe(VIDEO_DELETE_ALL, handleDeleteAllVideos);
     };
   }, [handleDeleteAllVideos]);
+
+  // handle VIDEO_UPDATED_BY_ID
+  useEffect(() => {
+    eventBus.subscribe(VIDEO_UPDATED_BY_ID, handleUpdateVideoById);
+    return () => {
+      eventBus.unsubscribe(VIDEO_UPDATED_BY_ID, handleUpdateVideoById);
+    };
+  }, [handleUpdateVideoById]);
+
+  // handle CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID
+  useEffect(() => {
+    eventBus.subscribe(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, handleRemoveTagFromVideoById);
+    return () => {
+      eventBus.unsubscribe(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, handleRemoveTagFromVideoById);
+    };
+  }, [handleRemoveTagFromVideoById]);
 
   return <VideoContext.Provider value={{ totalVideos, totalDuration, isInitialized }}>{children}</VideoContext.Provider>;
 };
