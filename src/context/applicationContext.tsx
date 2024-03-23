@@ -13,7 +13,7 @@ const ApplicationContext = createContext<ApplicationContextType | undefined>(und
 export const useApplicationContext = () => {
   const context = useContext(ApplicationContext);
   if (!context) {
-    throw new Error("useApplicationContext must be used within a tag provider");
+    throw new Error("useApplicationContext must be used within a application provider");
   }
   return context;
 };
