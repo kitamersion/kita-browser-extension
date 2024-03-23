@@ -24,6 +24,13 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
     console.log(`setting application enabled state to: ${value}`);
     setApplicationState(value);
     callback(value);
+
+    // send message to content.js in all tabs
+    chrome.tabs.query({}, (tabs: chrome.tabs.Tab[]) => {
+      for (const tab of tabs) {
+        chrome.tabs.sendMessage(tab.id ?? 0, storageValue);
+      }
+    });
   });
 };
 
