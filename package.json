@@ -76,7 +76,7 @@
         "@chakra-ui/react": "^2.4.1",
         "@emotion/react": "^11.10.5",
         "@emotion/styled": "^11.10.5",
-        "@supabase/supabase-js": "^2.1.1",
+        "@supabase/supabase-js": "^2.39.8",
         "date-fns": "^3.3.1",
         "dotenv-webpack": "^8.0.1",
         "framer-motion": "^7.6.12",
