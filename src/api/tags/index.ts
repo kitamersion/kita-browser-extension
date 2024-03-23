@@ -27,7 +27,7 @@ const getTags = (callback: Callback<ITag[]>) => {
 
   chrome.storage.local.get(TAG_KEY, (data) => {
     const items: ITag[] = data?.[TAG_KEY] || [];
-    console.log(`Get all tags: ${items.length}`);
+    console.log(`get all tags: ${items.length}`);
     callback(items);
   });
 };
@@ -35,7 +35,7 @@ const getTags = (callback: Callback<ITag[]>) => {
 // SET
 const setTag = (name: string, callback: Callback<ITag>) => {
   if (!name) {
-    console.error("Tag name can not be empty or null");
+    console.error("tag name can not be empty or null");
     return;
   }
   getTags((data) => {

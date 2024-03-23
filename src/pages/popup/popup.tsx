@@ -26,7 +26,6 @@ const PopUp = () => {
           <DeleteAll />
         </Flex>
       </Flex>
-
       {totalVideos.length > 0 ? (
         <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
           {totalVideos.map((item) => (
