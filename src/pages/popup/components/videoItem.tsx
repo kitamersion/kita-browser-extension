@@ -49,7 +49,7 @@ const VideoItem = (video: IVideo) => {
                 colorScheme="red"
                 variant="ghost"
                 rounded="full"
-                title={`Delete item ${id}`}
+                title="Delete item"
                 onClick={() => handleDeleteById(id)}
               />
             </Flex>

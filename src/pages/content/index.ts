@@ -23,7 +23,7 @@ const siteConfig: SiteConfigDictionary = {
   },
 };
 
-const BUTTON_RESET_DELAY_MS = 1500;
+const BUTTON_RESET_DELAY_MS = 2000;
 const RECORD_BUTTON_ID = "kita-record-button";
 
 const primaryButton = {
@@ -53,9 +53,20 @@ const primaryButton = {
   },
 };
 
-const videoTracker = {
-  totalWatched: 0,
-  totalDuration: 0,
+class VideoTracker {
+  private static instance: VideoTracker;
+  private keyboardShortcutHandler: ((event: KeyboardEvent) => void) | undefined;
+
+  constructor() {
+    this.keyboardShortcutHandler = undefined;
+  }
+
+  static getInstance(): VideoTracker {
+    if (!VideoTracker.instance) {
+      VideoTracker.instance = new VideoTracker();
+    }
+    return VideoTracker.instance;
+  }
 
   _isVideo() {
     const url = new URL(window.location.href);
@@ -63,7 +74,7 @@ const videoTracker = {
       return false;
     }
     return true;
-  },
+  }
 
   _getTitle() {
     let title = document.title;
@@ -71,7 +82,7 @@ const videoTracker = {
       title = title.replace(replaceString, "").trim();
     });
     return title;
-  },
+  }
 
   _getOrigin() {
     const url = new URL(window.location.href);
@@ -83,7 +94,7 @@ const videoTracker = {
       }
     }
     return "UNKNOWN" as SiteKey;
-  },
+  }
 
   handleVideoStart() {
     this._isVideo();
@@ -114,7 +125,7 @@ const videoTracker = {
     setVideo(newRecord, (data) => {
       console.log("video added from content", data);
     });
-  },
+  }
 
   getTotalDuration(duration: string): string {
     const parts = duration.split("/");
@@ -123,7 +134,7 @@ const videoTracker = {
       return totalDuration;
     }
     return duration.trim();
-  },
+  }
 
   convertDurationToSeconds(duration: string): number {
     const timeComponents = duration.split(":").map((component) => parseInt(component));
@@ -137,7 +148,7 @@ const videoTracker = {
       seconds += timeComponents[1]; // seconds
     }
     return seconds;
-  },
+  }
 
   renderButton() {
     const buttonContainer = document.createElement("div");
@@ -152,7 +163,7 @@ const videoTracker = {
 
     buttonContainer.appendChild(button);
     document.body.appendChild(buttonContainer);
-  },
+  }
 
   handleKeyboardShortcut(event: KeyboardEvent) {
     // keyboard shortcut: Shift+A
@@ -160,11 +171,12 @@ const videoTracker = {
       this.handleVideoStart();
       this.showNotification();
     }
-  },
+  }
 
   setupKeyboardShortcut() {
-    document.addEventListener("keydown", (event) => this.handleKeyboardShortcut(event));
-  },
+    this.keyboardShortcutHandler = (event) => this.handleKeyboardShortcut(event);
+    document.addEventListener("keydown", this.keyboardShortcutHandler);
+  }
 
   showNotification() {
     const button = document.getElementById(RECORD_BUTTON_ID) as HTMLButtonElement;
@@ -172,10 +184,11 @@ const videoTracker = {
     setTimeout(() => {
       primaryButton.buttonDefaultStyle(button);
     }, BUTTON_RESET_DELAY_MS);
-  },
+  }
 
   isContentLoaded() {
     const indicatorDiv = document.createElement("div");
+    indicatorDiv.id = "kitaIndicator";
     indicatorDiv.innerText = "Kita Browser ON";
     indicatorDiv.style.position = "fixed";
     indicatorDiv.style.top = "12px";
@@ -190,14 +203,38 @@ const videoTracker = {
     indicatorDiv.style.textAlign = "center";
     document.body.appendChild(indicatorDiv);
     return true;
-  },
+  }
 
   initialize() {
     if (this.isContentLoaded()) {
       this.renderButton();
       this.setupKeyboardShortcut();
     }
-  },
-};
+  }
 
+  destory() {
+    const indicatorDiv = document.querySelector("#kitaIndicator");
+    const recordButton = document.querySelector(`#${RECORD_BUTTON_ID}`);
+    if (indicatorDiv) {
+      indicatorDiv.remove();
+    }
+    if (recordButton) {
+      recordButton.remove();
+    }
+    if (this.keyboardShortcutHandler) {
+      document.removeEventListener("keydown", this.keyboardShortcutHandler);
+    }
+  }
+}
+
+const videoTracker = VideoTracker.getInstance();
 videoTracker.initialize();
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log(`content script received message: ${JSON.stringify(request)}`);
+  if (!request.IsApplicationEnabled) {
+    videoTracker.destory();
+  } else {
+    videoTracker.initialize();
+  }
+});
