@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.1.0...v1.2.0) (2024-03-23)
+
+
+### Features
+
+* create dependabot.yml for weekly scans ([#23](https://github.com/kitamersion/kita-browser-extension/issues/23)) ([dd233ba](https://github.com/kitamersion/kita-browser-extension/commit/dd233ba457b44167f5472bfe8d92cc0e4786fada))
+
 ## 1.1.0 (2024-03-23)
 
 
