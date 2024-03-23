@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.2.4...v1.3.0) (2024-03-23)
+
+
+### Features
+
+* toggle enable or disable application ([#22](https://github.com/kitamersion/kita-browser-extension/issues/22)) ([3f7f89e](https://github.com/kitamersion/kita-browser-extension/commit/3f7f89e6472090f2f61967bff380126ecbaf378b))
+
 ### [1.2.4](https://github.com/kitamersion/kita-browser-extension/compare/v1.2.3...v1.2.4) (2024-03-23)
 
 ### [1.2.3](https://github.com/kitamersion/kita-browser-extension/compare/v1.2.2...v1.2.3) (2024-03-23)
