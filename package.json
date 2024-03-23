@@ -12,7 +12,8 @@
         "prettier:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
         "test": "jest",
         "test:watch": "jest --watch",
-        "firefox:manifest": "cp -r ./firefox/*.json ./firefox/icons dist"
+        "firefox:manifest": "cp -r ./firefox/*.json ./firefox/icons dist",
+        "release": "standard-version"
     },
     "repository": {
         "type": "git",
