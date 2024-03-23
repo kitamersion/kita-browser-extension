@@ -22,8 +22,16 @@ Shows on websites enabled for kita browser
 ## Isolation mode
 
 
-
 ![kita-isolation-darkmode](/images/app/kita-isolation-darkmode.png)
 
 
 ![kita-isolation-lightmode](/images/app/kita-isolation-lightmode.png)
+
+## Settings 
+
+### Tags
+
+![kita-settings-tags-darkmode](/images/app/kita-settings-tags-darkmode.png)
+
+
+![kita-settings-tags-lightmode](/images/app/kita-settings-tags-lightmode.png)
