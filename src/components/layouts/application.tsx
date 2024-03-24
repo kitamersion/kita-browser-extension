@@ -1,4 +1,4 @@
-import { ChakraProvider, theme, ColorModeScript } from "@chakra-ui/react";
+import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import React, { PropsWithChildren } from "react";
 import Navigation from "../navigation";
 import GlobalLayoutWrapper from "./globalLayoutWrapper";
@@ -6,10 +6,11 @@ import PageLayoutWrapper from "./pageLayoutWrapper";
 import { VideoProvider } from "@/context/videoContext";
 import { TagProvider } from "@/context/tagContext";
 import { ApplicationProvider } from "@/context/applicationContext";
+import { theme, colorModeManager } from "@/config/theme";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <ApplicationProvider>
         <VideoProvider>
