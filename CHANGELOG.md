@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.1](https://github.com/kitamersion/kita-browser-extension/compare/v1.4.0...v1.4.1) (2024-03-24)
+
+
+### Bug Fixes
+
+* use action instead of browserAction ([#30](https://github.com/kitamersion/kita-browser-extension/issues/30)) ([62de9af](https://github.com/kitamersion/kita-browser-extension/commit/62de9afd9fa10eca2baa50a9ef9cda78366e49d6))
+
 ## [1.4.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.3.0...v1.4.0) (2024-03-24)
 
 
