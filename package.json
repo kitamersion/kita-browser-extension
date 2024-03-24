@@ -2,8 +2,8 @@
     "name": "kita-browser-extension",
     "version": "1.2.4",
     "scripts": {
-        "build": "npm run lint && webpack --mode production && npm run firefox:manifest",
-        "build:dev": "webpack --mode production && npm run firefox:manifest",
+        "build": "npm run lint && webpack --mode production && npm run ext:manifest",
+        "build:dev": "webpack --mode production && npm run ext:manifest",
         "build:start": "cd dist && PORT=3002 npx serve",
         "start": "webpack serve --open --mode development",
         "start:live": "webpack serve --open --mode development --live-reload --hot",
@@ -12,7 +12,7 @@
         "prettier:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
         "test": "jest",
         "test:watch": "jest --watch",
-        "firefox:manifest": "cp -r ./firefox/*.json ./firefox/icons dist",
+        "ext:manifest": "cp -r ./ext/*.json ./ext/icons dist",
         "release": "standard-version"
     },
     "repository": {

@@ -49,22 +49,22 @@ jobs:
       - name: Create source code archive
         run: |
           # Create a temporary directory
-          mkdir -p ${{ env.REPOSITORY_NAME }}-firefox
+          mkdir -p ${{ env.REPOSITORY_NAME }}-ext
 
-          cp -r dist/* ${{ env.REPOSITORY_NAME }}-firefox/
+          cp -r dist/* ${{ env.REPOSITORY_NAME }}-ext/
 
-          tar -czvf ${{ env.REPOSITORY_NAME }}-firefox.tar.gz ${{ env.REPOSITORY_NAME }}-firefox
-          zip -r ${{ env.REPOSITORY_NAME }}-firefox.zip ${{ env.REPOSITORY_NAME }}-firefox
+          tar -czvf ${{ env.REPOSITORY_NAME }}-ext.tar.gz ${{ env.REPOSITORY_NAME }}-ext/*
+          zip -r ${{ env.REPOSITORY_NAME }}-ext.zip ${{ env.REPOSITORY_NAME }}-ext/*
 
           # Calculate checksums
-          CHECKSUM_TAR=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-firefox.tar.gz | cut -d ' ' -f 1)
-          CHECKSUM_ZIP=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-firefox.zip | cut -d ' ' -f 1)
+          CHECKSUM_TAR=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-ext.tar.gz | cut -d ' ' -f 1)
+          CHECKSUM_ZIP=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-ext.zip | cut -d ' ' -f 1)
           echo "CHECKSUM_TAR=${CHECKSUM_TAR}" >> $GITHUB_ENV
           echo "CHECKSUM_ZIP=${CHECKSUM_ZIP}" >> $GITHUB_ENV
 
           # Create SHA256SUM.txt file
-          echo "$CHECKSUM_TAR  ${{ env.REPOSITORY_NAME }}-firefox.tar.gz" > SHA256SUM.txt
-          echo "$CHECKSUM_ZIP  ${{ env.REPOSITORY_NAME }}-firefox.zip" >> SHA256SUM.txt
+          echo "$CHECKSUM_TAR  ${{ env.REPOSITORY_NAME }}-ext.tar.gz" > SHA256SUM.txt
+          echo "$CHECKSUM_ZIP  ${{ env.REPOSITORY_NAME }}-ext.zip" >> SHA256SUM.txt
 
       - name: Bump version and push tag
         id: tag
@@ -91,8 +91,8 @@ jobs:
           body: |
             ${{ steps.get_pr_info.outputs.PR_TITLE }} ${{ steps.get_pr_info.outputs.COMMIT_HASH }}
             ```
-            ${{ env.CHECKSUM_TAR }} ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
-            ${{ env.CHECKSUM_ZIP }} ${{ env.REPOSITORY_NAME }}-firefox.zip
+            ${{ env.CHECKSUM_TAR }} ${{ env.REPOSITORY_NAME }}-ext.tar.gz
+            ${{ env.CHECKSUM_ZIP }} ${{ env.REPOSITORY_NAME }}-ext.zip
             ```
 
       - name: Upload release assets (tar.gz)
@@ -102,8 +102,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ env.REPOSITORY_NAME }}-firefox.tar.gz
-          asset_name: ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
+          asset_path: ./${{ env.REPOSITORY_NAME }}-ext.tar.gz
+          asset_name: ${{ env.REPOSITORY_NAME }}-ext.tar.gz
           asset_content_type: application/gzip
 
       - name: Upload release assets (zip)
@@ -113,8 +113,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ env.REPOSITORY_NAME }}-firefox.zip
-          asset_name: ${{ env.REPOSITORY_NAME }}-firefox.zip
+          asset_path: ./${{ env.REPOSITORY_NAME }}-ext.zip
+          asset_name: ${{ env.REPOSITORY_NAME }}-ext.zip
           asset_content_type: application/zip
 
       - name: Upload release assets (SHA256SUM.txt)
