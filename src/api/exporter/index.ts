@@ -1,27 +1,27 @@
-import { Callback } from "@/types/callback";
-
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
-const getItemsFromKey = async <T>(key: string, callback: Callback<T | null>) => {
-  if (ENV === "dev") {
-    const items = localStorage.getItem(key);
-    if (!items) {
-      callback(null);
-      return;
+const getItemsFromKey = <T>(key: string): Promise<T | null> => {
+  return new Promise((resolve) => {
+    if (ENV === "dev") {
+      const items = localStorage.getItem(key);
+      if (!items) {
+        resolve(null);
+      } else {
+        console.log(`export items for key: ${key}`);
+        resolve(items as T);
+      }
+    } else {
+      chrome.storage.local.get(key, (data) => {
+        const items: T = data?.[key] || null;
+        console.log(`export items for key: ${key}`);
+        resolve(items);
+      });
     }
-    console.log(`export items for key: ${key}`);
-    callback(items as T);
-    return;
-  }
-
-  chrome.storage.local.get(key, (data) => {
-    const items: T = data?.[key] || null;
-    console.log(`export items for key: ${key}`);
-    callback(items);
   });
 };
 
 const exportToJSON = <T>(data: T, fileName: string) => {
+  console.log("exporting data...");
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
 
   const url = URL.createObjectURL(blob);
