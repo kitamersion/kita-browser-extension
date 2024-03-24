@@ -61,11 +61,11 @@ const getApplicationEnabled = (callback: Callback<boolean>) => {
 const setApplicationState = (enabled: boolean) => {
   // icon
   const iconPath = enabled ? "/icons/enabled/icon32.png" : "/icons/disabled/icon32.png";
-  chrome.browserAction.setIcon({ path: iconPath });
+  chrome.action.setIcon({ path: iconPath });
 
   // title
   const title = enabled ? TITLE_ON : TITLE_OFF;
-  chrome.browserAction.setTitle({ title: title });
+  chrome.action.setTitle({ title: title });
 };
 
 export { setApplicationEnabled, getApplicationEnabled };
