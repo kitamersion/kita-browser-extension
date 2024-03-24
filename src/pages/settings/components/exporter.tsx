@@ -5,7 +5,6 @@ import React from "react";
 
 const Exporter = () => {
   const handleExportData = async () => {
-    console.log("Exporting data...");
     const kitaSchema = await getKitaSchema();
     exportToJSON(kitaSchema, "kita-data.json");
   };

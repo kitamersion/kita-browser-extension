@@ -5,21 +5,9 @@ import { kitaSchema } from "../videostorage";
 import { getItemsFromKey } from "../exporter";
 
 const getKitaSchema = async (): Promise<KitaSchema> => {
-  let videos: IVideo[] | null = null;
-  let tags: ITag[] | null = null;
-  let isApplicationEnabled: boolean | null = null;
-
-  await getItemsFromKey<IVideo[]>(kitaSchema.ApplicationSettings.StorageKeys.VideoKey, (data) => {
-    videos = data;
-  });
-
-  await getItemsFromKey<ITag[]>(kitaSchema.ApplicationSettings.StorageKeys.TagKey, (data) => {
-    tags = data;
-  });
-
-  await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey, (data) => {
-    isApplicationEnabled = data;
-  });
+  const videos = await getItemsFromKey<IVideo[]>(kitaSchema.ApplicationSettings.StorageKeys.VideoKey);
+  const tags = await getItemsFromKey<ITag[]>(kitaSchema.ApplicationSettings.StorageKeys.TagKey);
+  const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
 
   return {
     UserItems: {
