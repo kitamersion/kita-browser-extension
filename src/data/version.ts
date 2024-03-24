@@ -1,2 +1,2 @@
-import manifest from "../../firefox/manifest.json";
+import manifest from "../../ext/manifest.json";
 export const VERSION = manifest.version;
