@@ -9,7 +9,7 @@
 
 <div align="center">
   <a href="https://github.com/kitamersion/kita-browser-extension">
-    <img src="firefox/icons/icon512.png" alt="Logo" width="80" height="80">
+    <img src="ext/icons/enabled/icon512.png" alt="Logo" width="80" height="80">
   </a>
 
   <h1 align="center">Kita browser extension</h1>
