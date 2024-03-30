@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.5.0...v1.6.0) (2024-03-30)
+
+
+### Features
+
+* cleanup PR caches + remove node cache for potential secret leaks ([#41](https://github.com/kitamersion/kita-browser-extension/issues/41)) ([50409ff](https://github.com/kitamersion/kita-browser-extension/commit/50409fff08ebf02ca1c57ceb7bc72131582e270f))
+
 ## [1.5.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.4.7...v1.5.0) (2024-03-30)
 
 
