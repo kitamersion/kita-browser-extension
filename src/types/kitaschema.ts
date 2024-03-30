@@ -5,6 +5,7 @@ export type StorageKeys = {
   ApplicationEnabledKey: string;
   VideoKey: string;
   TagKey: string;
+  ThemeKey: string;
 };
 
 export type ApplicationSettings = {

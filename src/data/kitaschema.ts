@@ -12,6 +12,7 @@ export const kitaSchema: KitaSchema = {
       ApplicationEnabledKey: "kita_application_enabled",
       VideoKey: "kita_video_logs",
       TagKey: "kita_tag",
+      ThemeKey: "kita_theme",
     },
   },
 };
