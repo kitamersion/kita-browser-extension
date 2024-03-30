@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.1](https://github.com/kitamersion/kita-browser-extension/compare/v1.8.0...v1.8.1) (2024-03-30)
+
+
+### Bug Fixes
+
+* readme logo path ([#63](https://github.com/kitamersion/kita-browser-extension/issues/63)) ([783b10c](https://github.com/kitamersion/kita-browser-extension/commit/783b10c2080288fd6bf838f733269249d03db4f4))
+
 ## [1.8.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.7.7...v1.8.0) (2024-03-30)
 
 
