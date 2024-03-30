@@ -7,12 +7,8 @@ on:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        
+    permissions: write-all
+    steps:       
       - name: Cleanup
         run: |
           gh extension install actions/gh-actions-cache
@@ -23,6 +19,8 @@ jobs:
           ## Setting this to not fail the workflow while deleting cache keys.
           set +e
           echo "Deleting caches..."
+          ## List out all cackeKeys for PR
+          echo $cacheKeysForPR
           for cacheKey in $cacheKeysForPR
           do
               gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
