@@ -78,7 +78,7 @@
         "@emotion/styled": "^11.11.5",
         "@types/jsonfile": "^6.1.4",
         "date-fns": "^3.6.0",
-        "dotenv-webpack": "^8.0.1",
+        "dotenv-webpack": "^8.1.0",
         "framer-motion": "^7.6.12",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
