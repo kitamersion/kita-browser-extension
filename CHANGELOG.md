@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.8.2...v1.9.0) (2024-04-02)
+
+
+### Features
+
+* chrome extension url ([#65](https://github.com/kitamersion/kita-browser-extension/issues/65)) ([480e701](https://github.com/kitamersion/kita-browser-extension/commit/480e70156fd3a31e6f09db7d6259363514e8d309))
+
 ### [1.8.2](https://github.com/kitamersion/kita-browser-extension/compare/v1.8.1...v1.8.2) (2024-03-31)
 
 ### [1.8.1](https://github.com/kitamersion/kita-browser-extension/compare/v1.8.0...v1.8.1) (2024-03-30)
