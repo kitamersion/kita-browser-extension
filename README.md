@@ -2,10 +2,13 @@
 ![GitHub Release](https://img.shields.io/github/v/release/kitamersion/kita-browser-extension?style=for-the-badge)
 ![GitHub License](https://img.shields.io/github/license/kitamersion/kita-browser-extension?style=for-the-badge)
 [![][firefox-shield]][firefox-addon-url]
+[![][chrome-shield]][chrome-addon-url]
 
 [firefox-addon-url]: https://addons.mozilla.org/en-US/firefox/addon/kita-browser/
 [firefox-shield]: https://img.shields.io/badge/Firefox-Install-blue?style=for-the-badge
 
+[chrome-addon-url]: https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn
+[chrome-shield]: https://img.shields.io/badge/Chrome-Install-yellow?style=for-the-badge
 
 <div align="center">
   <a href="https://github.com/kitamersion/kita-browser-extension">
