@@ -2,9 +2,9 @@
     "name": "kita-browser-extension",
     "version": "1.9.1",
     "scripts": {
-        "build": "npm run ext:manifest && npm run lint && webpack --mode production && npm run ext:copy",
-        "build:firefox": "TARGET_BROWSER=firefox npm run build",
-        "build:chrome": "TARGET_BROWSER=chrome npm run build",
+        "build": "npm run lint && webpack --mode production && npm run ext:copy",
+        "build:firefox": "TARGET_BROWSER=firefox npm run ext:manifest",
+        "build:chrome": "TARGET_BROWSER=chrome npm run ext:manifest",
         "build:dev": "webpack --mode production && npm run ext:manifest",
         "build:start": "cd dist && PORT=3002 npx serve",
         "start": "webpack serve --open --mode development",
@@ -14,7 +14,7 @@
         "prettier:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
         "test": "jest",
         "test:watch": "jest --watch",
-        "ext:manifest": "node build-manifest.ts",
+        "ext:manifest": "node builder/build-manifest.ts",
         "ext:copy": "cp -r ./ext/*.json ./ext/icons dist",
         "release": "standard-version"
     },

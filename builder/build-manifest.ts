@@ -2,7 +2,7 @@
 const fs = require("fs");
 
 const PACKAGE_PATH = "./package.json";
-const EXTENSION_PATH = "./ext/manifest.json";
+const EXTENSION_PATH = "./dist/manifest.json";
 const FIREFOX = "firefox";
 const CHROME = "chrome";
 
