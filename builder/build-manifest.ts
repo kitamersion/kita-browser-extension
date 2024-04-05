@@ -6,6 +6,9 @@ const EXTENSION_PATH = "./dist/manifest.json";
 const FIREFOX = "firefox";
 const CHROME = "chrome";
 
+/**
+ * Parsed contents of the package.json file.
+ */
 const packageJson = JSON.parse(fs.readFileSync(PACKAGE_PATH, "utf8"));
 let manifest = fs.readFileSync(EXTENSION_PATH, "utf8");
 
