@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.9.1...v1.10.0) (2024-04-05)
+
+
+### Features
+
+* build firefox and chrome + ci archive and upload for release ([#67](https://github.com/kitamersion/kita-browser-extension/issues/67)) ([1e36de4](https://github.com/kitamersion/kita-browser-extension/commit/1e36de4912bbd408a64cadf5cc2b5c340d2e2c5f))
+
 ### [1.9.1](https://github.com/kitamersion/kita-browser-extension/compare/v1.9.0...v1.9.1) (2024-04-02)
 
 ## [1.9.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.8.2...v1.9.0) (2024-04-02)
