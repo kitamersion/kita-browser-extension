@@ -79,16 +79,16 @@ jobs:
           CHECKSUM_ZIP_CH=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-chrome.zip | cut -d ' ' -f 1)
 
           # Export checksums to environment
-          echo "CHECKSUM_TAR=${CHECKSUM_TAR_FF}" >> $GITHUB_ENV
-          echo "CHECKSUM_ZIP=${CHECKSUM_ZIP_FF}" >> $GITHUB_ENV
+          echo "CHECKSUM_TAR_FF=${CHECKSUM_TAR_FF}" >> $GITHUB_ENV
+          echo "CHECKSUM_ZIP_FF=${CHECKSUM_ZIP_FF}" >> $GITHUB_ENV
           echo "CHECKSUM_TAR_CH=${CHECKSUM_TAR_CH}" >> $GITHUB_ENV
           echo "CHECKSUM_ZIP_CH=${CHECKSUM_ZIP_CH}" >> $GITHUB_ENV
 
           # Create SHA256SUM.txt file
-          echo "$CHECKSUM_TAR_FF  ${{ env.REPOSITORY_NAME }}-firefox.tar.gz" > SHA256SUM.txt
-          echo "$CHECKSUM_ZIP_FF  ${{ env.REPOSITORY_NAME }}-firefox.zip" >> SHA256SUM.txt
-          echo "$CHECKSUM_TAR_CH  ${{ env.REPOSITORY_NAME }}-chrome.tar.gz" >> SHA256SUM.txt
-          echo "$CHECKSUM_ZIP_CH  ${{ env.REPOSITORY_NAME }}-chrome.zip" >> SHA256SUM.txt
+          echo "${{ env.CHECKSUM_TAR_FF }}  ${{ env.REPOSITORY_NAME }}-firefox.tar.gz" >> SHA256SUM.txt
+          echo "${{ env.CHECKSUM_ZIP_FF }}  ${{ env.REPOSITORY_NAME }}-firefox.zip" >> SHA256SUM.txt
+          echo "${{ env.CHECKSUM_TAR_CH }}  ${{ env.REPOSITORY_NAME }}-chrome.tar.gz" >> SHA256SUM.txt
+          echo "${{ env.CHECKSUM_ZIP_CH }}  ${{ env.REPOSITORY_NAME }}-chrome.zip" >> SHA256SUM.txt
 
       - name: Bump version and push tag
         id: tag
