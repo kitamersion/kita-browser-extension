@@ -115,8 +115,10 @@ jobs:
           body: |
             ${{ steps.get_pr_info.outputs.PR_TITLE }} ${{ steps.get_pr_info.outputs.COMMIT_HASH }}
             ```
-            ${{ env.CHECKSUM_TAR }} ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
-            ${{ env.CHECKSUM_ZIP }} ${{ env.REPOSITORY_NAME }}-firefox.zip
+            ${{ env.CHECKSUM_TAR_FF }} ${{ env.REPOSITORY_NAME }}-firefox.tar.gz
+            ${{ env.CHECKSUM_ZIP_FF }} ${{ env.REPOSITORY_NAME }}-firefox.zip
+            ${{ env.CHECKSUM_TAR_CH }} ${{ env.REPOSITORY_NAME }}-chrome.tar.gz
+            ${{ env.CHECKSUM_ZIP_CH }} ${{ env.REPOSITORY_NAME }}-chrome.zip
             ```
 
       - name: Upload firefox release assets (tar.gz)
