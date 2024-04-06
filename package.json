@@ -28,7 +28,7 @@
     },
     "browser-extension": {
         "firefox": {
-            "id": "kita-browser@kitamersion.com"
+            "id": "{3aff539d-2b68-41c8-96e8-fd0e994cf184}"
         }
     },
     "devDependencies": {
