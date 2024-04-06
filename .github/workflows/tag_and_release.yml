@@ -57,8 +57,8 @@ jobs:
 
           cp -r dist/* ${{ env.REPOSITORY_NAME }}-firefox/
 
-          tar -czvf ${{ env.REPOSITORY_NAME }}-ext.tar.gz ${{ env.REPOSITORY_NAME }}-firefox/*
-          zip -r ${{ env.REPOSITORY_NAME }}-ext.zip ${{ env.REPOSITORY_NAME }}-firefox/*
+          tar -czvf ${{ env.REPOSITORY_NAME }}-firefox.tar.gz ${{ env.REPOSITORY_NAME }}-firefox/*
+          zip -r ${{ env.REPOSITORY_NAME }}-firefox.zip ${{ env.REPOSITORY_NAME }}-firefox/*
 
           # chrome extension
           npm run build:chrome
