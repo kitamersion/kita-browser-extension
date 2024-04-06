@@ -3,6 +3,7 @@ import { Flex, Heading, TabPanel } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import Exporter from "../components/exporter";
 import Importer from "../components/importer";
+import ManuallyCopySettingsAndData from "../components/manuallyCopySettingsAndData";
 
 const GeneralTab = () => {
   return (
@@ -16,6 +17,7 @@ const GeneralTab = () => {
             <Exporter />
             <Importer />
           </Flex>
+          <ManuallyCopySettingsAndData />
         </Flex>
       </Suspense>
     </TabPanel>
