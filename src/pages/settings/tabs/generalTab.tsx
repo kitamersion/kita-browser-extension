@@ -1,15 +1,21 @@
 import LoadingState from "@/components/states/LoadingState";
-import { Flex, TabPanel } from "@chakra-ui/react";
+import { Flex, Heading, TabPanel } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import Exporter from "../components/exporter";
+import Importer from "../components/importer";
 
 const GeneralTab = () => {
   return (
     <TabPanel>
       <Suspense fallback={<LoadingState />}>
         <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
-          <Exporter />
-          <p>Import data Coming soon...</p>
+          <Heading as={"h2"} size={"md"}>
+            Import / Export
+          </Heading>
+          <Flex gap={2}>
+            <Exporter />
+            <Importer />
+          </Flex>
         </Flex>
       </Suspense>
     </TabPanel>
