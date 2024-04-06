@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.11.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.10.3...v1.11.0) (2024-04-06)
+
+
+### Features
+
+* firefox amo id ([#71](https://github.com/kitamersion/kita-browser-extension/issues/71)) ([f217f17](https://github.com/kitamersion/kita-browser-extension/commit/f217f17c16b6165adfb48ee434b2f0eafa8a5547))
+
 ### [1.10.3](https://github.com/kitamersion/kita-browser-extension/compare/v1.10.2...v1.10.3) (2024-04-06)
 
 ### [1.10.2](https://github.com/kitamersion/kita-browser-extension/compare/v1.10.1...v1.10.2) (2024-04-06)
