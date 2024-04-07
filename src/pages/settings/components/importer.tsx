@@ -11,8 +11,8 @@ const Importer = () => {
     if (fileInputRef.current?.files?.length) {
       const file = fileInputRef.current.files[0];
       showToastPromise(importFromJSON(file), {
-        loading: { title: "Importing data", status: "loading" },
-        success: { title: "Data imported", status: "success", description: "Please refresh the page to see the changes." },
+        loading: { title: "Importing data", status: "loading", description: "Please do not leave or refresh page while importing" },
+        success: { title: "Data imported", status: "success", description: "You can refresh the page to see your changes" },
         error: { title: "Failed to import data", status: "error" },
       });
     }
