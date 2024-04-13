@@ -6,7 +6,7 @@ import React, { PropsWithChildren, useMemo } from "react";
 
 const SummaryItem = ({ children }: PropsWithChildren<any>) => {
   return (
-    <Flex flexDirection={"column"} gap={1} rounded={"2xl"} border={"1px"} p={4} alignItems={"center"}>
+    <Flex flexDirection={"column"} rounded={"2xl"} p={4} alignItems={"center"} boxShadow={"dark-lg"}>
       {children}
     </Flex>
   );
@@ -33,7 +33,7 @@ const Summary = () => {
   }, [columns, isMobile]);
 
   return (
-    <Grid templateColumns={`repeat(${summaryColumns}, 1fr)`} gap={4} mt={4} mx={2}>
+    <Grid templateColumns={`repeat(${summaryColumns}, 1fr)`} gap={2} mt={4} mx={2}>
       <SummaryItem>
         <SummaryItem.Value value={totalVideos.length} />
         <SummaryItem.Title>Total Videos</SummaryItem.Title>

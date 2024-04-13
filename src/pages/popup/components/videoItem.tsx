@@ -33,9 +33,9 @@ const VideoItem = (video: IVideo) => {
   }, [tagObject, tags]);
 
   return (
-    <Box width={"full"} border={"1px"} boxShadow={"md"} rounded={"2xl"} p="2">
+    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
       <Flex width={"full"} flexDirection={"row"}>
-        <Flex width={"full"} flexDirection={"column"}>
+        <Flex width={"full"} flexDirection={"column"} gap={1}>
           <Flex gap={1} justifyContent={"space-between"}>
             <Flex gap={1}>
               <IoIosCalendar color="tomato" />
@@ -50,15 +50,8 @@ const VideoItem = (video: IVideo) => {
                 {formatDuration(video_duration)}
               </Text>
             </Flex>
-          </Flex>
-          <Flex justifyContent={"space-between"}>
-            <Flex alignItems={"center"}>
-              <OriginToIcon siteKey={origin} />
-              <Link p={2} href={video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
-                <Text as="b">{video_title}</Text>
-              </Link>
-            </Flex>
-            <Flex gap="1">
+
+            <Flex gap={1}>
               <UpdateVideo {...video} />
               <IconButton
                 icon={<MdDelete />}
@@ -69,6 +62,14 @@ const VideoItem = (video: IVideo) => {
                 title="Delete item"
                 onClick={() => handleDeleteById(id)}
               />
+            </Flex>
+          </Flex>
+          <Flex justifyContent={"space-between"}>
+            <Flex alignItems={"center"}>
+              <OriginToIcon siteKey={origin} />
+              <Link p={2} href={video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
+                <Text as="b">{video_title}</Text>
+              </Link>
             </Flex>
           </Flex>
           <Flex gap={1} flexWrap={"wrap"}>
