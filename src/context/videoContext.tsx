@@ -11,11 +11,18 @@ import {
 } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 
-interface VideoContextType {
+const WEEK_IN_DAYS = 7;
+const MONTH_IN_DAYS = 30;
+const YEAR_IN_DAYS = 365;
+
+type VideoContextType = {
   totalVideos: IVideo[];
   totalDuration: number;
+  totalDurationWeek: number;
+  totalDurationMonth: number;
+  totalDurationYear: number;
   isInitialized: boolean;
-}
+};
 
 const VideoContext = createContext<VideoContextType | undefined>(undefined);
 
@@ -31,24 +38,55 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   const { showToast } = useToastContext();
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
   const [totalDuration, setTotalDuration] = useState<number>(0);
+  const [totalDurationWeek, setTotalDurationWeek] = useState<number>(0);
+  const [totalDurationMonth, setTotalDurationMonth] = useState<number>(0);
+  const [totalDurationYear, setTotalDurationYear] = useState<number>(0);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  const filterVideos = (videos: IVideo[], date: Date): IVideo[] => {
+    const now = date.getTime();
+    return videos.filter((video) => video.created_at > now);
+  };
+
+  const getDateFromNow = (days: number) => {
+    const now = new Date();
+    now.setDate(now.getDate() - days);
+    return now;
+  };
+
+  const calculateTotalDuration = (videos: IVideo[]): number => {
+    return videos.reduce((total, video) => total + video.video_duration, 0);
+  };
+
+  const calculateDurationByDate = useCallback((videos: IVideo[], days: number): number => {
+    const date = getDateFromNow(days);
+    const filteredVideos = filterVideos(videos, date);
+    return calculateTotalDuration(filteredVideos);
+  }, []);
 
   const handleGetVideos = useCallback(() => {
     getVideos((data) => {
       setTotalVideos(data);
-      const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
+
+      setTotalVideos(data);
+      const totalTimeInSeconds = calculateTotalDuration(data);
+      const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
+      const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
+      const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
       setTotalDuration(totalTimeInSeconds);
-      showToast({
-        title: `Fetched ${data.length} videos`,
-        status: "success",
-      });
+      setTotalDurationWeek(totalDurationWeek);
+      setTotalDurationMonth(totalDurationMonth);
+      setTotalDurationYear(totalDurationYear);
     });
-  }, [showToast]);
+  }, [calculateDurationByDate]);
 
   const handleDeleteAllVideos = useCallback(() => {
     deleteAllVideos(() => {
       setTotalVideos([]);
       setTotalDuration(0);
+      setTotalDurationWeek(0);
+      setTotalDurationMonth(0);
+      setTotalDurationYear(0);
       showToast({
         title: "Videos deleted",
         status: "success",
@@ -65,15 +103,21 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       }
       deleteVideoById(id, totalVideos, (data) => {
         setTotalVideos(data);
-        const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
+        const totalTimeInSeconds = calculateTotalDuration(data);
+        const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
+        const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
+        const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
         setTotalDuration(totalTimeInSeconds);
+        setTotalDurationWeek(totalDurationWeek);
+        setTotalDurationMonth(totalDurationMonth);
+        setTotalDurationYear(totalDurationYear);
         showToast({
           title: "Video deleted",
           status: "success",
         });
       });
     },
-    [showToast, totalVideos]
+    [calculateDurationByDate, showToast, totalVideos]
   );
 
   const handleUpdateVideoById = useCallback(
@@ -87,15 +131,21 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
 
       updateVideoById(updatedVideo.id, updatedVideo, totalVideos, (data) => {
         setTotalVideos(data);
-        const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
+        const totalTimeInSeconds = calculateTotalDuration(data);
+        const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
+        const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
+        const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
         setTotalDuration(totalTimeInSeconds);
+        setTotalDurationWeek(totalDurationWeek);
+        setTotalDurationMonth(totalDurationMonth);
+        setTotalDurationYear(totalDurationYear);
         showToast({
           title: "Video updated",
           status: "success",
         });
       });
     },
-    [showToast, totalVideos]
+    [calculateDurationByDate, showToast, totalVideos]
   );
 
   const handleRemoveTagFromVideoById = useCallback(
@@ -115,11 +165,17 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       });
       setVideos(updatedVideos, () => {
         setTotalVideos(updatedVideos);
-        const totalTimeInSeconds = updatedVideos.reduce((total, video) => total + video.video_duration, 0);
+        const totalTimeInSeconds = calculateTotalDuration(updatedVideos);
+        const totalDurationWeek = calculateDurationByDate(updatedVideos, WEEK_IN_DAYS);
+        const totalDurationMonth = calculateDurationByDate(updatedVideos, MONTH_IN_DAYS);
+        const totalDurationYear = calculateDurationByDate(updatedVideos, YEAR_IN_DAYS);
         setTotalDuration(totalTimeInSeconds);
+        setTotalDurationWeek(totalDurationWeek);
+        setTotalDurationMonth(totalDurationMonth);
+        setTotalDurationYear(totalDurationYear);
       });
     },
-    [totalVideos]
+    [calculateDurationByDate, totalVideos]
   );
 
   useEffect(() => {
@@ -174,5 +230,18 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     };
   }, [handleRemoveTagFromVideoById]);
 
-  return <VideoContext.Provider value={{ totalVideos, totalDuration, isInitialized }}>{children}</VideoContext.Provider>;
+  return (
+    <VideoContext.Provider
+      value={{
+        totalVideos,
+        totalDuration,
+        totalDurationWeek,
+        totalDurationMonth,
+        totalDurationYear,
+        isInitialized,
+      }}
+    >
+      {children}
+    </VideoContext.Provider>
+  );
 };

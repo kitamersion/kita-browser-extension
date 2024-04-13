@@ -14,7 +14,7 @@ const PageLayoutWrapper: React.FC<PageLayoutWrapperProps> = ({ children }) => {
   const bgColor = colorMode === "light" ? "white" : "gray.800";
 
   return (
-    <Box width={"full"} px={24} pb={4} bg={bgColor} minWidth={isMobile ? MIN_SIZE_PX : "full"}>
+    <Box width={"full"} px={2} bg={bgColor} minWidth={isMobile ? MIN_SIZE_PX : "full"}>
       {children}
     </Box>
   );

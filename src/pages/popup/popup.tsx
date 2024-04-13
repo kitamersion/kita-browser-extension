@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, Grid } from "@chakra-ui/react";
+import { Box, Flex, Grid, Text } from "@chakra-ui/react";
 import VideoItem from "./components/videoItem";
 import useScreenSize from "@/hooks/useScreenSize";
 import EmptyState from "@/components/states/EmptyState";
@@ -9,9 +9,13 @@ import FetchVideos from "./components/fetchVideos";
 import DeleteAll from "./components/deleteAll";
 import { useVideoContext } from "@/context/videoContext";
 
+const MAX_ITEMS_TO_SHOW = 12;
+
 const PopUp = () => {
-  const { isInitialized, totalDuration, totalVideos } = useVideoContext();
+  const { isInitialized, totalVideos } = useVideoContext();
   const { columns } = useScreenSize();
+
+  const latestTenVideos = totalVideos.sort((a, b) => b.created_at - a.created_at).slice(0, MAX_ITEMS_TO_SHOW);
 
   if (!isInitialized) {
     return <LoadingState />;
@@ -19,19 +23,27 @@ const PopUp = () => {
 
   return (
     <Box as="main">
-      <Flex justifyContent={"space-between"} alignItems={"center"} gap={2}>
-        <Summary duration={totalDuration} total={totalVideos.length} />
-        <Flex gap={"2"}>
-          <FetchVideos />
-          <DeleteAll />
-        </Flex>
+      <Flex justifyContent={"flex-end"}>
+        <FetchVideos />
+        <DeleteAll />
       </Flex>
-      {totalVideos.length > 0 ? (
-        <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
-          {totalVideos.map((item) => (
-            <VideoItem key={item.id} {...item} />
-          ))}
-        </Grid>
+      {latestTenVideos.length > 0 ? (
+        <>
+          <Summary />
+          <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
+            {latestTenVideos.map((item) => (
+              <VideoItem key={item.id} {...item} />
+            ))}
+          </Grid>
+          <Flex alignItems={"center"} my={4} flexDirection={"column"}>
+            <Text fontSize={12} color={"tomato"}>
+              For performance, only showing the latest twelve items.
+            </Text>
+            <Text fontSize={12} color={"tomato"}>
+              All item page coming soon...
+            </Text>
+          </Flex>
+        </>
       ) : (
         <EmptyState />
       )}

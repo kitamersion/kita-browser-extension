@@ -10,6 +10,8 @@ import UpdateVideo from "./updateVideo";
 import { useTagContext } from "@/context/tagContext";
 import TagItem from "@/pages/settings/components/tagItem";
 import { ITag } from "@/types/tag";
+import { IoTimerOutline } from "react-icons/io5";
+import { IoIosCalendar } from "react-icons/io";
 
 const VideoItem = (video: IVideo) => {
   const { id, created_at, origin, video_duration, video_title, video_url, tags } = video;
@@ -31,9 +33,24 @@ const VideoItem = (video: IVideo) => {
   }, [tagObject, tags]);
 
   return (
-    <Box width={"full"} border={"1px"} boxShadow={"md"} rounded={"2xl"} p="2">
+    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
       <Flex width={"full"} flexDirection={"row"}>
-        <Flex width={"full"} flexDirection={"column"}>
+        <Flex width={"full"} flexDirection={"column"} gap={1}>
+          <Flex gap={1} justifyContent={"space-between"}>
+            <Flex gap={1}>
+              <IoIosCalendar color="tomato" />
+              <Text fontSize={12} color={"tomato"}>
+                {formatTimestamp(created_at)}
+              </Text>
+            </Flex>
+
+            <Flex gap={1}>
+              <IoTimerOutline color="tomato" />
+              <Text fontSize={12} color={"tomato"}>
+                {formatDuration(video_duration)}
+              </Text>
+            </Flex>
+          </Flex>
           <Flex justifyContent={"space-between"}>
             <Flex alignItems={"center"}>
               <OriginToIcon siteKey={origin} />
@@ -41,7 +58,7 @@ const VideoItem = (video: IVideo) => {
                 <Text as="b">{video_title}</Text>
               </Link>
             </Flex>
-            <Flex gap="1">
+            <Flex gap={1}>
               <UpdateVideo {...video} />
               <IconButton
                 icon={<MdDelete />}
@@ -54,9 +71,7 @@ const VideoItem = (video: IVideo) => {
               />
             </Flex>
           </Flex>
-          <Text>Duration: {formatDuration(video_duration)}</Text>
-          <Text>Created At: {formatTimestamp(created_at)}</Text>
-          <Flex gap={1} my={2} flexWrap={"wrap"}>
+          <Flex gap={1} flexWrap={"wrap"}>
             {renderTags.map((tag) => (
               <TagItem key={tag.id} tag={tag} size="sm" />
             ))}
