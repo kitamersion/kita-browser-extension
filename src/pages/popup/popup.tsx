@@ -23,12 +23,12 @@ const PopUp = () => {
 
   return (
     <Box as="main">
+      <Flex justifyContent={"flex-end"}>
+        <FetchVideos />
+        <DeleteAll />
+      </Flex>
       {latestTenVideos.length > 0 ? (
         <>
-          <Flex justifyContent={"flex-end"}>
-            <FetchVideos />
-            <DeleteAll />
-          </Flex>
           <Summary />
           <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
             {latestTenVideos.map((item) => (
