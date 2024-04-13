@@ -18,7 +18,7 @@ SummaryItem.Value = function SummaryItemValue({ value }: { value: string | numbe
 
 SummaryItem.Title = function SummaryItemTitle({ children }: PropsWithChildren<any>) {
   return (
-    <Text as={"sub"} color={"tomato"}>
+    <Text fontSize={12} color={"tomato"}>
       {children}
     </Text>
   );
