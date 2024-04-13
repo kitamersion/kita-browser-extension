@@ -3,6 +3,7 @@ import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
 import { deleteAllTags, deleteTagById, getTags, setTag } from "@/api/tags";
 import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID } from "@/data/events";
+import { useToastContext } from "./toastNotificationContext";
 
 interface TagContextType {
   tags: ITag[];
@@ -20,6 +21,7 @@ export const useTagContext = () => {
 };
 
 export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { showToast } = useToastContext();
   const [tags, setTags] = useState<ITag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
@@ -32,8 +34,12 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleDeleteAllTags = useCallback(() => {
     deleteAllTags(() => {
       setTags([]);
+      showToast({
+        title: "Tags deleted",
+        status: "success",
+      });
     });
-  }, []);
+  }, [showToast]);
 
   const handleDeleteById = useCallback(
     (eventData: any) => {
@@ -45,9 +51,13 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       deleteTagById(id, tags, (data) => {
         eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, { message: "remove tag from video", value: { id: id } });
         setTags([...data]);
+        showToast({
+          title: "Tag deleted",
+          status: "success",
+        });
       });
     },
-    [tags]
+    [showToast, tags]
   );
 
   const handleSetTag = useCallback(
@@ -59,9 +69,13 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       }
       setTag(name, (data) => {
         setTags([...tags, data]);
+        showToast({
+          title: "Tag added",
+          status: "success",
+        });
       });
     },
-    [tags]
+    [showToast, tags]
   );
 
   useEffect(() => {
@@ -76,7 +90,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   // ======================     EVENT HANDLERS      =================================
   // ================================================================================
 
-  // handle VIDEO_DELETED_BY_ID
+  // handle TAG_DELETE_BY_ID
   useEffect(() => {
     eventBus.subscribe(TAG_DELETE_BY_ID, handleDeleteById);
     return () => {
@@ -84,7 +98,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     };
   }, [handleDeleteById]);
 
-  // handle VIDEO_DELETE_ALL
+  // handle TAG_DELETE_ALL
   useEffect(() => {
     eventBus.subscribe(TAG_DELETE_ALL, handleDeleteAllTags);
     return () => {
