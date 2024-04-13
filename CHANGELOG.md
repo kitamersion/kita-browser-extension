@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.13.0...v1.14.0) (2024-04-13)
+
+
+### Features
+
+* add toast notification on user actions ([#77](https://github.com/kitamersion/kita-browser-extension/issues/77)) ([3302cc2](https://github.com/kitamersion/kita-browser-extension/commit/3302cc2cf8f4d26e79389f85d29add42ffb1aa88))
+
 ## [1.13.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.12.1...v1.13.0) (2024-04-13)
 
 
