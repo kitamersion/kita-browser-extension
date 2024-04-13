@@ -37,7 +37,7 @@ const PopUp = () => {
           </Grid>
           <Flex alignItems={"center"} my={4} flexDirection={"column"}>
             <Text fontSize={12} color={"tomato"}>
-              For performance, only showing the latest ten items.
+              For performance, only showing the latest twelve items.
             </Text>
             <Text fontSize={12} color={"tomato"}>
               All item page coming soon...
