@@ -9,6 +9,7 @@ import {
   VIDEO_REFRESH,
   VIDEO_UPDATED_BY_ID,
 } from "@/data/events";
+import { useToastContext } from "./toastNotificationContext";
 
 interface VideoContextType {
   totalVideos: IVideo[];
@@ -27,6 +28,7 @@ export const useVideoContext = () => {
 };
 
 export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { showToast } = useToastContext();
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
   const [totalDuration, setTotalDuration] = useState<number>(0);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -36,15 +38,23 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       setTotalVideos(data);
       const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
       setTotalDuration(totalTimeInSeconds);
+      showToast({
+        title: `Fetched ${data.length} videos`,
+        status: "success",
+      });
     });
-  }, []);
+  }, [showToast]);
 
   const handleDeleteAllVideos = useCallback(() => {
     deleteAllVideos(() => {
       setTotalVideos([]);
       setTotalDuration(0);
+      showToast({
+        title: "Videos deleted",
+        status: "success",
+      });
     });
-  }, []);
+  }, [showToast]);
 
   const handleDeleteById = useCallback(
     (eventData: any) => {
@@ -57,9 +67,13 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         setTotalVideos(data);
         const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
         setTotalDuration(totalTimeInSeconds);
+        showToast({
+          title: "Video deleted",
+          status: "success",
+        });
       });
     },
-    [totalVideos]
+    [showToast, totalVideos]
   );
 
   const handleUpdateVideoById = useCallback(
@@ -75,9 +89,13 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         setTotalVideos(data);
         const totalTimeInSeconds = data.reduce((total, video) => total + video.video_duration, 0);
         setTotalDuration(totalTimeInSeconds);
+        showToast({
+          title: "Video updated",
+          status: "success",
+        });
       });
     },
-    [totalVideos]
+    [showToast, totalVideos]
   );
 
   const handleRemoveTagFromVideoById = useCallback(
