@@ -20,7 +20,7 @@ const ManuallyCopySettingsAndData = () => {
     <>
       <Flex flexDirection={"column"}>
         <Text>
-          You can manually copy and save your setting and data. Make sure to <b>save as a json file.</b>
+          You can manually copy and save your settings and data. Make sure to <b>save as a json file.</b>
         </Text>
         <Text>
           Example: <Code>kita-data.json</Code>
