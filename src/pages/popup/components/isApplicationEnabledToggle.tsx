@@ -24,9 +24,10 @@ const IsApplicationEnabledToggle = () => {
         size={"xs"}
         rounded={"full"}
         onClick={handleApplicationStatusChange}
-        colorScheme={isApplicationEnabled ? "green" : "red"}
+        color={isApplicationEnabled ? "green" : "red.600"}
+        px={4}
       >
-        Status: {isApplicationEnabled ? "ON" : "OFF"}
+        {isApplicationEnabled ? "ON" : "OFF"}
       </Button>
     </Tooltip>
   );
