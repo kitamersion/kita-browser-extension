@@ -1,5 +1,11 @@
 # Images
 
+Reference to older application UI. To visualize changes over time
+
+To version:
+
+- 1.4: https://github.com/kitamersion/kita-browser-extension/pull/81
+
 ## Content script
 
 Shows on websites enabled for kita browser
