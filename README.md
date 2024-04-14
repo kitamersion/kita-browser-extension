@@ -20,24 +20,25 @@
   <p align="center">
     A user-friendly tool for tracking immersion across mutiple platforms.
   </p>
+
+  <a align="center" href="https://www.kitamersion.com">⭐ www.kitamersion.com ⭐</a>
 </div>
 
-**View all application images ➡️  [/image/README.md](/images/README.md)**
+**View all application images ➡️ [/image/README.md](/images/README.md)**
+
+![kita-popup-darkmode](/images/app/kita-popup-darkmode.png)
 
 ---
 
 ## Installation
 
-**Mozilla Firefox**
-
 [![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
+[![](images/addon/chrome-web-store.png)](https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn)
 
-TODO
-
-- [ ] Chromium support
 
 ## Start dev environment
 
+Create a `.env` from `env_template`. For development, set `APPLICATION_ENVIRONMENT` to `dev`. This will use browser local storage. For building and using extension set `APPLICATION_ENVIRONMENT` to `prod`.
 
 Install dependencies
 
