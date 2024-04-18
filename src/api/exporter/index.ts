@@ -1,3 +1,5 @@
+import { KitaSchema } from "@/types/kitaschema";
+
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 const getItemsFromKey = <T>(key: string): Promise<T | null> => {
@@ -25,10 +27,12 @@ const getItemsFromKey = <T>(key: string): Promise<T | null> => {
   });
 };
 
-const exportToJSON = <T>(data: T, fileName: string): Promise<T | null> => {
+const exportToJSON = (data: KitaSchema, fileName: string): Promise<KitaSchema | null> => {
   return new Promise((resolve, reject) => {
     try {
       console.log("exporting data...");
+      data.UserItems.Total.Videos = data.UserItems.Videos.length;
+      data.UserItems.Total.Tags = data.UserItems.Tags.length;
       const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
 
       const url = URL.createObjectURL(blob);

@@ -4,6 +4,7 @@ import { ITag } from "@/types/tag";
 import { deleteAllTags, deleteTagById, getTags, setTag } from "@/api/tags";
 import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
+import { decrementTotalTags, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/totalTags";
 
 interface TagContextType {
   tags: ITag[];
@@ -34,6 +35,9 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleDeleteAllTags = useCallback(() => {
     deleteAllTags(() => {
       setTags([]);
+
+      resetTotalTags();
+
       showToast({
         title: "Tags deleted",
         status: "success",
@@ -51,6 +55,9 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       deleteTagById(id, tags, (data) => {
         eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, { message: "remove tag from video", value: { id: id } });
         setTags([...data]);
+
+        decrementTotalTags();
+
         showToast({
           title: "Tag deleted",
           status: "success",
@@ -69,6 +76,9 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       }
       setTag(name, (data) => {
         setTags([...tags, data]);
+
+        incrementTotalTags();
+
         showToast({
           title: "Tag added",
           status: "success",

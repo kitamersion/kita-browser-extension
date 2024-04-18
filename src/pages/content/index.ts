@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
+import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -124,6 +125,7 @@ class VideoTracker {
     };
     setVideo(newRecord, (data) => {
       console.log("video added from content", data);
+      incrementTotalVideos();
     });
   }
 

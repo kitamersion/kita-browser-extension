@@ -4,6 +4,7 @@ import { kitaSchema } from "@/data/kitaschema";
 import { KitaSchema } from "@/types/kitaschema";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
+const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
 
 const setItemsForKey = async <T>(key: string, items: T) => {
   if (ENV === "dev") {
@@ -33,6 +34,12 @@ const importFromJSON = (file: File): Promise<void> => {
           kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
           data.ApplicationSettings.IsApplicationEnabled
         );
+
+        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos, data.UserItems.Total.Videos);
+        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags, data.UserItems.Total.Tags);
+
+        // pause for 3 seconds to allow the data to be saved
+        await new Promise((resolve) => setTimeout(resolve, ON_SAVE_TIMEOUT_MS));
 
         resolve();
       } catch (error) {

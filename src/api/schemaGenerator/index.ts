@@ -8,11 +8,17 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
   const videos = await getItemsFromKey<IVideo[]>(kitaSchema.ApplicationSettings.StorageKeys.VideoKey);
   const tags = await getItemsFromKey<ITag[]>(kitaSchema.ApplicationSettings.StorageKeys.TagKey);
   const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
+  const totalVideos = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos);
+  const totalTags = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags);
 
   return {
     UserItems: {
       Videos: videos ?? [],
       Tags: tags ?? [],
+      Total: {
+        Videos: totalVideos ?? 0,
+        Tags: totalTags ?? 0,
+      },
     },
     ApplicationSettings: {
       IsReady: false, // @todo: implement
@@ -22,6 +28,10 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
         VideoKey: kitaSchema.ApplicationSettings.StorageKeys.VideoKey,
         TagKey: kitaSchema.ApplicationSettings.StorageKeys.TagKey,
         ThemeKey: kitaSchema.ApplicationSettings.StorageKeys.ThemeKey,
+        TotalKeys: {
+          Videos: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos,
+          Tags: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags,
+        },
       },
     },
   };

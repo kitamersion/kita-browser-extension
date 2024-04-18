@@ -10,6 +10,7 @@ import {
   VIDEO_UPDATED_BY_ID,
 } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
+import { decrementTotalVideos, resetTotalVideos } from "@/api/summaryStorage/totalVideos";
 
 const WEEK_IN_DAYS = 7;
 const MONTH_IN_DAYS = 30;
@@ -87,6 +88,8 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       setTotalDurationWeek(0);
       setTotalDurationMonth(0);
       setTotalDurationYear(0);
+
+      resetTotalVideos();
       showToast({
         title: "Videos deleted",
         status: "success",
@@ -111,6 +114,9 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         setTotalDurationWeek(totalDurationWeek);
         setTotalDurationMonth(totalDurationMonth);
         setTotalDurationYear(totalDurationYear);
+
+        decrementTotalVideos();
+
         showToast({
           title: "Video deleted",
           status: "success",
@@ -139,6 +145,9 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         setTotalDurationWeek(totalDurationWeek);
         setTotalDurationMonth(totalDurationMonth);
         setTotalDurationYear(totalDurationYear);
+
+        decrementTotalVideos();
+
         showToast({
           title: "Video updated",
           status: "success",
