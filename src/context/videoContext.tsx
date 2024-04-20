@@ -118,13 +118,15 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         decrementTotalVideos();
       });
       await IndexedDB.deleteVideoById(id);
+      await IndexedDB.deleteVideoTagByVideoId(id);
+      handleGetVideos();
 
       showToast({
         title: "Video deleted",
         status: "success",
       });
     },
-    [calculateDurationByDate, showToast, totalVideos]
+    [calculateDurationByDate, handleGetVideos, showToast, totalVideos]
   );
 
   const handleUpdateVideoById = useCallback(

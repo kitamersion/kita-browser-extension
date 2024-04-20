@@ -5,6 +5,7 @@ export type IVideo = {
   video_url: string;
   origin: SiteKey;
   created_at: number;
+  updated_at?: number;
   tags?: string[];
 };
 

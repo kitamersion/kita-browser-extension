@@ -47,6 +47,10 @@ const AddVideoButton = () => {
   const [video, setVideo] = useState(initialState);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
+  const [hour, setHour] = useState(0);
+  const [minute, setMinute] = useState(0);
+  const [second, setSecond] = useState(0);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
     const { name, value } = e.target;
@@ -62,13 +66,34 @@ const AddVideoButton = () => {
     }
   };
 
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setHour(parseInt(value));
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setMinute(parseInt(value));
+  };
+
+  const handleSecondChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setSecond(parseInt(value));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formatDuration = `${hour}h ${minute}m ${second}s`;
 
     const videoToAdd: IVideo = {
       ...video,
       id: uuidv4(),
-      video_duration: convertToSeconds(video.video_duration.toString()),
+      video_duration: convertToSeconds(formatDuration),
+      created_at: Date.now(),
     };
 
     const videoTagRelationship: IVideoTag[] = selectedTags.map((tagId) => {
@@ -83,12 +108,22 @@ const AddVideoButton = () => {
     eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship", value: videoTagRelationship });
 
     onClose();
+    setVideo(initialState);
   };
 
   return (
     <>
       <Box position="fixed" right="1em" bottom="1em">
-        <IconButton isRound={true} aria-label="Add video" title="Add video" variant="solid" icon={<MdOutlineAdd />} onClick={onOpen} />
+        <IconButton
+          size={"lg"}
+          isRound={true}
+          aria-label="Add video"
+          title="Add video"
+          backgroundColor={"red.600"}
+          color={"white"}
+          icon={<MdOutlineAdd />}
+          onClick={onOpen}
+        />
       </Box>
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
         <DrawerOverlay />
@@ -106,10 +141,20 @@ const AddVideoButton = () => {
                   <FormLabel>Video URL</FormLabel>
                   <Input name="video_url" value={video.video_url} onChange={handleChange} />
                 </FormControl>
-                <FormControl id="video_duration">
-                  <FormLabel>Video Duration</FormLabel>
-                  <Input name="video_duration" value={video.video_duration} onChange={handleChange} />
-                </FormControl>
+                <Flex gap={1}>
+                  <FormControl id="video_duration_h">
+                    <FormLabel>Hour</FormLabel>
+                    <Input name="video_duration_h" type="number" min={0} value={hour} onChange={handleHourChange} />
+                  </FormControl>
+                  <FormControl id="video_duration_m">
+                    <FormLabel>Min</FormLabel>
+                    <Input name="video_duration_m" type="number" min={0} value={minute} onChange={handleMinuteChange} />
+                  </FormControl>
+                  <FormControl id="video_duration_s">
+                    <FormLabel>Sec</FormLabel>
+                    <Input name="video_duration_s" type="number" min={0} value={second} onChange={handleSecondChange} />
+                  </FormControl>
+                </Flex>
                 <FormControl id="origin">
                   <FormLabel>Origin</FormLabel>
                   <Select name="origin" value={video.origin} onChange={handleChange}>

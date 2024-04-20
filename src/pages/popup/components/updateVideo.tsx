@@ -25,19 +25,19 @@ import {
   Tag,
   TagLabel,
 } from "@chakra-ui/react";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { MdEdit } from "react-icons/md";
 
 const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, video_url, tags }: IVideo) => {
-  const initialState = useMemo(() => {
+  const initialState: IVideo = useMemo(() => {
     return {
-      id,
-      origin,
-      video_duration: formatDuration(video_duration),
-      video_title,
-      created_at,
-      video_url,
-      tags,
+      id: id,
+      origin: origin,
+      video_duration: video_duration,
+      video_title: video_title,
+      created_at: created_at,
+      video_url: video_url,
+      tags: tags,
     };
   }, [created_at, id, origin, tags, video_duration, video_title, video_url]);
   const { colorMode } = useColorMode();
@@ -46,6 +46,46 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
   const [isInvalid, setIsInvalid] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { tags: contextTags } = useTagContext();
+
+  // @todo move to utils + unit tests
+  const durationSplit: number[] = formatDuration(video.video_duration)
+    .split(" ")
+    .map((item) => {
+      const value = item.slice(0, -1);
+      return parseInt(value);
+    });
+
+  const [hour, setHour] = useState<number>(durationSplit[0]);
+  const [minute, setMinute] = useState(durationSplit[1]);
+  const [second, setSecond] = useState(durationSplit[2]);
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setHour(parseInt(value));
+    handleDurationChange();
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setMinute(parseInt(value));
+    handleDurationChange();
+  };
+
+  const handleSecondChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+    setSecond(parseInt(value));
+    handleDurationChange();
+  };
+
+  const handleDurationChange = useCallback(() => {
+    const formatDuration = `${hour}h ${minute}m ${second}s`;
+    setVideo((prevVideo) => {
+      return { ...prevVideo, video_duration: convertToSeconds(formatDuration) };
+    });
+  }, [hour, minute, second]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
@@ -82,7 +122,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
     e.preventDefault();
     const updatedVideo = {
       ...video,
-      video_duration: convertToSeconds(video.video_duration),
+      updated_at: Date.now(),
     };
     eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "Updating video", value: updatedVideo });
     onClose();
@@ -107,10 +147,20 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
                   <FormLabel>Video URL</FormLabel>
                   <Input isInvalid={!video.video_url} name="video_url" value={video.video_url} onChange={handleChange} />
                 </FormControl>
-                <FormControl id="video_duration">
-                  <FormLabel>Video Duration</FormLabel>
-                  <Input isInvalid={!video.video_duration} name="video_duration" value={video.video_duration} onChange={handleChange} />
-                </FormControl>
+                <Flex gap={1}>
+                  <FormControl id="video_duration_h">
+                    <FormLabel>Hour</FormLabel>
+                    <Input name="video_duration_h" type="number" min={0} value={hour} onChange={handleHourChange} />
+                  </FormControl>
+                  <FormControl id="video_duration_m">
+                    <FormLabel>Min</FormLabel>
+                    <Input name="video_duration_m" type="number" min={0} value={minute} onChange={handleMinuteChange} />
+                  </FormControl>
+                  <FormControl id="video_duration_s">
+                    <FormLabel>Sec</FormLabel>
+                    <Input name="video_duration_s" type="number" min={0} value={second} onChange={handleSecondChange} />
+                  </FormControl>
+                </Flex>
                 <FormControl id="origin">
                   <FormLabel>Origin</FormLabel>
                   <Select isInvalid={!video.origin} name="origin" value={video.origin} onChange={handleChange}>

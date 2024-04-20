@@ -23,7 +23,7 @@ const VideoItem = (video: IVideo) => {
 
   const renderTags = useMemo(() => {
     const matchingTag: ITag[] = [];
-    tags.map((t) => {
+    tags?.map((t) => {
       const match = tagObject.find((tag) => tag.id === t);
       if (match) {
         matchingTag.push(match);
