@@ -21,7 +21,6 @@ export const useVideoTagRelationshipContext = () => {
 export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleVideoTagAddRelationship = useCallback((eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
-    console.log("Received VIDEO_TAG_ADD_RELATIONSHIP with payload:", videoTagRelationship);
 
     if (!videoTagRelationship || videoTagRelationship.length === 0) {
       console.warn("No video tag relationship found from event handler");
@@ -36,7 +35,6 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
 
   const handleVideoTagDeleteRelationshipByTagId = useCallback(async (eventData: any) => {
     const tagId = eventData.value as string;
-    console.log("Received VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID with payload:", tagId);
 
     if (!tagId) {
       console.warn("No tag id found from event handler");
@@ -48,7 +46,6 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
 
   const handleVideoTagDeleteRelationshipByVideoId = useCallback(async (eventData: any) => {
     const videoId = eventData.value as string;
-    console.log("Received VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID with payload:", videoId);
 
     if (!videoId) {
       console.warn("No video id found from event handler");

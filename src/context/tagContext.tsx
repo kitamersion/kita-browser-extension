@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
-import { deleteAllTags, deleteTagById, getTags, setTag } from "@/api/tags";
+import { deleteAllTags, deleteTagById, setTag } from "@/api/tags";
 import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import { decrementTotalTags, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/totalTags";
@@ -27,10 +27,9 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [tags, setTags] = useState<ITag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const handleGetTags = useCallback(() => {
-    getTags((data) => {
-      setTags(data);
-    });
+  const handleGetTags = useCallback(async () => {
+    const allTags = await IndexedDB.getAllTags();
+    setTags(allTags);
   }, []);
 
   const handleDeleteAllTags = useCallback(() => {

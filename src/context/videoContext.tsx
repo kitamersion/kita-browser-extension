@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import { IVideo } from "@/types/video";
-import { deleteAllVideos, deleteVideoById, getVideos, setVideos, updateVideoById } from "@/api/videostorage";
+import { deleteAllVideos, deleteVideoById, setVideos, updateVideoById } from "@/api/videostorage";
 import eventBus, { PublishData } from "@/api/eventbus";
 import {
   CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID,
@@ -67,20 +67,18 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     return calculateTotalDuration(filteredVideos);
   }, []);
 
-  const handleGetVideos = useCallback(() => {
-    getVideos((data) => {
-      setTotalVideos(data);
+  const handleGetVideos = useCallback(async () => {
+    const allVideos = await IndexedDB.getAllVideos();
+    setTotalVideos(allVideos);
 
-      setTotalVideos(data);
-      const totalTimeInSeconds = calculateTotalDuration(data);
-      const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
-      const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
-      const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
-      setTotalDuration(totalTimeInSeconds);
-      setTotalDurationWeek(totalDurationWeek);
-      setTotalDurationMonth(totalDurationMonth);
-      setTotalDurationYear(totalDurationYear);
-    });
+    const totalTimeInSeconds = calculateTotalDuration(allVideos);
+    const totalDurationWeek = calculateDurationByDate(allVideos, WEEK_IN_DAYS);
+    const totalDurationMonth = calculateDurationByDate(allVideos, MONTH_IN_DAYS);
+    const totalDurationYear = calculateDurationByDate(allVideos, YEAR_IN_DAYS);
+    setTotalDuration(totalTimeInSeconds);
+    setTotalDurationWeek(totalDurationWeek);
+    setTotalDurationMonth(totalDurationMonth);
+    setTotalDurationYear(totalDurationYear);
   }, [calculateDurationByDate]);
 
   const handleDeleteAllVideos = useCallback(() => {
@@ -202,12 +200,13 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         return;
       }
       await IndexedDB.addVideo(videoToAdd);
+      handleGetVideos();
       showToast({
         title: "Video added",
         status: "success",
       });
     },
-    [showToast]
+    [handleGetVideos, showToast]
   );
 
   useEffect(() => {
