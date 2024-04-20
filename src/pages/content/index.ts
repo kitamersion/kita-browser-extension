@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
+import { VIDEO_ADD } from "@/data/events";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -123,10 +124,15 @@ class VideoTracker {
       created_at: timestamp,
       tags: [],
     };
-    setVideo(newRecord, (data) => {
-      console.log("video added from content", data);
+
+    setVideo(newRecord, () => {
       incrementTotalVideos();
     });
+
+    const payload = JSON.stringify(newRecord);
+    chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
+
+    console.log("video added from content");
   }
 
   getTotalDuration(duration: string): string {

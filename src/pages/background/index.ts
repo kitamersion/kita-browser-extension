@@ -1,13 +1,17 @@
-chrome.runtime.onMessage.addListener(function (
-  request: { type: string; payload: any },
-  sender: any,
-  sendResponse: (arg0: { status: string }) => void
-) {
-  if (request.type === "MY_EVENT") {
-    console.log("Received MY_EVENT with payload:", request.payload);
-    // Do some processing here...
+import { VIDEO_ADD } from "@/data/events";
+import IndexedDB from "@/db/index";
 
-    // When you're done, you can send a response back
-    sendResponse({ status: "OK" });
+chrome.runtime.onMessage.addListener(async function (request: { type: string; payload: any }) {
+  let parsedPayload;
+  try {
+    parsedPayload = JSON.parse(request.payload);
+  } catch (e) {
+    console.error("Error parsing payload", e);
+    return;
+  }
+
+  if (request.type === VIDEO_ADD) {
+    console.log("Received ADD_VIDEO with payload:", parsedPayload);
+    await IndexedDB.addVideo(parsedPayload);
   }
 });

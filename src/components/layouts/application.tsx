@@ -8,6 +8,7 @@ import { TagProvider } from "@/context/tagContext";
 import { ApplicationProvider } from "@/context/applicationContext";
 import { theme, colorModeManager } from "@/config/theme";
 import { ToastProvider } from "@/context/toastNotificationContext";
+import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -15,14 +16,16 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <ToastProvider>
         <ApplicationProvider>
-          <VideoProvider>
-            <TagProvider>
-              <GlobalLayoutWrapper>
-                <Navigation />
-                <PageLayoutWrapper>{children}</PageLayoutWrapper>
-              </GlobalLayoutWrapper>
-            </TagProvider>
-          </VideoProvider>
+          <VideoTagRelationshipProvider>
+            <VideoProvider>
+              <TagProvider>
+                <GlobalLayoutWrapper>
+                  <Navigation />
+                  <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                </GlobalLayoutWrapper>
+              </TagProvider>
+            </VideoProvider>
+          </VideoTagRelationshipProvider>
         </ApplicationProvider>
       </ToastProvider>
     </ChakraProvider>

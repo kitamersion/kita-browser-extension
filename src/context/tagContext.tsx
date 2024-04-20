@@ -2,9 +2,10 @@ import React, { createContext, useState, useEffect, useCallback, PropsWithChildr
 import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
 import { deleteAllTags, deleteTagById, getTags, setTag } from "@/api/tags";
-import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID } from "@/data/events";
+import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import { decrementTotalTags, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/totalTags";
+import IndexedDB from "@/db/index";
 
 interface TagContextType {
   tags: ITag[];
@@ -46,29 +47,32 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   }, [showToast]);
 
   const handleDeleteById = useCallback(
-    (eventData: any) => {
+    async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
         console.warn("No tag id found from event handler");
         return;
       }
       deleteTagById(id, tags, (data) => {
-        eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_ID, { message: "remove tag from video", value: { id: id } });
+        eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID, { message: "remove tag from video", value: { id: id } });
         setTags([...data]);
 
         decrementTotalTags();
+      });
 
-        showToast({
-          title: "Tag deleted",
-          status: "success",
-        });
+      await IndexedDB.deleteTagById(id);
+      await IndexedDB.deleteVideoTagByTagId(id);
+
+      showToast({
+        title: "Tag deleted",
+        status: "success",
       });
     },
     [showToast, tags]
   );
 
   const handleSetTag = useCallback(
-    (eventData: any) => {
+    async (eventData: any) => {
       const name = eventData.value.name as string;
       if (!name) {
         console.warn("Empty or null tag name");
@@ -78,11 +82,12 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
         setTags([...tags, data]);
 
         incrementTotalTags();
+      });
 
-        showToast({
-          title: "Tag added",
-          status: "success",
-        });
+      await IndexedDB.addTag(name);
+      showToast({
+        title: "Tag added",
+        status: "success",
       });
     },
     [showToast, tags]

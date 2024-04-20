@@ -5,12 +5,7 @@ export type IVideo = {
   video_url: string;
   origin: SiteKey;
   created_at: number;
-  tags: string[];
-};
-
-export type ITotal = {
-  total_watched: number;
-  total_duration: number;
+  tags?: string[];
 };
 
 export enum SiteKey {
@@ -18,6 +13,11 @@ export enum SiteKey {
   YOUTUBE_MUSIC = "YOUTUBE_MUSIC",
   CRUNCHYROLL = "CRUNCHYROLL",
 }
+
+export type ITotal = {
+  total_watched: number;
+  total_duration: number;
+};
 
 type TitleLookup = "DOCUMENT_TITLE" | "QUERY_SELECT";
 

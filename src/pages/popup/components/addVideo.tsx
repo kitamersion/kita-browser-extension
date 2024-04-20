@@ -1,10 +1,13 @@
-import eventbus from "@/api/eventbus";
-import { useTagContext } from "@/context/tagContext";
-import { VIDEO_UPDATED_BY_ID } from "@/data/events";
 import { IVideo, SiteKey } from "@/types/video";
-import { convertToSeconds, formatDuration, settingsNavigation } from "@/utils";
+import { convertToSeconds, settingsNavigation } from "@/utils";
+import eventbus from "@/api/eventbus";
+import { v4 as uuidv4 } from "uuid";
 import {
+  IconButton,
+  Box,
   Button,
+  Checkbox,
+  CheckboxGroup,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
@@ -14,47 +17,39 @@ import {
   Flex,
   FormControl,
   FormLabel,
-  IconButton,
   Input,
   Select,
-  useColorMode,
-  useDisclosure,
-  Text,
-  Checkbox,
-  CheckboxGroup,
   Tag,
   TagLabel,
+  useDisclosure,
+  useColorMode,
+  Text,
 } from "@chakra-ui/react";
-import React, { useState, useEffect, useMemo } from "react";
-import { MdEdit } from "react-icons/md";
+import React, { useState } from "react";
+import { MdOutlineAdd } from "react-icons/md";
+import { VIDEO_ADD, VIDEO_TAG_ADD_RELATIONSHIP } from "@/data/events";
+import { useTagContext } from "@/context/tagContext";
+import { IVideoTag } from "@/types/relationship";
 
-const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, video_url, tags }: IVideo) => {
-  const initialState = useMemo(() => {
-    return {
-      id,
-      origin,
-      video_duration: formatDuration(video_duration),
-      video_title,
-      created_at,
-      video_url,
-      tags,
-    };
-  }, [created_at, id, origin, tags, video_duration, video_title, video_url]);
+const AddVideoButton = () => {
+  const initialState: IVideo = {
+    id: "",
+    origin: SiteKey.YOUTUBE,
+    video_duration: 0,
+    video_title: "",
+    created_at: 0,
+    video_url: "",
+    tags: [],
+  };
   const { colorMode } = useColorMode();
-  const [video, setVideo] = useState(initialState);
-  const [isChanged, setIsChanged] = useState(false);
-  const [isInvalid, setIsInvalid] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const { tags: contextTags } = useTagContext();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [video, setVideo] = useState(initialState);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
     const { name, value } = e.target;
-    if (!value) {
-      setIsInvalid(true);
-    } else {
-      setIsInvalid(false);
-    }
     setVideo({ ...video, [name]: value });
   };
 
@@ -62,35 +57,39 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
     const tagId = event.target.value;
     const isChecked = event.target.checked;
 
-    setVideo((prevVideo) => {
-      let updatedTags;
-      if (isChecked) {
-        updatedTags = [...(prevVideo.tags ?? []), tagId]; // add checked
-      } else {
-        updatedTags = prevVideo.tags?.filter((tag) => tag !== tagId); // remove unchecked
-      }
-      return { ...prevVideo, tags: updatedTags };
-    });
+    if (isChecked) {
+      setSelectedTags([...selectedTags, tagId]);
+    }
   };
-
-  // enable button if record has changed
-  useEffect(() => {
-    setIsChanged(JSON.stringify(video) !== JSON.stringify(initialState));
-  }, [initialState, video]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const updatedVideo = {
+
+    const videoToAdd: IVideo = {
       ...video,
-      video_duration: convertToSeconds(video.video_duration),
+      id: uuidv4(),
+      video_duration: convertToSeconds(video.video_duration.toString()),
     };
-    eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "Updating video", value: updatedVideo });
+
+    const videoTagRelationship: IVideoTag[] = selectedTags.map((tagId) => {
+      return {
+        id: uuidv4(),
+        video_id: videoToAdd.id,
+        tag_id: tagId,
+      };
+    });
+
+    eventbus.publish(VIDEO_ADD, { message: "add video", value: videoToAdd });
+    eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship", value: videoTagRelationship });
+
     onClose();
   };
 
   return (
     <>
-      <IconButton icon={<MdEdit />} aria-label="Edit item" variant="ghost" rounded="full" title="Edit item" onClick={onOpen} />
+      <Box position="fixed" right="1em" bottom="1em">
+        <IconButton isRound={true} aria-label="Add video" title="Add video" variant="solid" icon={<MdOutlineAdd />} onClick={onOpen} />
+      </Box>
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
         <DrawerOverlay />
         <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
@@ -101,19 +100,19 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
               <Flex flexDirection={"column"} gap={4}>
                 <FormControl id="video_title">
                   <FormLabel>Video Title</FormLabel>
-                  <Input isInvalid={!video.video_title} name="video_title" value={video.video_title} onChange={handleChange} />
+                  <Input name="video_title" value={video.video_title} onChange={handleChange} />
                 </FormControl>
                 <FormControl id="video_url">
                   <FormLabel>Video URL</FormLabel>
-                  <Input isInvalid={!video.video_url} name="video_url" value={video.video_url} onChange={handleChange} />
+                  <Input name="video_url" value={video.video_url} onChange={handleChange} />
                 </FormControl>
                 <FormControl id="video_duration">
                   <FormLabel>Video Duration</FormLabel>
-                  <Input isInvalid={!video.video_duration} name="video_duration" value={video.video_duration} onChange={handleChange} />
+                  <Input name="video_duration" value={video.video_duration} onChange={handleChange} />
                 </FormControl>
                 <FormControl id="origin">
                   <FormLabel>Origin</FormLabel>
-                  <Select isInvalid={!video.origin} name="origin" value={video.origin} onChange={handleChange}>
+                  <Select name="origin" value={video.origin} onChange={handleChange}>
                     {Object.values(SiteKey).map((siteKey) => (
                       <option key={siteKey} value={siteKey}>
                         {siteKey}
@@ -143,7 +142,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
                     </CheckboxGroup>
                   )}
                 </FormControl>
-                <Button mt={4} type="submit" isDisabled={!isChanged || isInvalid}>
+                <Button mt={4} type="submit">
                   Save
                 </Button>
               </Flex>
@@ -155,4 +154,4 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
   );
 };
 
-export default UpdateVideo;
+export default AddVideoButton;
