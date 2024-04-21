@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
@@ -21,7 +22,7 @@ const siteConfig: SiteConfigDictionary = {
     titleLookup: "DOCUMENT_TITLE",
     replaceString: "- Watch on Crunchyroll",
     originUrl: "www.crunchyroll.com",
-    durationKey: "div.css-901oao[data-testid='vilos-duration']",
+    durationKey: "meta[property='video:duration']",
   },
 };
 
@@ -108,11 +109,26 @@ class VideoTracker {
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);
-    const videoDurationText = videoDurationElement?.textContent;
+    let videoDurationText = videoDurationElement?.textContent;
     const timestamp = Date.now();
 
-    const identifyDuration = videoDurationText ? this.getTotalDuration(videoDurationText) : "0:00";
-    const videoDuration = this.convertDurationToSeconds(identifyDuration);
+    let videoDuration = 0;
+
+    switch (origin) {
+      case SiteKey.YOUTUBE:
+      case SiteKey.YOUTUBE_MUSIC:
+        const identifyDuration = this.getTotalDuration(videoDurationText ?? "");
+        videoDuration = this.convertDurationToSeconds(identifyDuration);
+        break;
+
+      case SiteKey.CRUNCHYROLL:
+        videoDurationText = videoDurationElement?.getAttribute("content");
+        videoDuration = parseInt(videoDurationText ?? "0");
+        break;
+      default:
+        console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+        break;
+    }
 
     // Create the video data object
     const newRecord: IVideo = {
