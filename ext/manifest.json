@@ -39,5 +39,16 @@
                 "content.js"
             ]
         }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "/icons/enabled/icon128.png"
+            ],
+            "matches": [
+                "*://*.youtube.com/*",
+                "*://*.crunchyroll.com/*"
+            ]
+        }
     ]
 }

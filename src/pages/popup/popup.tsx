@@ -23,7 +23,7 @@ const PopUp = () => {
   }
 
   return (
-    <Box as="main">
+    <Box as="main" minHeight={"xl"}>
       <Flex justifyContent={"flex-end"}>
         <FetchVideos />
         <DeleteAll />

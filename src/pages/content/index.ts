@@ -99,7 +99,11 @@ class VideoTracker {
     return "UNKNOWN" as SiteKey;
   }
 
-  handleVideoStart() {
+  _extensionBaseUrl() {
+    return chrome.runtime.getURL("/");
+  }
+
+  _handleVideoCapture() {
     this._isVideo();
     const url = window.location.href;
     const videoTitle = this._getTitle();
@@ -181,7 +185,7 @@ class VideoTracker {
     primaryButton.buttonDefaultStyle(button);
 
     button.addEventListener("click", () => {
-      this.handleVideoStart();
+      this._handleVideoCapture();
       this.showNotification();
     });
 
@@ -192,7 +196,7 @@ class VideoTracker {
   handleKeyboardShortcut(event: KeyboardEvent) {
     // keyboard shortcut: Shift+A
     if (event.shiftKey && event.key === "A") {
-      this.handleVideoStart();
+      this._handleVideoCapture();
       this.showNotification();
     }
   }
@@ -229,10 +233,49 @@ class VideoTracker {
     return true;
   }
 
+  _youtubeTimelineButton() {
+    const parentDiv = document.querySelector(".ytp-right-controls");
+
+    if (parentDiv) {
+      const newButton = document.createElement("button");
+
+      newButton.classList.add("ytp-button", "ytp-settings-button");
+      newButton.id = "kitabrowserCapture";
+      newButton.title = "Capture Video (Shortcut: Shift+A)";
+
+      newButton.addEventListener("click", () => {
+        this._handleVideoCapture();
+      });
+
+      const baseUrl = this._extensionBaseUrl();
+      const newImg = document.createElement("img");
+      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
+      newImg.style.width = "68%";
+
+      newButton.appendChild(newImg);
+      newButton.style.cssText = "margin-top: 8px; vertical-align: top; text-align: center;";
+
+      parentDiv.insertBefore(newButton, parentDiv.firstChild);
+    } else {
+      console.error("[KITA_BROWSER] Unable to find parent div");
+    }
+  }
+
   initialize() {
-    if (this.isContentLoaded()) {
-      this.renderButton();
+    const origin = this._getOrigin();
+    if (origin) {
+      // this.renderButton();
       this.setupKeyboardShortcut();
+
+      switch (origin) {
+        case SiteKey.YOUTUBE:
+        case SiteKey.YOUTUBE_MUSIC:
+          this._youtubeTimelineButton();
+          break;
+        default:
+          console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+          break;
+      }
     }
   }
 

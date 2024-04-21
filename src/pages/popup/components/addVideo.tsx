@@ -120,7 +120,6 @@ const AddVideoButton = () => {
           isRound={true}
           aria-label="Add video"
           title="Add video"
-          backgroundColor={"red.600"}
           color={"white"}
           icon={<MdOutlineAdd />}
           onClick={onOpen}
