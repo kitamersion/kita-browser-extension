@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, PropsWithChildren, useContext, useCallback } from "react";
+import React, { createContext, useEffect, PropsWithChildren, useContext, useCallback, useState } from "react";
 import {
   VIDEO_TAG_ADD_RELATIONSHIP,
   VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID,
@@ -8,7 +8,11 @@ import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
 import IndexedDB from "@/db/index";
 
-const VideoTagRelationshipContext = createContext<undefined>(undefined);
+type VideoTagRelationshipContextType = {
+  videoTagRelationship: IVideoTag[];
+};
+
+const VideoTagRelationshipContext = createContext<VideoTagRelationshipContextType | undefined>(undefined);
 
 export const useVideoTagRelationshipContext = () => {
   const context = useContext(VideoTagRelationshipContext);
@@ -19,6 +23,8 @@ export const useVideoTagRelationshipContext = () => {
 };
 
 export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const [relationships, setRelationships] = useState<IVideoTag[]>([]);
+
   const handleVideoTagAddRelationship = useCallback((eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
 
@@ -30,6 +36,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     // for earch items in videoTagRelationship, add to indexedDB
     videoTagRelationship.forEach(async (videoTagRelationship) => {
       await IndexedDB.addVideoTag(videoTagRelationship);
+      setRelationships((prev) => [...prev, videoTagRelationship]);
     });
   }, []);
 
@@ -42,6 +49,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     }
 
     await IndexedDB.deleteVideoTagByTagId(tagId);
+    setRelationships((prev) => prev.filter((item) => item.tag_id !== tagId));
   }, []);
 
   const handleVideoTagDeleteRelationshipByVideoId = useCallback(async (eventData: any) => {
@@ -53,7 +61,20 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     }
 
     await IndexedDB.deleteVideoTagByVideoId(videoId);
+    setRelationships((prev) => prev.filter((item) => item.video_id !== videoId));
   }, []);
+
+  const fetchRelationships = useCallback(async () => {
+    const allVideoTags = await IndexedDB.getAllVideoTags();
+    setRelationships(allVideoTags);
+  }, []);
+
+  useEffect(() => {
+    async function fetchData() {
+      await fetchRelationships();
+    }
+    fetchData();
+  }, [fetchRelationships]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -81,7 +102,9 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     return () => {
       eventBus.unsubscribe(VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID, handleVideoTagDeleteRelationshipByVideoId);
     };
-  }, [handleVideoTagDeleteRelationshipByTagId]);
+  }, [handleVideoTagDeleteRelationshipByVideoId]);
 
-  return <VideoTagRelationshipContext.Provider value={undefined}>{children}</VideoTagRelationshipContext.Provider>;
+  return (
+    <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships }}>{children}</VideoTagRelationshipContext.Provider>
+  );
 };

@@ -1,3 +1,4 @@
+import { IVideoTag } from "./relationship";
 import { ITag } from "./tag";
 import { IVideo } from "./video";
 
@@ -23,6 +24,7 @@ export type ApplicationSettings = {
 export type UserItems = {
   Videos: IVideo[];
   Tags: ITag[];
+  VideoTagRelationships: IVideoTag[];
   Total: Total;
 };
 

@@ -109,6 +109,7 @@ const AddVideoButton = () => {
 
     onClose();
     setVideo(initialState);
+    setSelectedTags([]);
   };
 
   return (
@@ -135,7 +136,7 @@ const AddVideoButton = () => {
               <Flex flexDirection={"column"} gap={4}>
                 <FormControl id="video_title">
                   <FormLabel>Video Title</FormLabel>
-                  <Input name="video_title" value={video.video_title} onChange={handleChange} />
+                  <Input autoFocus name="video_title" value={video.video_title} onChange={handleChange} />
                 </FormControl>
                 <FormControl id="video_url">
                   <FormLabel>Video URL</FormLabel>

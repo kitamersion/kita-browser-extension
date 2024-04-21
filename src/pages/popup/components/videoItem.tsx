@@ -12,10 +12,16 @@ import TagItem from "@/pages/settings/components/tagItem";
 import { ITag } from "@/types/tag";
 import { IoTimerOutline } from "react-icons/io5";
 import { IoIosCalendar } from "react-icons/io";
+import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
 
 const VideoItem = (video: IVideo) => {
-  const { id, created_at, origin, video_duration, video_title, video_url, tags } = video;
+  const { id, created_at, origin, video_duration, video_title, video_url } = video;
   const { tags: tagObject } = useTagContext();
+  const { videoTagRelationship } = useVideoTagRelationshipContext();
+
+  const selectedTagIdsForVideo = videoTagRelationship
+    .filter((relationship) => relationship.video_id === video.id)
+    .map((relationship) => relationship.tag_id);
 
   const handleDeleteById = (id: string) => {
     eventbus.publish(VIDEO_DELETED_BY_ID, { message: `Delete video ${id}`, value: { id: id } });
@@ -23,14 +29,14 @@ const VideoItem = (video: IVideo) => {
 
   const renderTags = useMemo(() => {
     const matchingTag: ITag[] = [];
-    tags?.map((t) => {
+    selectedTagIdsForVideo?.map((t) => {
       const match = tagObject.find((tag) => tag.id === t);
       if (match) {
         matchingTag.push(match);
       }
     });
     return matchingTag;
-  }, [tagObject, tags]);
+  }, [selectedTagIdsForVideo, tagObject]);
 
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>

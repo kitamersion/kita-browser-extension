@@ -81,7 +81,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     setTotalDurationYear(totalDurationYear);
   }, [calculateDurationByDate]);
 
-  const handleDeleteAllVideos = useCallback(() => {
+  const handleDeleteAllVideos = useCallback(async () => {
     deleteAllVideos(() => {
       setTotalVideos([]);
       setTotalDuration(0);
@@ -90,10 +90,14 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       setTotalDurationYear(0);
 
       resetTotalVideos();
-      showToast({
-        title: "Videos deleted",
-        status: "success",
-      });
+    });
+
+    await IndexedDB.deleteAllVideos();
+    await IndexedDB.deleteAllVideoTags();
+
+    showToast({
+      title: "Videos deleted",
+      status: "success",
     });
   }, [showToast]);
 

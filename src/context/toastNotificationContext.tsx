@@ -39,7 +39,7 @@ export const ToastProvider: React.FC = ({ children }) => {
       duration: duration ?? TOAST_RESET_DELAY_MS,
       isClosable: true,
       position: "bottom-left",
-      variant: "solid",
+      variant: "subtle",
     });
   };
 
@@ -49,7 +49,7 @@ export const ToastProvider: React.FC = ({ children }) => {
       status: "loading",
       duration: null,
       position: "bottom-left",
-      variant: "solid",
+      variant: "subtle",
     };
     const loadingToastId = chakraToast(loadingToast);
 

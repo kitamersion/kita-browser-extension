@@ -1,12 +1,12 @@
 import { KitaSchema } from "@/types/kitaschema";
-import { ITag } from "@/types/tag";
-import { IVideo } from "@/types/video";
 import { kitaSchema } from "../videostorage";
 import { getItemsFromKey } from "../exporter";
+import IndexedDB from "@/db/index";
 
 const getKitaSchema = async (): Promise<KitaSchema> => {
-  const videos = await getItemsFromKey<IVideo[]>(kitaSchema.ApplicationSettings.StorageKeys.VideoKey);
-  const tags = await getItemsFromKey<ITag[]>(kitaSchema.ApplicationSettings.StorageKeys.TagKey);
+  const videos = await IndexedDB.getAllVideos();
+  const tags = await IndexedDB.getAllTags();
+  const videoTagRelationships = await IndexedDB.getAllVideoTags();
   const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
   const totalVideos = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos);
   const totalTags = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags);
@@ -15,6 +15,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
     UserItems: {
       Videos: videos ?? [],
       Tags: tags ?? [],
+      VideoTagRelationships: videoTagRelationships ?? [],
       Total: {
         Videos: totalVideos ?? 0,
         Tags: totalTags ?? 0,

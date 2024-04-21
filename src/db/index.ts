@@ -173,6 +173,24 @@ class IndexedDB {
     });
   }
 
+  // delete all videos
+  deleteAllVideos(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
+      const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+
+      const request = videoStore.clear();
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
   // ================================================================================
   // ======================     TAG STORE           =================================
   // ================================================================================
@@ -210,14 +228,14 @@ class IndexedDB {
   }
 
   // add tag
-  addTag(name: string): Promise<void> {
+  addTag(name: string, id?: string, created_at?: number): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
 
-      const tagItem: ITag = { id: uuidv4(), name, created_at: Date.now() };
+      const tagItem: ITag = { id: id ?? uuidv4(), name, created_at: created_at ?? Date.now() };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();
@@ -283,6 +301,22 @@ class IndexedDB {
     });
   }
 
+  // get all video tag relationships
+  getAllVideoTags(): Promise<IVideoTag[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readonly");
+      const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
+      const request = videoTagStore.getAll();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
   // delete video tag relationship by video id
   deleteVideoTagByVideoId(videoId: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -322,6 +356,22 @@ class IndexedDB {
         } else {
           resolve();
         }
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // delete all video tag relationships
+  deleteAllVideoTags(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
+      const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
+      const request = videoTagStore.clear();
+      request.onsuccess = () => {
+        resolve();
       };
       request.onerror = () => {
         reject(request.error);

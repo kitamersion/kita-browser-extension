@@ -32,16 +32,16 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     setTags(allTags);
   }, []);
 
-  const handleDeleteAllTags = useCallback(() => {
+  const handleDeleteAllTags = useCallback(async () => {
     deleteAllTags(() => {
       setTags([]);
 
       resetTotalTags();
+    });
 
-      showToast({
-        title: "Tags deleted",
-        status: "success",
-      });
+    showToast({
+      title: "Tags deleted",
+      status: "success",
     });
   }, [showToast]);
 
