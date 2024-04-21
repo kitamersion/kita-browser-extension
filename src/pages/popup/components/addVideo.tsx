@@ -116,7 +116,7 @@ const AddVideoButton = () => {
     <>
       <Box position="fixed" right="1em" bottom="1em">
         <IconButton
-          size={"lg"}
+          size={"md"}
           isRound={true}
           aria-label="Add video"
           title="Add video"
