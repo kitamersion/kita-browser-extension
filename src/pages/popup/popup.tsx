@@ -8,6 +8,7 @@ import Summary from "./components/summary";
 import FetchVideos from "./components/fetchVideos";
 import DeleteAll from "./components/deleteAll";
 import { useVideoContext } from "@/context/videoContext";
+import AddVideoButton from "./components/addVideo";
 
 const MAX_ITEMS_TO_SHOW = 12;
 
@@ -22,7 +23,7 @@ const PopUp = () => {
   }
 
   return (
-    <Box as="main">
+    <Box as="main" minHeight={"xl"}>
       <Flex justifyContent={"flex-end"}>
         <FetchVideos />
         <DeleteAll />
@@ -47,6 +48,7 @@ const PopUp = () => {
       ) : (
         <EmptyState />
       )}
+      <AddVideoButton />
     </Box>
   );
 };

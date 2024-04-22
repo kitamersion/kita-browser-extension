@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Kita Browser",
-    "version": "1.4",
+    "version": "1.5",
     "description": "Simple immersion tracker",
     "action": {
         "default_popup": "popup.html",
@@ -37,6 +37,17 @@
             ],
             "js": [
                 "content.js"
+            ]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "/icons/enabled/icon128.png"
+            ],
+            "matches": [
+                "*://*.youtube.com/*",
+                "*://*.crunchyroll.com/*"
             ]
         }
     ]

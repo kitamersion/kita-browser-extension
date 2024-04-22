@@ -2,8 +2,10 @@ import { IVideo } from "@/types/video";
 import { ITag } from "@/types/tag";
 import { kitaSchema } from "@/data/kitaschema";
 import { KitaSchema } from "@/types/kitaschema";
+import IndexedDB from "@/db/index";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
+const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
 
 const setItemsForKey = async <T>(key: string, items: T) => {
   if (ENV === "dev") {
@@ -27,12 +29,31 @@ const importFromJSON = (file: File): Promise<void> => {
         const text = event.target?.result as string;
         const data: KitaSchema = JSON.parse(text);
 
-        await setItemsForKey<IVideo[]>(kitaSchema.ApplicationSettings.StorageKeys.VideoKey, data.UserItems.Videos);
-        await setItemsForKey<ITag[]>(kitaSchema.ApplicationSettings.StorageKeys.TagKey, data.UserItems.Tags);
+        const videosToAdd = data.UserItems.Videos;
+        videosToAdd.forEach(async (video: IVideo) => {
+          await IndexedDB.addVideo(video);
+        });
+
+        const tagsToAdd = data.UserItems.Tags;
+        tagsToAdd.forEach(async (tag: ITag) => {
+          await IndexedDB.addTag(tag.name, tag.id, tag.created_at);
+        });
+
+        const videoTagRelationshipsToAdd = data.UserItems.VideoTagRelationships;
+        videoTagRelationshipsToAdd.forEach(async (relationship) => {
+          await IndexedDB.addVideoTag(relationship);
+        });
+
         await setItemsForKey<boolean>(
           kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
           data.ApplicationSettings.IsApplicationEnabled
         );
+
+        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos, data.UserItems.Total.Videos);
+        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags, data.UserItems.Total.Tags);
+
+        // pause for 3 seconds to allow data to be saved
+        await new Promise((resolve) => setTimeout(resolve, ON_SAVE_TIMEOUT_MS));
 
         resolve();
       } catch (error) {

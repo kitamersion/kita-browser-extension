@@ -1,6 +1,9 @@
+/* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
+import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
+import { VIDEO_ADD } from "@/data/events";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -19,7 +22,7 @@ const siteConfig: SiteConfigDictionary = {
     titleLookup: "DOCUMENT_TITLE",
     replaceString: "- Watch on Crunchyroll",
     originUrl: "www.crunchyroll.com",
-    durationKey: "div.css-901oao[data-testid='vilos-duration']",
+    durationKey: "meta[property='video:duration']",
   },
 };
 
@@ -96,7 +99,11 @@ class VideoTracker {
     return "UNKNOWN" as SiteKey;
   }
 
-  handleVideoStart() {
+  _extensionBaseUrl() {
+    return chrome.runtime.getURL("/");
+  }
+
+  _handleVideoCapture() {
     this._isVideo();
     const url = window.location.href;
     const videoTitle = this._getTitle();
@@ -106,11 +113,26 @@ class VideoTracker {
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);
-    const videoDurationText = videoDurationElement?.textContent;
+    let videoDurationText = videoDurationElement?.textContent;
     const timestamp = Date.now();
 
-    const identifyDuration = videoDurationText ? this.getTotalDuration(videoDurationText) : "0:00";
-    const videoDuration = this.convertDurationToSeconds(identifyDuration);
+    let videoDuration = 0;
+
+    switch (origin) {
+      case SiteKey.YOUTUBE:
+      case SiteKey.YOUTUBE_MUSIC:
+        const identifyDuration = this.getTotalDuration(videoDurationText ?? "");
+        videoDuration = this.convertDurationToSeconds(identifyDuration);
+        break;
+
+      case SiteKey.CRUNCHYROLL:
+        videoDurationText = videoDurationElement?.getAttribute("content");
+        videoDuration = parseInt(videoDurationText ?? "0");
+        break;
+      default:
+        console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+        break;
+    }
 
     // Create the video data object
     const newRecord: IVideo = {
@@ -122,9 +144,15 @@ class VideoTracker {
       created_at: timestamp,
       tags: [],
     };
-    setVideo(newRecord, (data) => {
-      console.log("video added from content", data);
+
+    setVideo(newRecord, () => {
+      incrementTotalVideos();
     });
+
+    const payload = JSON.stringify(newRecord);
+    chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
+
+    console.log("video added from content");
   }
 
   getTotalDuration(duration: string): string {
@@ -157,7 +185,7 @@ class VideoTracker {
     primaryButton.buttonDefaultStyle(button);
 
     button.addEventListener("click", () => {
-      this.handleVideoStart();
+      this._handleVideoCapture();
       this.showNotification();
     });
 
@@ -168,7 +196,7 @@ class VideoTracker {
   handleKeyboardShortcut(event: KeyboardEvent) {
     // keyboard shortcut: Shift+A
     if (event.shiftKey && event.key === "A") {
-      this.handleVideoStart();
+      this._handleVideoCapture();
       this.showNotification();
     }
   }
@@ -205,10 +233,49 @@ class VideoTracker {
     return true;
   }
 
+  _youtubeTimelineButton() {
+    const parentDiv = document.querySelector(".ytp-right-controls");
+
+    if (parentDiv) {
+      const newButton = document.createElement("button");
+
+      newButton.classList.add("ytp-button", "ytp-settings-button");
+      newButton.id = "kitabrowserCapture";
+      newButton.title = "Capture Video (Shortcut: Shift+A)";
+
+      newButton.addEventListener("click", () => {
+        this._handleVideoCapture();
+      });
+
+      const baseUrl = this._extensionBaseUrl();
+      const newImg = document.createElement("img");
+      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
+      newImg.style.width = "68%";
+
+      newButton.appendChild(newImg);
+      newButton.style.cssText = "margin-top: 8px; vertical-align: top; text-align: center;";
+
+      parentDiv.insertBefore(newButton, parentDiv.firstChild);
+    } else {
+      console.error("[KITA_BROWSER] Unable to find parent div");
+    }
+  }
+
   initialize() {
-    if (this.isContentLoaded()) {
+    const origin = this._getOrigin();
+    if (origin) {
       this.renderButton();
       this.setupKeyboardShortcut();
+
+      switch (origin) {
+        case SiteKey.YOUTUBE:
+        case SiteKey.YOUTUBE_MUSIC:
+          this._youtubeTimelineButton();
+          break;
+        default:
+          console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+          break;
+      }
     }
   }
 
