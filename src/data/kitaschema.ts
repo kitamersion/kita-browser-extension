@@ -4,6 +4,7 @@ export const kitaSchema: KitaSchema = {
   UserItems: {
     Videos: [],
     Tags: [],
+    VideoTagRelationships: [],
     Total: {
       Videos: 0,
       Tags: 0,
