@@ -88,7 +88,6 @@ const deleteVideoById = (id: string, videos: IVideo[], callback: Callback<IVideo
   const localVideos = videos;
   const index = localVideos.findIndex((v) => v.id === id);
   if (index === -1) {
-    console.warn(`video with id ${id} not found.`);
     callback(localVideos);
     return;
   }
