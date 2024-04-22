@@ -34,6 +34,12 @@ Shows on websites enabled for kita browser
 ![kita-isolation-lightmode](/images/app/kita-isolation-lightmode.png)
 
 
+## Add Item
+
+![kita-popup-add-darkmode](/images/app/kita-popup-add-darkmode.png)
+
+![kita-popup-add-lightmode](/images/app/kita-popup-add-lightmode.png)
+
 ## Editing (popup and isolation)
 
 ### Popup

@@ -264,7 +264,7 @@ class VideoTracker {
   initialize() {
     const origin = this._getOrigin();
     if (origin) {
-      // this.renderButton();
+      this.renderButton();
       this.setupKeyboardShortcut();
 
       switch (origin) {

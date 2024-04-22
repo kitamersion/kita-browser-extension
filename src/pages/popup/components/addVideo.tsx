@@ -129,7 +129,7 @@ const AddVideoButton = () => {
         <DrawerOverlay />
         <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
           <DrawerCloseButton />
-          <DrawerHeader>Editing</DrawerHeader>
+          <DrawerHeader>Add Video</DrawerHeader>
           <DrawerBody>
             <form onSubmit={handleSubmit}>
               <Flex flexDirection={"column"} gap={4}>
