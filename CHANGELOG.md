@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.16.1...v2.0.0) (2024-04-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* project scalability `extensionStorage` > `indexDb` (#86)
+
+### Features
+
+* project scalability `extensionStorage` > `indexDb` ([#86](https://github.com/kitamersion/kita-browser-extension/issues/86)) ([5536862](https://github.com/kitamersion/kita-browser-extension/commit/55368628fb35675276465b0ec4435d440811fdd6))
+
 ### [1.16.1](https://github.com/kitamersion/kita-browser-extension/compare/v1.16.0...v1.16.1) (2024-04-19)
 
 ## [1.16.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.15.0...v1.16.0) (2024-04-14)
