@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
-import { setVideo } from "../../api/videostorage";
+import { kitaSchema, setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
 import { VIDEO_ADD } from "@/data/events";
@@ -26,39 +26,14 @@ const siteConfig: SiteConfigDictionary = {
   },
 };
 
-const BUTTON_RESET_DELAY_MS = 2000;
-const RECORD_BUTTON_ID = "kita-record-button";
-
-const primaryButton = {
-  buttonCoreStyles(button: HTMLButtonElement) {
-    button.id = RECORD_BUTTON_ID;
-    button.style.position = "fixed";
-    button.style.top = "12px";
-    button.style.left = "300px";
-    button.style.color = "white";
-    button.style.zIndex = "9999";
-    button.style.padding = "8px";
-    button.style.borderRadius = "18px";
-    button.style.border = "none";
-    button.style.fontSize = "10px";
-    button.style.textAlign = "center";
-    button.style.cursor = "pointer";
-  },
-  buttonDefaultStyle(button: HTMLButtonElement) {
-    button.innerText = "Record Video";
-    button.style.backgroundColor = "rgba(255, 0, 0, 0.5)";
-    button.style.transition = "background-color 0.3s ease-out";
-  },
-  buttonSaved(button: HTMLButtonElement) {
-    button.innerText = "Record Saved!";
-    button.style.backgroundColor = "rgba(0, 255, 0, 0.7)";
-    button.style.transition = "background-color 0.3s ease-out";
-  },
-};
+const BUTTON_RESET_DELAY_MS = 1800;
+const TIMELINE_CAPTURE_BUTTON_ID = "kita-capture-button";
+const TIMELINE_CAPTURE_IMAGE_ID = "kita-capture-img";
 
 class VideoTracker {
   private static instance: VideoTracker;
   private keyboardShortcutHandler: ((event: KeyboardEvent) => void) | undefined;
+  private timeoutId: NodeJS.Timeout | undefined;
 
   constructor() {
     this.keyboardShortcutHandler = undefined;
@@ -152,7 +127,7 @@ class VideoTracker {
     const payload = JSON.stringify(newRecord);
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
 
-    console.log("video added from content");
+    console.log("[KITA_BROWSER] video added from content");
   }
 
   getTotalDuration(duration: string): string {
@@ -178,26 +153,11 @@ class VideoTracker {
     return seconds;
   }
 
-  renderButton() {
-    const buttonContainer = document.createElement("div");
-    const button = document.createElement("button");
-    primaryButton.buttonCoreStyles(button);
-    primaryButton.buttonDefaultStyle(button);
-
-    button.addEventListener("click", () => {
-      this._handleVideoCapture();
-      this.showNotification();
-    });
-
-    buttonContainer.appendChild(button);
-    document.body.appendChild(buttonContainer);
-  }
-
   handleKeyboardShortcut(event: KeyboardEvent) {
     // keyboard shortcut: Shift+A
     if (event.shiftKey && event.key === "A") {
       this._handleVideoCapture();
-      this.showNotification();
+      this._youtubeTimelineButtonNotification();
     }
   }
 
@@ -206,65 +166,58 @@ class VideoTracker {
     document.addEventListener("keydown", this.keyboardShortcutHandler);
   }
 
-  showNotification() {
-    const button = document.getElementById(RECORD_BUTTON_ID) as HTMLButtonElement;
-    primaryButton.buttonSaved(button);
-    setTimeout(() => {
-      primaryButton.buttonDefaultStyle(button);
-    }, BUTTON_RESET_DELAY_MS);
-  }
-
-  isContentLoaded() {
-    const indicatorDiv = document.createElement("div");
-    indicatorDiv.id = "kitaIndicator";
-    indicatorDiv.innerText = "Kita Browser ON";
-    indicatorDiv.style.position = "fixed";
-    indicatorDiv.style.top = "12px";
-    indicatorDiv.style.left = "200px";
-    indicatorDiv.style.backgroundColor = "rgba(255, 0, 0, 0.5)";
-    indicatorDiv.style.color = "white";
-    indicatorDiv.style.zIndex = "9999";
-    indicatorDiv.style.padding = "8px";
-    indicatorDiv.style.borderRadius = "18px";
-    indicatorDiv.style.border = "none";
-    indicatorDiv.style.fontSize = "10px";
-    indicatorDiv.style.textAlign = "center";
-    document.body.appendChild(indicatorDiv);
-    return true;
-  }
-
   _youtubeTimelineButton() {
     const parentDiv = document.querySelector(".ytp-right-controls");
 
     if (parentDiv) {
       const newButton = document.createElement("button");
 
+      newButton.id = TIMELINE_CAPTURE_BUTTON_ID;
       newButton.classList.add("ytp-button", "ytp-settings-button");
-      newButton.id = "kitabrowserCapture";
       newButton.title = "Capture Video (Shortcut: Shift+A)";
 
       newButton.addEventListener("click", () => {
         this._handleVideoCapture();
+        this._youtubeTimelineButtonNotification();
       });
 
       const baseUrl = this._extensionBaseUrl();
       const newImg = document.createElement("img");
+      newImg.id = TIMELINE_CAPTURE_IMAGE_ID;
       newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "68%";
+      newImg.style.width = "54%";
 
       newButton.appendChild(newImg);
-      newButton.style.cssText = "margin-top: 8px; vertical-align: top; text-align: center;";
+      newButton.style.cssText = "margin-top: 9px; vertical-align: top; text-align: center;";
 
       parentDiv.insertBefore(newButton, parentDiv.firstChild);
     } else {
-      console.error("[KITA_BROWSER] Unable to find parent div");
+      console.error("[KITA_BROWSER] unable to find parent div");
+    }
+  }
+
+  _youtubeTimelineButtonNotification() {
+    const image = document.getElementById(TIMELINE_CAPTURE_IMAGE_ID) as HTMLImageElement;
+    if (image) {
+      const baseUrl = this._extensionBaseUrl();
+      image.src = `${baseUrl}icons/saved/icon128.png`;
+
+      if (this.timeoutId) {
+        console.log("[KITA_BROWSER] timeout cleared");
+        clearTimeout(this.timeoutId);
+      }
+
+      this.timeoutId = setTimeout(() => {
+        image.src = `${baseUrl}icons/enabled/icon128.png`;
+      }, BUTTON_RESET_DELAY_MS);
+    } else {
+      console.error(`[KITA_BROWSER] unable to find image with id ${TIMELINE_CAPTURE_IMAGE_ID}`);
     }
   }
 
   initialize() {
     const origin = this._getOrigin();
     if (origin) {
-      this.renderButton();
       this.setupKeyboardShortcut();
 
       switch (origin) {
@@ -279,14 +232,11 @@ class VideoTracker {
     }
   }
 
-  destory() {
-    const indicatorDiv = document.querySelector("#kitaIndicator");
-    const recordButton = document.querySelector(`#${RECORD_BUTTON_ID}`);
-    if (indicatorDiv) {
-      indicatorDiv.remove();
-    }
-    if (recordButton) {
-      recordButton.remove();
+  destroy() {
+    const timelineButton = document.getElementById(TIMELINE_CAPTURE_BUTTON_ID);
+
+    if (timelineButton) {
+      timelineButton.remove();
     }
     if (this.keyboardShortcutHandler) {
       document.removeEventListener("keydown", this.keyboardShortcutHandler);
@@ -294,14 +244,27 @@ class VideoTracker {
   }
 }
 
-const videoTracker = VideoTracker.getInstance();
-videoTracker.initialize();
+(() => {
+  const videoTracker = VideoTracker.getInstance();
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`content script received message: ${JSON.stringify(request)}`);
-  if (!request.IsApplicationEnabled) {
-    videoTracker.destory();
-  } else {
-    videoTracker.initialize();
-  }
-});
+  // @todo: move to service worker (background)
+  // check users settings to see if the application should be enabled
+  const IsApplicationEnabledKey = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
+  chrome.storage.local.get(IsApplicationEnabledKey, (result) => {
+    if (result[IsApplicationEnabledKey].IsApplicationEnabled) {
+      videoTracker.initialize();
+    } else {
+      videoTracker.destroy();
+    }
+  });
+
+  // listen for messages to disable/enable the application
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log(`content script received message: ${JSON.stringify(request)}`);
+    if (!request.IsApplicationEnabled) {
+      videoTracker.destroy();
+    } else {
+      videoTracker.initialize();
+    }
+  });
+})();

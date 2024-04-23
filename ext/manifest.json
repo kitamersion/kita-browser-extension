@@ -43,7 +43,8 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "/icons/enabled/icon128.png"
+                "/icons/enabled/icon128.png",
+                "/icons/saved/icon128.png"
             ],
             "matches": [
                 "*://*.youtube.com/*",
