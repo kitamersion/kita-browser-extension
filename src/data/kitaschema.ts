@@ -22,6 +22,12 @@ export const kitaSchema: KitaSchema = {
         Videos: "kita_total_videos",
         Tags: "kita_total_tags",
       },
+      IntegrationKeys: {
+        AnilistKeys: {
+          AnilistAuthKey: "kita_anilist_auth",
+          AnilistConfigKey: "kita_anilist_config",
+        },
+      },
     },
   },
 };

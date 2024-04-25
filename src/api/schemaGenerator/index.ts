@@ -33,6 +33,9 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
           Videos: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos,
           Tags: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags,
         },
+        IntegrationKeys: {
+          AnilistKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKey,
+        },
       },
     },
   };

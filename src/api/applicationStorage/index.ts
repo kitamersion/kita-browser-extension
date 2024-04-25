@@ -6,6 +6,13 @@ import { TITLE_OFF, TITLE_ON } from "@/data/contants";
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
+const getExtensionBaseUrl = () => {
+  if (ENV === "dev") {
+    return window.location.origin;
+  }
+  return chrome.identity.getRedirectURL("settings.html");
+};
+
 // SET
 // @todo: make this generic for future use
 const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
@@ -68,4 +75,4 @@ const setApplicationState = (enabled: boolean) => {
   chrome.action.setTitle({ title: title });
 };
 
-export { setApplicationEnabled, getApplicationEnabled };
+export { getExtensionBaseUrl, getApplicationEnabled, setApplicationEnabled };

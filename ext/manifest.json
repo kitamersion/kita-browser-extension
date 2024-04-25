@@ -27,7 +27,8 @@
     },
     "permissions": [
         "storage",
-        "unlimitedStorage"
+        "unlimitedStorage",
+        "identity"
     ],
     "content_scripts": [
         {
