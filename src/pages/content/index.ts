@@ -157,7 +157,7 @@ class VideoTracker {
     // keyboard shortcut: Shift+A
     if (event.shiftKey && event.key === "A") {
       this._handleVideoCapture();
-      this._youtubeTimelineButtonNotification();
+      this._buttonCapturedIndication();
     }
   }
 
@@ -178,7 +178,7 @@ class VideoTracker {
 
       newButton.addEventListener("click", () => {
         this._handleVideoCapture();
-        this._youtubeTimelineButtonNotification();
+        this._buttonCapturedIndication();
       });
 
       const baseUrl = this._extensionBaseUrl();
@@ -196,7 +196,7 @@ class VideoTracker {
     }
   }
 
-  _youtubeTimelineButtonNotification() {
+  _buttonCapturedIndication() {
     const image = document.getElementById(TIMELINE_CAPTURE_IMAGE_ID) as HTMLImageElement;
     if (image) {
       const baseUrl = this._extensionBaseUrl();
@@ -215,6 +215,35 @@ class VideoTracker {
     }
   }
 
+  _crunchyrollTimelineButton() {
+    const parentDiv = document.querySelector(".current-media-parent-ref");
+
+    if (parentDiv) {
+      const newButton = document.createElement("button");
+
+      newButton.id = TIMELINE_CAPTURE_BUTTON_ID;
+      newButton.title = "Capture Video (Shortcut: Shift+A)";
+      newButton.style.width = "22%";
+
+      newButton.addEventListener("click", () => {
+        this._handleVideoCapture();
+        this._buttonCapturedIndication();
+      });
+
+      const baseUrl = this._extensionBaseUrl();
+      const newImg = document.createElement("img");
+      newImg.id = TIMELINE_CAPTURE_IMAGE_ID;
+      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
+      newImg.style.width = "40%";
+
+      newButton.appendChild(newImg);
+
+      parentDiv.appendChild(newButton);
+    } else {
+      console.error("[KITA_BROWSER] unable to find parent div");
+    }
+  }
+
   initialize() {
     const origin = this._getOrigin();
     if (origin) {
@@ -224,6 +253,9 @@ class VideoTracker {
         case SiteKey.YOUTUBE:
         case SiteKey.YOUTUBE_MUSIC:
           this._youtubeTimelineButton();
+          break;
+        case SiteKey.CRUNCHYROLL:
+          this._crunchyrollTimelineButton();
           break;
         default:
           console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
