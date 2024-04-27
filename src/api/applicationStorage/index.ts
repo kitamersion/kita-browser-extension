@@ -52,14 +52,12 @@ const getApplicationEnabled = (callback: Callback<boolean>) => {
       return;
     }
     const value: IApplication = JSON.parse(items);
-    console.log(`get application enabled: ${value.IsApplicationEnabled}`);
     callback(value.IsApplicationEnabled);
     return;
   }
 
   chrome.storage.local.get(TAG_KEY, (data) => {
     const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: true };
-    console.log(`get application enabled: ${value.IsApplicationEnabled}`);
     setApplicationState(value.IsApplicationEnabled);
     callback(value.IsApplicationEnabled);
   });

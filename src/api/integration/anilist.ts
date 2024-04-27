@@ -1,10 +1,12 @@
 import { kitaSchema } from "@/data/kitaschema";
 import { Callback } from "@/types/callback";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { AuthStatus } from "@/types/kitaschema";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ANILIST_CONFIG_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistConfigKey;
 const ANILIST_AUTH_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey;
+const ANILIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus;
 
 // get anlist config
 const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
@@ -20,7 +22,6 @@ const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
   }
 
   chrome.storage.local.get(ANILIST_CONFIG_KEY, (data) => {
-    console.log("fetching anilist config");
     const anilist = data?.[ANILIST_CONFIG_KEY] || null;
     callback(anilist);
   });
@@ -91,4 +92,95 @@ const setAnilistAuth = (anilist: AnilistAuth, callback: Callback<AnilistAuth>) =
   });
 };
 
-export { getAnilistConfig, setAnilistConfig, deleteAnilistConfig, getAnilistAuth, setAnilistAuth };
+// get anilist auth status
+const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
+  if (ENV === "dev") {
+    console.log("fetching anilist auth state");
+    const state = localStorage.getItem(ANILIST_AUTH_STATE_KEY);
+    if (!state) {
+      callback(null);
+      return;
+    }
+    callback(state as AuthStatus);
+    return;
+  }
+
+  chrome.storage.local.get(ANILIST_AUTH_STATE_KEY, (data) => {
+    console.log("fetching anilist auth state");
+    const state = data?.[ANILIST_AUTH_STATE_KEY] || null;
+    callback(state);
+  });
+};
+
+// set anilist auth status
+const setAnilistAuthStatus = (state: AuthStatus, callback: Callback<AuthStatus>) => {
+  if (ENV === "dev") {
+    console.log("setting anilist auth state");
+    localStorage.setItem(ANILIST_AUTH_STATE_KEY, state);
+    callback(state);
+    return;
+  }
+
+  chrome.storage.local.set({ [ANILIST_AUTH_STATE_KEY]: state }, () => {
+    console.log("setting anilist auth state");
+    callback(state);
+  });
+};
+
+// delete anilist auth status
+const deleteAnilistAuthStatus = (callback: Callback<void>) => {
+  if (ENV === "dev") {
+    console.log("deleting anilist auth state");
+    localStorage.removeItem(ANILIST_AUTH_STATE_KEY);
+    callback();
+    return;
+  }
+
+  chrome.storage.local.remove(ANILIST_AUTH_STATE_KEY, () => {
+    console.log("deleting anilist auth state");
+    callback();
+  });
+};
+
+const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
+  getAnilistAuth((data) => {
+    if (!data) {
+      console.log("no anilist auth data");
+      callback("initial");
+      return;
+    }
+    if (!data?.access_token) {
+      console.log("no access token");
+      callback("initial");
+      return;
+    }
+
+    if (!data?.issued_at) {
+      console.log("no issued_at");
+      callback("unauthorized");
+      return;
+    }
+
+    const nowInSeconds = Date.now() / 1000;
+    const issuedInSeconds = data?.issued_at / 1000;
+    if (nowInSeconds > issuedInSeconds + data?.expires_in) {
+      console.log("access token expired");
+      callback("unauthorized");
+      return;
+    }
+    console.log("authorized with anilist");
+    callback("authorized");
+  });
+};
+
+export {
+  getAnilistConfig,
+  setAnilistConfig,
+  deleteAnilistConfig,
+  getAnilistAuth,
+  setAnilistAuth,
+  getAnilistAuthStatus,
+  setAnilistAuthStatus,
+  deleteAnilistAuthStatus,
+  getIsAuthorizedWithAnilist,
+};

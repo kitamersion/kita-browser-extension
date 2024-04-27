@@ -1,57 +1,37 @@
-import { getAnilistAuth, getAnilistConfig } from "@/api/integration/anilist";
 import { useAnilistContext } from "@/context/anilistContext";
-import { INTEGRATION_ANILIST_AUTH } from "@/data/events";
-import { RuntimeResponse } from "@/pages/background";
+import { INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 import { Box, Button, Flex, FormControl, FormLabel, Input, Text } from "@chakra-ui/react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import eventBus from "@/api/eventbus";
+import LoadingState from "@/components/states/LoadingState";
 
 const Anilist = () => {
-  const { anilistConfig: aniConfig, anilistAuth: aniAuth } = useAnilistContext();
-  const [anilistConfig, setAnilistConfig] = useState<AnilistConfig>(aniConfig);
-  const [anilistAuth, setAnilistAuth] = useState<AnilistAuth>(aniAuth);
-
-  // calculate if expired or not
-  const hasExpired = useMemo(() => {
-    return anilistAuth.expires_in > Date.now();
-  }, [anilistAuth.expires_in]);
+  const { isInitialized, anilistConfig, anilistAuth, anilistAuthStatus } = useAnilistContext();
+  const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig | null>(null);
+  const [anilistAuthState, setAnilistAuthState] = useState<AnilistAuth | null>(null);
 
   const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    if (isInitialized) {
+      console.log("setting anilist config/auth state");
+      setAnilistConfigState(anilistConfig);
+      setAnilistAuthState(anilistAuth);
+    }
+  }, [anilistAuth, anilistAuthState, anilistConfig, anilistConfigState, isInitialized]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
     const { name, value } = e.target;
-    setAnilistConfig({ ...anilistConfig, [name]: value });
+    const updatedState = { ...(anilistConfigState as AnilistConfig), [name]: value ?? "" };
+    setAnilistConfigState(updatedState);
   };
-
-  useEffect(() => {
-    getAnilistConfig((data) => {
-      if (data) {
-        setAnilistConfig(data);
-      }
-    });
-
-    getAnilistAuth((data) => {
-      if (data) {
-        setAnilistAuth(data);
-      }
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = JSON.stringify(anilistConfig);
-    chrome.runtime.sendMessage({ type: INTEGRATION_ANILIST_AUTH, payload: payload }, (response: RuntimeResponse) => {
-      console.log(response.message);
-      getAnilistAuth((data) => {
-        console.log("Anilist auth", data);
-        if (!data) return;
-        setAnilistAuth(data);
-      });
-      if (response.status === "success") {
-        handleFetchData();
-      }
-    });
+    eventBus.publish(INTEGRATION_ANILIST_AUTH_START, { message: "start anilist auth", value: anilistConfigState });
+    eventBus.publish(INTEGRATION_ANILIST_AUTH_POLL, { message: "start polling anilist auth status", value: "" });
   };
 
   const handleFetchData = async () => {
@@ -89,6 +69,8 @@ Media (id: $id, type: ANIME) { # Insert our variables into the query arguments (
     setData(data);
   };
 
+  if (!isInitialized) return <LoadingState />;
+
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
       <Flex flexDirection={"column"} gap={4}>
@@ -96,38 +78,49 @@ Media (id: $id, type: ANIME) { # Insert our variables into the query arguments (
           <Text as="h2" fontWeight={"bold"} fontSize={"large"}>
             Anilist
           </Text>
-
-          <p>{hasExpired ? "Not Connected" : "Connected"}</p>
+          {anilistAuthStatus === "initial" && <Text>Not Connected</Text>}
+          {anilistAuthStatus === "pending" && <Text>Connecting...</Text>}
+          {anilistAuthStatus === "authorized" && <Text>Authorized</Text>}
+          {anilistAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
+          {anilistAuthStatus === "error" && <Text>Error Connecting</Text>}
         </Flex>
         <form onSubmit={handleSubmit}>
           <Flex flexDirection={"column"} gap={4}>
             <FormControl id="anilistId">
               <FormLabel>Anilist Id</FormLabel>
-              <Input name="anilistId" value={anilistConfig.anilistId} onChange={handleChange} />
+              <Input name="anilistId" value={anilistConfigState?.anilistId} onChange={handleChange} />
             </FormControl>
             <FormControl id="secret">
               <FormLabel>Secret</FormLabel>
-              <Input name="secret" value={anilistConfig.secret} onChange={handleChange} />
+              <Input name="secret" value={anilistConfigState?.secret} onChange={handleChange} />
             </FormControl>
             <FormControl id="redirectUrl" mt={10}>
               <FormLabel>
                 <Text>Redirect URL (readonly)</Text>
                 <Text fontSize={"small"}>In anilist, configure your redirect url to the text below</Text>
               </FormLabel>
-              <Input readOnly name="redirectUrl" value={anilistConfig.redirectUrl} onChange={handleChange} />
+              <Input readOnly name="redirectUrl" value={anilistConfigState?.redirectUrl} onChange={handleChange} />
             </FormControl>
 
-            <Button colorScheme="green" type="submit">
-              Connect
-            </Button>
+            {anilistAuthStatus !== "authorized" && (
+              <Button colorScheme="green" type="submit">
+                Connect
+              </Button>
+            )}
           </Flex>
         </form>
 
-        <Button colorScheme="blue" onClick={handleFetchData}>
-          Manual Fetch
-        </Button>
+        {anilistAuthStatus === "authorized" && (
+          <Button colorScheme="blue" onClick={handleFetchData}>
+            Manual Fetch
+          </Button>
+        )}
 
         <div>{JSON.stringify(data ?? "Nothing here")}</div>
+
+        <div>{JSON.stringify(anilistConfig ?? "No Config here")}</div>
+
+        <div>{JSON.stringify(!anilistAuth ? "No Auth here" : "has data")}</div>
       </Flex>
     </Box>
   );

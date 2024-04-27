@@ -26,6 +26,7 @@ export const kitaSchema: KitaSchema = {
         AnilistKeys: {
           AnilistAuthKey: "kita_anilist_auth",
           AnilistConfigKey: "kita_anilist_config",
+          AuthStatus: "kita_anilist_auth_status",
         },
       },
     },

@@ -41,7 +41,10 @@ export type IntegrationKeys = {
 export type AnilistKeys = {
   AnilistConfigKey: string;
   AnilistAuthKey: string;
+  AuthStatus: string;
 };
+
+export type AuthStatus = "initial" | "pending" | "authorized" | "unauthorized" | "error";
 
 export type KitaSchema = {
   UserItems: UserItems;

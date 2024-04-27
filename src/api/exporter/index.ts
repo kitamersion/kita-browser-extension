@@ -10,14 +10,12 @@ const getItemsFromKey = <T>(key: string): Promise<T | null> => {
         if (!items) {
           resolve(null);
         } else {
-          console.log(`export items for key: ${key}`);
           const parsedItems = JSON.parse(items);
           resolve(parsedItems as T);
         }
       } else {
         chrome.storage.local.get(key, (data) => {
           const items: T = data?.[key] || null;
-          console.log(`export items for key: ${key}`);
           resolve(items);
         });
       }
