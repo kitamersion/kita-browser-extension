@@ -1,5 +1,5 @@
 import { getAnilistConfig, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
-import { INTEGRATION_ANILIST_AUTH, VIDEO_ADD } from "@/data/events";
+import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 
@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     return;
   }
 
-  if (request.type === INTEGRATION_ANILIST_AUTH) {
+  if (request.type === INTEGRATION_ANILIST_AUTH_CONNECT) {
     const success = await authorizeAnilist(parsedPayload);
     if (success) {
       setAnilistAuthStatus("authorized", () => {});

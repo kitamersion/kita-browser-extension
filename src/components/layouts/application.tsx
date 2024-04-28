@@ -10,28 +10,36 @@ import { theme, colorModeManager } from "@/config/theme";
 import { ToastProvider } from "@/context/toastNotificationContext";
 import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipContext";
 import { AnilistProvider } from "@/context/anilistContext";
+import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
+  const client = new ApolloClient({
+    uri: "https://graphql.anilist.co",
+    cache: new InMemoryCache(),
+  });
+
   return (
-    <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
-      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-      <ToastProvider>
-        <ApplicationProvider>
-          <AnilistProvider>
-            <VideoTagRelationshipProvider>
-              <VideoProvider>
-                <TagProvider>
-                  <GlobalLayoutWrapper>
-                    <Navigation />
-                    <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                  </GlobalLayoutWrapper>
-                </TagProvider>
-              </VideoProvider>
-            </VideoTagRelationshipProvider>
-          </AnilistProvider>
-        </ApplicationProvider>
-      </ToastProvider>
-    </ChakraProvider>
+    <ApolloProvider client={client}>
+      <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
+        <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+        <ToastProvider>
+          <ApplicationProvider>
+            <AnilistProvider>
+              <VideoTagRelationshipProvider>
+                <VideoProvider>
+                  <TagProvider>
+                    <GlobalLayoutWrapper>
+                      <Navigation />
+                      <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                    </GlobalLayoutWrapper>
+                  </TagProvider>
+                </VideoProvider>
+              </VideoTagRelationshipProvider>
+            </AnilistProvider>
+          </ApplicationProvider>
+        </ToastProvider>
+      </ChakraProvider>
+    </ApolloProvider>
   );
 };
 

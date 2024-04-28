@@ -1,15 +1,20 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 import {
-  setAnilistConfig,
   getAnilistAuth,
   getAnilistConfig,
   setAnilistAuthStatus,
   getAnilistAuthStatus,
   getIsAuthorizedWithAnilist,
+  deleteAnilistAuth,
 } from "@/api/integration/anilist";
 import eventBus from "@/api/eventbus";
-import { INTEGRATION_ANILIST_AUTH, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
+import {
+  INTEGRATION_ANILIST_AUTH_CONNECT,
+  INTEGRATION_ANILIST_AUTH_DISCONNECT,
+  INTEGRATION_ANILIST_AUTH_POLL,
+  INTEGRATION_ANILIST_AUTH_START,
+} from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import { AuthStatus } from "@/types/kitaschema";
 
@@ -18,6 +23,7 @@ interface AnilistContextType {
   anilistConfig: AnilistConfig;
   anilistAuth: AnilistAuth;
   anilistAuthStatus: AuthStatus;
+  anilistIsAuthorized: boolean;
 }
 
 const initialAnilistAuthState: AnilistAuth = {
@@ -68,11 +74,11 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
         title: "Existing Authorization found",
         status: "success",
       });
+      setAuthStatus("authorized");
       return;
     }
-    getAnilistAuthStatus((states) => {
-      if (!states) return;
-      const status = states as AuthStatus;
+    getAnilistAuthStatus((status) => {
+      if (!status) return;
       if (status === "initial") {
         return;
       }
@@ -141,23 +147,21 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
     const payload = eventData.value as AnilistConfig;
     const jsonPayload = JSON.stringify(payload);
     setAnilistAuthStatus("pending", () => {
-      chrome.runtime.sendMessage({ type: INTEGRATION_ANILIST_AUTH, payload: jsonPayload });
+      chrome.runtime.sendMessage({ type: INTEGRATION_ANILIST_AUTH_CONNECT, payload: jsonPayload });
     });
   }, []);
 
-  const handleUpdateAnilistConfig = useCallback(
-    (eventData: any) => {
-      const payload = eventData.value as AnilistConfig;
-      setAnilistConfig(payload, (config) => {
-        setAnilistConfigState(config);
+  const handleAnilistDisconnect = useCallback(() => {
+    deleteAnilistAuth(() => {
+      setAnilistAuthStatus("initial", (status) => {
+        setAuthStatus(status);
         showToast({
-          title: "Anilist config updated",
+          title: "Anilist authorization disconnected",
           status: "success",
         });
       });
-    },
-    [showToast]
-  );
+    });
+  }, [showToast]);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -181,13 +185,13 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
     };
   }, [handleStartAuthFlow]);
 
-  // handle INTEGRATION_ANILIST_CONFIG_UPDATE
+  // handle INTEGRATION_ANILIST_AUTH_DISCONNECT
   useEffect(() => {
-    eventBus.subscribe(INTEGRATION_ANILIST_AUTH, handleUpdateAnilistConfig);
+    eventBus.subscribe(INTEGRATION_ANILIST_AUTH_DISCONNECT, handleAnilistDisconnect);
     return () => {
-      eventBus.unsubscribe(INTEGRATION_ANILIST_AUTH, handleUpdateAnilistConfig);
+      eventBus.unsubscribe(INTEGRATION_ANILIST_AUTH_DISCONNECT, handleAnilistDisconnect);
     };
-  }, [handleUpdateAnilistConfig]);
+  }, [handleAnilistDisconnect]);
 
   // handle INTEGRATION_ANILIST_AUTH_POLL
   useEffect(() => {
@@ -198,7 +202,9 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
   }, [startPolling]);
 
   return (
-    <AnilistContext.Provider value={{ isInitialized, anilistConfig, anilistAuth, anilistAuthStatus: authStatus }}>
+    <AnilistContext.Provider
+      value={{ isInitialized, anilistConfig, anilistAuth, anilistAuthStatus: authStatus, anilistIsAuthorized: alreadyAuthorized }}
+    >
       {children}
     </AnilistContext.Provider>
   );

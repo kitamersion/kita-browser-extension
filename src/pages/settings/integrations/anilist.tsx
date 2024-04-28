@@ -1,25 +1,25 @@
 import { useAnilistContext } from "@/context/anilistContext";
-import { INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
-import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { INTEGRATION_ANILIST_AUTH_DISCONNECT, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
+import { AnilistConfig } from "@/types/integrations/anilist";
 import { Box, Button, Flex, FormControl, FormLabel, Input, Text } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
+import { useGetMeQuery } from "@/graphql";
 
 const Anilist = () => {
   const { isInitialized, anilistConfig, anilistAuth, anilistAuthStatus } = useAnilistContext();
   const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig | null>(null);
-  const [anilistAuthState, setAnilistAuthState] = useState<AnilistAuth | null>(null);
 
-  const [data, setData] = useState<any>(null);
+  const { data, loading, error } = useGetMeQuery({
+    skip: anilistAuthStatus !== "authorized",
+  });
 
   useEffect(() => {
     if (isInitialized) {
-      console.log("setting anilist config/auth state");
       setAnilistConfigState(anilistConfig);
-      setAnilistAuthState(anilistAuth);
     }
-  }, [anilistAuth, anilistAuthState, anilistConfig, anilistConfigState, isInitialized]);
+  }, [anilistConfig, isInitialized]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
@@ -34,42 +34,11 @@ const Anilist = () => {
     eventBus.publish(INTEGRATION_ANILIST_AUTH_POLL, { message: "start polling anilist auth status", value: "" });
   };
 
-  const handleFetchData = async () => {
-    const apiUrl = "https://graphql.anilist.co";
-    const query = `
-query ($id: Int) { # Define which variables will be used in the query (id)
-Media (id: $id, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
-    id
-    title {
-    romaji
-    english
-    native
-    }
-}
-}
-`;
-    const variables = {
-      id: 15125,
-    };
-    const options = {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + anilistAuth.access_token,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        query: query,
-        variables: variables,
-      }),
-    };
-    const response = await fetch(apiUrl, options);
-    const data = await response.json();
-    console.log(data);
-    setData(data);
+  const handleDisconnect = () => {
+    eventBus.publish(INTEGRATION_ANILIST_AUTH_DISCONNECT, { message: "delete anilist auth", value: "" });
   };
 
-  if (!isInitialized) return <LoadingState />;
+  if (!isInitialized || loading) return <LoadingState />;
 
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
@@ -107,16 +76,20 @@ Media (id: $id, type: ANIME) { # Insert our variables into the query arguments (
                 Connect
               </Button>
             )}
+            {anilistAuthStatus === "authorized" && (
+              <Button colorScheme="red" onClick={handleDisconnect}>
+                Disconnect
+              </Button>
+            )}
           </Flex>
         </form>
 
-        {anilistAuthStatus === "authorized" && (
-          <Button colorScheme="blue" onClick={handleFetchData}>
-            Manual Fetch
-          </Button>
-        )}
+        <div>
+          <p>{data?.Viewer?.id}</p>
+          <p>{data?.Viewer?.name}</p>
+        </div>
 
-        <div>{JSON.stringify(data ?? "Nothing here")}</div>
+        <div>{JSON.stringify(error ?? "")}</div>
 
         <div>{JSON.stringify(anilistConfig ?? "No Config here")}</div>
 

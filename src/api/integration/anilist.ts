@@ -92,6 +92,21 @@ const setAnilistAuth = (anilist: AnilistAuth, callback: Callback<AnilistAuth>) =
   });
 };
 
+// delete anilist auth
+const deleteAnilistAuth = (callback: Callback<void>) => {
+  if (ENV === "dev") {
+    console.log("deleting anilist auth");
+    localStorage.removeItem(ANILIST_AUTH_KEY);
+    callback();
+    return;
+  }
+
+  chrome.storage.local.remove(ANILIST_AUTH_KEY, () => {
+    console.log("deleting anilist auth");
+    callback();
+  });
+};
+
 // get anilist auth status
 const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
   if (ENV === "dev") {
@@ -113,31 +128,31 @@ const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
 };
 
 // set anilist auth status
-const setAnilistAuthStatus = (state: AuthStatus, callback: Callback<AuthStatus>) => {
+const setAnilistAuthStatus = (status: AuthStatus, callback: Callback<AuthStatus>) => {
   if (ENV === "dev") {
-    console.log("setting anilist auth state");
-    localStorage.setItem(ANILIST_AUTH_STATE_KEY, state);
-    callback(state);
+    console.log("setting anilist auth status");
+    localStorage.setItem(ANILIST_AUTH_STATE_KEY, status);
+    callback(status);
     return;
   }
 
-  chrome.storage.local.set({ [ANILIST_AUTH_STATE_KEY]: state }, () => {
+  chrome.storage.local.set({ [ANILIST_AUTH_STATE_KEY]: status }, () => {
     console.log("setting anilist auth state");
-    callback(state);
+    callback(status);
   });
 };
 
 // delete anilist auth status
 const deleteAnilistAuthStatus = (callback: Callback<void>) => {
   if (ENV === "dev") {
-    console.log("deleting anilist auth state");
+    console.log("deleting anilist auth status");
     localStorage.removeItem(ANILIST_AUTH_STATE_KEY);
     callback();
     return;
   }
 
   chrome.storage.local.remove(ANILIST_AUTH_STATE_KEY, () => {
-    console.log("deleting anilist auth state");
+    console.log("deleting anilist auth status");
     callback();
   });
 };
@@ -179,6 +194,7 @@ export {
   deleteAnilistConfig,
   getAnilistAuth,
   setAnilistAuth,
+  deleteAnilistAuth,
   getAnilistAuthStatus,
   setAnilistAuthStatus,
   deleteAnilistAuthStatus,
