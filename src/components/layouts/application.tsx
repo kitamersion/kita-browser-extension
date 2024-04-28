@@ -10,21 +10,16 @@ import { theme, colorModeManager } from "@/config/theme";
 import { ToastProvider } from "@/context/toastNotificationContext";
 import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipContext";
 import { AnilistProvider } from "@/context/anilistContext";
-import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+import { GraphqlProvider } from "@/context/apolloContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
-  const client = new ApolloClient({
-    uri: "https://graphql.anilist.co",
-    cache: new InMemoryCache(),
-  });
-
   return (
-    <ApolloProvider client={client}>
-      <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
-        <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-        <ToastProvider>
-          <ApplicationProvider>
-            <AnilistProvider>
+    <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
+      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      <ToastProvider>
+        <ApplicationProvider>
+          <AnilistProvider>
+            <GraphqlProvider>
               <VideoTagRelationshipProvider>
                 <VideoProvider>
                   <TagProvider>
@@ -35,11 +30,11 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
                   </TagProvider>
                 </VideoProvider>
               </VideoTagRelationshipProvider>
-            </AnilistProvider>
-          </ApplicationProvider>
-        </ToastProvider>
-      </ChakraProvider>
-    </ApolloProvider>
+            </GraphqlProvider>
+          </AnilistProvider>
+        </ApplicationProvider>
+      </ToastProvider>
+    </ChakraProvider>
   );
 };
 
