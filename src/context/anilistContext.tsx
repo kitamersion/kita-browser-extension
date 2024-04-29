@@ -7,6 +7,7 @@ import {
   getAnilistAuthStatus,
   getIsAuthorizedWithAnilist,
   deleteAnilistAuth,
+  setAnilistConfig,
 } from "@/api/integration/anilist";
 import eventBus from "@/api/eventbus";
 import {
@@ -97,6 +98,10 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
           title: "Anilist authorization successful",
           status: "success",
         });
+        // @todo remove reload when stats page is implemented
+        setTimeout(() => {
+          window.location.reload();
+        }, POLLING_INTERVAL_MS);
       }
       if (status === "error") {
         setAuthStatus(status);
@@ -147,7 +152,9 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
     const payload = eventData.value as AnilistConfig;
     const jsonPayload = JSON.stringify(payload);
     setAnilistAuthStatus("pending", () => {
-      chrome.runtime.sendMessage({ type: INTEGRATION_ANILIST_AUTH_CONNECT, payload: jsonPayload });
+      setAnilistConfig(payload, () => {
+        chrome.runtime.sendMessage({ type: INTEGRATION_ANILIST_AUTH_CONNECT, payload: jsonPayload });
+      });
     });
   }, []);
 

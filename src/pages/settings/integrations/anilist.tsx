@@ -1,15 +1,19 @@
 import { useAnilistContext } from "@/context/anilistContext";
 import { INTEGRATION_ANILIST_AUTH_DISCONNECT, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
 import { AnilistConfig } from "@/types/integrations/anilist";
-import { Box, Button, Flex, FormControl, FormLabel, Input, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, FormControl, FormLabel, Input, InputGroup, InputRightElement, Text } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
 import { useGetMeQuery } from "@/graphql";
+import AnilistProfile from "../components/anilistProfile";
 
 const Anilist = () => {
-  const { isInitialized, anilistConfig, anilistAuth, anilistAuthStatus } = useAnilistContext();
+  const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
   const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig | null>(null);
+
+  const [showPasswordInput, setShowPasswordInput] = React.useState(false);
+  const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
 
   const { data, loading, error } = useGetMeQuery({
     skip: anilistAuthStatus !== "authorized",
@@ -61,7 +65,19 @@ const Anilist = () => {
             </FormControl>
             <FormControl id="secret">
               <FormLabel>Secret</FormLabel>
-              <Input name="secret" value={anilistConfigState?.secret} onChange={handleChange} />
+              <InputGroup size="md">
+                <Input
+                  name="secret"
+                  type={showPasswordInput ? "text" : "password"}
+                  value={anilistConfigState?.secret}
+                  onChange={handleChange}
+                />
+                <InputRightElement width="4.5rem">
+                  <Button h="1.75rem" size="sm" onClick={handleShowPasswordInput}>
+                    {showPasswordInput ? "Hide" : "Show"}
+                  </Button>
+                </InputRightElement>
+              </InputGroup>
             </FormControl>
             <FormControl id="redirectUrl" mt={10}>
               <FormLabel>
@@ -84,16 +100,7 @@ const Anilist = () => {
           </Flex>
         </form>
 
-        <div>
-          <p>{data?.Viewer?.id}</p>
-          <p>{data?.Viewer?.name}</p>
-        </div>
-
-        <div>{JSON.stringify(error ?? "")}</div>
-
-        <div>{JSON.stringify(anilistConfig ?? "No Config here")}</div>
-
-        <div>{JSON.stringify(!anilistAuth ? "No Auth here" : "has data")}</div>
+        {anilistAuthStatus === "authorized" && <AnilistProfile Viewer={data?.Viewer} />}
       </Flex>
     </Box>
   );

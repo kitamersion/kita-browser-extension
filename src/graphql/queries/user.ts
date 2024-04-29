@@ -5,6 +5,21 @@ export const GET_ME = gql`
     Viewer {
       id
       name
+      siteUrl
+      avatar {
+        medium
+      }
+      statistics {
+        anime {
+          count
+          minutesWatched
+        }
+
+        manga {
+          count
+          chaptersRead
+        }
+      }
     }
   }
 `;

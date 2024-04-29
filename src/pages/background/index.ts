@@ -49,7 +49,6 @@ const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError.message);
         } else {
-          console.log("url from launch", url);
           resolve(url);
         }
       }
