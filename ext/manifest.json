@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Kita Browser",
-    "version": "1.5",
+    "version": "1.6",
     "description": "Simple immersion tracker",
     "action": {
         "default_popup": "popup.html",
@@ -27,7 +27,8 @@
     },
     "permissions": [
         "storage",
-        "unlimitedStorage"
+        "unlimitedStorage",
+        "identity"
     ],
     "content_scripts": [
         {
@@ -43,7 +44,8 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "/icons/enabled/icon128.png"
+                "/icons/enabled/icon128.png",
+                "/icons/saved/icon128.png"
             ],
             "matches": [
                 "*://*.youtube.com/*",

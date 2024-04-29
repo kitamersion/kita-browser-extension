@@ -30,6 +30,7 @@
         "src/**/*"
     ],
     "exclude": [
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        // "src/graphql/index.tsx" // graphql codegen
     ]
 }

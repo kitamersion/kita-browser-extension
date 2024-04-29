@@ -3,7 +3,7 @@ import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
 import { v4 as uuidv4 } from "uuid";
 
-const DB_NAME = "kitadb";
+const DB_NAME = "kitamersiondb";
 const OBJECT_STORE_VIDEOS = "videos";
 const OBJECT_STORE_TAGS = "tags";
 const OBJECT_STORE_VIDEO_TAGS = "video_tags";

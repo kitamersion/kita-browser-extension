@@ -23,7 +23,7 @@ const ManuallyCopySettingsAndData = () => {
           You can manually copy and save your settings and data. Make sure to <b>save as a json file.</b>
         </Text>
         <Text>
-          Example: <Code>kita-data.json</Code>
+          Example: <Code>kitamersion-data.json</Code>
         </Text>
       </Flex>
       {settingsAndData && (

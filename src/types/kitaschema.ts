@@ -8,6 +8,7 @@ export type StorageKeys = {
   TagKey: string;
   ThemeKey: string;
   TotalKeys: TotalKeys;
+  IntegrationKeys: IntegrationKeys;
 };
 
 export type TotalKeys = {
@@ -32,6 +33,18 @@ export type Total = {
   Videos: number;
   Tags: number;
 };
+
+export type IntegrationKeys = {
+  AnilistKeys: AnilistKeys;
+};
+
+export type AnilistKeys = {
+  AnilistConfigKey: string;
+  AnilistAuthKey: string;
+  AuthStatus: string;
+};
+
+export type AuthStatus = "initial" | "pending" | "authorized" | "unauthorized" | "error";
 
 export type KitaSchema = {
   UserItems: UserItems;

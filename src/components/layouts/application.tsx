@@ -9,6 +9,8 @@ import { ApplicationProvider } from "@/context/applicationContext";
 import { theme, colorModeManager } from "@/config/theme";
 import { ToastProvider } from "@/context/toastNotificationContext";
 import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipContext";
+import { AnilistProvider } from "@/context/anilistContext";
+import { GraphqlProvider } from "@/context/apolloContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -16,16 +18,20 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <ToastProvider>
         <ApplicationProvider>
-          <VideoTagRelationshipProvider>
-            <VideoProvider>
-              <TagProvider>
-                <GlobalLayoutWrapper>
-                  <Navigation />
-                  <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                </GlobalLayoutWrapper>
-              </TagProvider>
-            </VideoProvider>
-          </VideoTagRelationshipProvider>
+          <AnilistProvider>
+            <GraphqlProvider>
+              <VideoTagRelationshipProvider>
+                <VideoProvider>
+                  <TagProvider>
+                    <GlobalLayoutWrapper>
+                      <Navigation />
+                      <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                    </GlobalLayoutWrapper>
+                  </TagProvider>
+                </VideoProvider>
+              </VideoTagRelationshipProvider>
+            </GraphqlProvider>
+          </AnilistProvider>
         </ApplicationProvider>
       </ToastProvider>
     </ChakraProvider>

@@ -6,6 +6,13 @@ import { TITLE_OFF, TITLE_ON } from "@/data/contants";
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
+const getExtensionBaseUrl = () => {
+  if (ENV === "dev") {
+    return window.location.origin;
+  }
+  return chrome.identity.getRedirectURL("settings.html");
+};
+
 // SET
 // @todo: make this generic for future use
 const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
@@ -45,14 +52,12 @@ const getApplicationEnabled = (callback: Callback<boolean>) => {
       return;
     }
     const value: IApplication = JSON.parse(items);
-    console.log(`get application enabled: ${value.IsApplicationEnabled}`);
     callback(value.IsApplicationEnabled);
     return;
   }
 
   chrome.storage.local.get(TAG_KEY, (data) => {
     const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: true };
-    console.log(`get application enabled: ${value.IsApplicationEnabled}`);
     setApplicationState(value.IsApplicationEnabled);
     callback(value.IsApplicationEnabled);
   });
@@ -68,4 +73,4 @@ const setApplicationState = (enabled: boolean) => {
   chrome.action.setTitle({ title: title });
 };
 
-export { setApplicationEnabled, getApplicationEnabled };
+export { getExtensionBaseUrl, getApplicationEnabled, setApplicationEnabled };

@@ -1,5 +1,5 @@
 import { UseToastOptions, useToast as useChakraToast } from "@chakra-ui/react";
-import React, { createContext, useContext } from "react";
+import React, { PropsWithChildren, createContext, useContext } from "react";
 
 const TOAST_RESET_DELAY_MS = 3000; // 3 seconds
 const ENV = process.env.NODE_ENV;
@@ -28,7 +28,7 @@ export const useToastContext = () => {
   return context;
 };
 
-export const ToastProvider: React.FC = ({ children }) => {
+export const ToastProvider = ({ children }: PropsWithChildren<unknown>) => {
   const chakraToast = useChakraToast();
 
   const showToast = ({ title, status, description, duration }: IToast) => {

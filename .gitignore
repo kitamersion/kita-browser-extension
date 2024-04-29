@@ -132,3 +132,7 @@ dist
 _/*
 
 **/docker-compose.yml
+
+
+# graphql schema codegen
+src/graphql/index.tsx

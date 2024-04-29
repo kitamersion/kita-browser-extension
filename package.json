@@ -2,10 +2,10 @@
     "name": "kita-browser-extension",
     "version": "2.0.1",
     "scripts": {
-        "build": "npm run lint && webpack --mode production && npm run ext:copy",
+        "build": "npm run graphql:codegen && npm run lint && webpack --mode production && npm run ext:copy",
         "build:firefox": "TARGET_BROWSER=firefox npm run ext:manifest",
         "build:chrome": "TARGET_BROWSER=chrome npm run ext:manifest",
-        "build:dev": "webpack --mode production && npm run ext:copy",
+        "build:dev": "npm run graphql:codegen && webpack --mode production && npm run ext:copy",
         "build:start": "cd dist && PORT=3002 npx serve",
         "start": "webpack serve --open --mode development",
         "start:live": "webpack serve --open --mode development --live-reload --hot",
@@ -16,7 +16,8 @@
         "test:watch": "jest --watch",
         "ext:manifest": "node builder/build-manifest.ts",
         "ext:copy": "cp -r ./ext/*.json ./ext/icons dist",
-        "release": "standard-version"
+        "release": "standard-version",
+        "graphql:codegen": "npx graphql-codegen"
     },
     "repository": {
         "type": "git",
@@ -37,6 +38,10 @@
         "@babel/preset-env": "^7.22.15",
         "@babel/preset-react": "^7.24.1",
         "@babel/preset-typescript": "^7.10.4",
+        "@graphql-codegen/cli": "^5.0.2",
+        "@graphql-codegen/typescript": "^4.0.6",
+        "@graphql-codegen/typescript-operations": "^4.2.0",
+        "@graphql-codegen/typescript-react-apollo": "^4.3.0",
         "@testing-library/jest-dom": "^6.1.4",
         "@testing-library/react": "^14.0.0",
         "@testing-library/user-event": "^14.5.0",
@@ -79,6 +84,7 @@
         "webpack-dev-server": "^4.3.1"
     },
     "dependencies": {
+        "@apollo/client": "^3.10.1",
         "@babel/runtime": "^7.24.1",
         "@chakra-ui/icons": "^2.0.12",
         "@chakra-ui/react": "^2.4.1",
@@ -88,6 +94,7 @@
         "date-fns": "^3.6.0",
         "dotenv-webpack": "^8.1.0",
         "framer-motion": "^7.6.12",
+        "graphql": "^16.8.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-icons": "^5.0.1"
