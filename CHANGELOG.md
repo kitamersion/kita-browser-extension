@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.0.1...v2.1.0) (2024-04-29)
+
+
+### Features
+
+* anilist authorization integration + content script improvements ([#90](https://github.com/kitamersion/kita-browser-extension/issues/90)) ([fb1afb8](https://github.com/kitamersion/kita-browser-extension/commit/fb1afb80c6ba7541fbe5e8429370dda1e6b204ad))
+
 ### [2.0.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.0.0...v2.0.1) (2024-04-23)
 
 ## [2.0.0](https://github.com/kitamersion/kita-browser-extension/compare/v1.16.1...v2.0.0) (2024-04-22)
