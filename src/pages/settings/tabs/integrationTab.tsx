@@ -1,4 +1,4 @@
-import { Center, Flex, Grid, TabPanel, Text } from "@chakra-ui/react";
+import { Center, Grid, TabPanel, Text } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import LoadingState from "@/components/states/LoadingState";
 import Anilist from "../integrations/anilist";
