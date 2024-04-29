@@ -14,19 +14,19 @@ export const kitaSchema: KitaSchema = {
     IsReady: false, // @todo: implement
     IsApplicationEnabled: true, // default enabled
     StorageKeys: {
-      ApplicationEnabledKey: "kita_application_enabled",
-      VideoKey: "kita_video_logs",
-      TagKey: "kita_tag",
-      ThemeKey: "kita_theme",
+      ApplicationEnabledKey: "kitamersion_application_enabled",
+      VideoKey: "kitamersion_video_logs",
+      TagKey: "kitamersion_tag",
+      ThemeKey: "kitamersion_theme",
       TotalKeys: {
-        Videos: "kita_total_videos",
-        Tags: "kita_total_tags",
+        Videos: "kitamersion_total_videos",
+        Tags: "kitamersion_total_tags",
       },
       IntegrationKeys: {
         AnilistKeys: {
-          AnilistAuthKey: "kita_anilist_auth",
-          AnilistConfigKey: "kita_anilist_config",
-          AuthStatus: "kita_anilist_auth_status",
+          AnilistAuthKey: "kitamersion_anilist_auth",
+          AnilistConfigKey: "kitamersion_anilist_config",
+          AuthStatus: "kitamersion_anilist_auth_status",
         },
       },
     },

@@ -27,8 +27,8 @@ const siteConfig: SiteConfigDictionary = {
 };
 
 const BUTTON_RESET_DELAY_MS = 1800;
-const TIMELINE_CAPTURE_BUTTON_ID = "kita-capture-button";
-const TIMELINE_CAPTURE_IMAGE_ID = "kita-capture-img";
+const TIMELINE_CAPTURE_BUTTON_ID = "kitamersion-capture-button";
+const TIMELINE_CAPTURE_IMAGE_ID = "kitamersion-capture-img";
 
 class VideoTracker {
   private static instance: VideoTracker;

@@ -8,7 +8,7 @@ const Exporter = () => {
   const { showToastPromise } = useToastContext();
   const handleExportData = async () => {
     const kitaSchema = await getKitaSchema();
-    await showToastPromise(exportToJSON(kitaSchema, "kita-data.json"), {
+    await showToastPromise(exportToJSON(kitaSchema, "kitamersion-data.json"), {
       loading: { title: "Exporting data", status: "loading" },
       success: { title: "Data exported", status: "success" },
       error: { title: "Failed to export data", status: "error" },
