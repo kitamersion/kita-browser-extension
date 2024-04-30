@@ -223,7 +223,7 @@ class VideoTracker {
 
       newButton.id = TIMELINE_CAPTURE_BUTTON_ID;
       newButton.title = "Capture Video (Shortcut: Shift+A)";
-      newButton.style.width = "22%";
+      newButton.style.cssText = "flex: 0 0 auto; height: 2.5rem; padding: .5rem; width: 2.5rem;";
 
       newButton.addEventListener("click", () => {
         this._handleVideoCapture();
@@ -234,7 +234,7 @@ class VideoTracker {
       const newImg = document.createElement("img");
       newImg.id = TIMELINE_CAPTURE_IMAGE_ID;
       newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "40%";
+      newImg.style.width = "100%";
 
       newButton.appendChild(newImg);
 
