@@ -1,4 +1,4 @@
-import { getAnilistConfig, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
+import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
@@ -57,9 +57,8 @@ const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
 };
 
 const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> => {
-  const authUrl = `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistConfig.anilistId}&response_type=token`;
-
   try {
+    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId);
     const redirectUrl = await launchWebAuthFlow(authUrl);
 
     const url = new URL(redirectUrl ?? "");

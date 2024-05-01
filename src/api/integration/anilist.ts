@@ -14,7 +14,7 @@ const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
     console.log("fetching anilist config");
     const anilist = localStorage.getItem(ANILIST_CONFIG_KEY);
     if (!anilist) {
-      callback(null);
+      callback({ anilistId: "", secret: "", redirectUrl: window.location.origin });
       return;
     }
     callback(JSON.parse(anilist));
@@ -188,7 +188,13 @@ const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
   });
 };
 
+// get auth url
+const getAnilistAuthUrl = (anilistId: string): string => {
+  return `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistId}&response_type=token`;
+};
+
 export {
+  getAnilistAuthUrl,
   getAnilistConfig,
   setAnilistConfig,
   deleteAnilistConfig,
