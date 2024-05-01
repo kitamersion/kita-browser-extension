@@ -20,7 +20,9 @@ export const formatTimestamp = (timestamp: number) => {
 };
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
-const PAGE_NAME = "settings.html";
+const SETTINGS_PAGE_NAME = "settings.html";
+const STATISTICS_PAGE_NAME = "statistics.html";
+
 const createTab = (url: string) => {
   return new Promise((resolve, reject) => {
     chrome.tabs.create({ url }, (tab) => {
@@ -34,12 +36,15 @@ const createTab = (url: string) => {
   });
 };
 
-export const settingsNavigation = async () => {
+const pageNaginator = async (page: string) => {
   if (ENV === "dev") {
-    window.open(PAGE_NAME, "_blank");
+    window.open(page, "_blank");
     return;
   }
 
-  const settingsUrl = chrome.runtime.getURL(`/${PAGE_NAME}`);
+  const settingsUrl = chrome.runtime.getURL(`/${page}`);
   await createTab(settingsUrl);
 };
+
+export const settingsNavigation = async () => pageNaginator(SETTINGS_PAGE_NAME);
+export const statisticsNavigation = async () => pageNaginator(STATISTICS_PAGE_NAME);

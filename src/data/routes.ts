@@ -3,6 +3,7 @@ const ToggleTheme = React.lazy(() => import("@/components/toggleTheme"));
 const GitHub = React.lazy(() => import("@/components/github"));
 const OpenExtensionButton = React.lazy(() => import("@/components/openExtensionButton"));
 const SettingsButton = React.lazy(() => import("@/components/settingsButton"));
+const StatisticsButton = React.lazy(() => import("@/components/statisticsButton"));
 
 export const enum GlobalRouteKey {
   HOME = "HOME",
@@ -28,5 +29,6 @@ export const ActionItems = [
   { component: ToggleTheme },
   { component: GitHub },
   { component: SettingsButton },
+  { component: StatisticsButton },
   { component: OpenExtensionButton },
 ];
