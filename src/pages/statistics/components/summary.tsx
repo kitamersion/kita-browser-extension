@@ -4,8 +4,7 @@ import { formatDuration } from "@/utils";
 import { Flex, Grid, Text } from "@chakra-ui/react";
 import React, { PropsWithChildren, useMemo } from "react";
 
-// @todo: extract to separate file
-export const SummaryItem = ({ children }: PropsWithChildren<any>) => {
+const SummaryItem = ({ children }: PropsWithChildren<any>) => {
   return (
     <Flex flexDirection={"column"} rounded={"2xl"} p={4} alignItems={"center"} boxShadow={"dark-lg"}>
       {children}
