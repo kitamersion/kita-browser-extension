@@ -63,7 +63,7 @@ const importFromJSON = (file: File): Promise<void> => {
 
         await setItemsForKey<number>(
           kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey,
-          data.Statistics.TagStatistics.TotalTags
+          tagsToAdd.length
         );
         // pause for 3 seconds to allow data to be saved
         await new Promise((resolve) => setTimeout(resolve, ON_SAVE_TIMEOUT_MS));
