@@ -190,7 +190,7 @@ class VideoTracker {
 
       newButton.appendChild(newImg);
       newButton.style.cssText =
-        "width: 4em; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; position: fixed; bottom: 1em; right: 1em; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
+        "width: 3.5em; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; position: fixed; bottom: 1em; right: 1em; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
 
       newButton.onmouseover = function () {
         (this as HTMLButtonElement).style.opacity = "1";
