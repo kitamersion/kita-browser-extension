@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Flex, Grid, Text } from "@chakra-ui/react";
 import VideoItem from "./components/videoItem";
 import useScreenSize from "@/hooks/useScreenSize";
@@ -16,7 +16,9 @@ const PopUp = () => {
   const { isInitialized, totalVideos } = useVideoContext();
   const { columns } = useScreenSize();
 
-  const latestTenVideos = totalVideos.sort((a, b) => b.created_at - a.created_at).slice(0, MAX_ITEMS_TO_SHOW);
+  const latestTenVideos = useMemo(() => {
+    return totalVideos.sort((a, b) => b.created_at - a.created_at).slice(0, MAX_ITEMS_TO_SHOW);
+  }, [totalVideos]);
 
   if (!isInitialized) {
     return <LoadingState />;

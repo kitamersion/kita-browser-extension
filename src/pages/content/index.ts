@@ -2,7 +2,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
-import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
+import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
 
@@ -123,6 +123,7 @@ class VideoTracker {
 
     setVideo(newRecord, () => {
       incrementTotalVideos();
+      incrementTotalVideoDuration(newRecord.video_duration);
     });
 
     const payload = JSON.stringify(newRecord);

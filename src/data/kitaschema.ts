@@ -5,10 +5,6 @@ export const kitaSchema: KitaSchema = {
     Videos: [],
     Tags: [],
     VideoTagRelationships: [],
-    Total: {
-      Videos: 0,
-      Tags: 0,
-    },
   },
   ApplicationSettings: {
     IsReady: false, // @todo: implement
@@ -18,10 +14,6 @@ export const kitaSchema: KitaSchema = {
       VideoKey: "kitamersion_video_logs",
       TagKey: "kitamersion_tag",
       ThemeKey: "kitamersion_theme",
-      TotalKeys: {
-        Videos: "kitamersion_total_videos",
-        Tags: "kitamersion_total_tags",
-      },
       IntegrationKeys: {
         AnilistKeys: {
           AnilistAuthKey: "kitamersion_anilist_auth",
@@ -29,6 +21,24 @@ export const kitaSchema: KitaSchema = {
           AuthStatus: "kitamersion_anilist_auth_status",
         },
       },
+      StatisticsKeys: {
+        VideoStatisticsKeys: {
+          TotalVideosKey: "kitamersion_total_videos",
+          TotalDurationSecondsKey: "kitamersion_total_duration_seconds",
+        },
+        TagStatisticsKeys: {
+          TotalTagsKey: "kitamersion_total_tags",
+        },
+      },
+    },
+  },
+  Statistics: {
+    VideoStatistics: {
+      TotalVideos: 0,
+      TotalDurationSeconds: 0,
+    },
+    TagStatistics: {
+      TotalTags: 0,
     },
   },
 };

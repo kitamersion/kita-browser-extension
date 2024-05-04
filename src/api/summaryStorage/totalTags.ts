@@ -1,7 +1,7 @@
 import { Callback } from "@/types/callback";
 import { kitaSchema } from "../videostorage";
 
-const TAG_TOTAL_KEY = kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags;
+const TAG_TOTAL_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 const getTotalTagCount = (callback: Callback<number>) => {
