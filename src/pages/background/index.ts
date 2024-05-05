@@ -11,7 +11,7 @@ export type RuntimeResponse = {
 type RuntimeStatus = "error" | "success" | "unknown";
 
 // EVENT HANDLERS
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   let parsedPayload;
   try {
     parsedPayload = JSON.parse(request.payload);
@@ -23,18 +23,22 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
 
   if (request.type === VIDEO_ADD) {
-    console.log("Received ADD_VIDEO with payload:", parsedPayload);
-    await IndexedDB.addVideo(parsedPayload);
+    (async () => {
+      console.log("Received ADD_VIDEO with payload:", parsedPayload);
+      await IndexedDB.addVideo(parsedPayload);
+    })();
     return;
   }
 
   if (request.type === INTEGRATION_ANILIST_AUTH_CONNECT) {
-    const success = await authorizeAnilist(parsedPayload);
-    if (success) {
-      setAnilistAuthStatus("authorized", () => {});
-    } else {
-      setAnilistAuthStatus("error", () => {});
-    }
+    (async () => {
+      const success = await authorizeAnilist(parsedPayload);
+      if (success) {
+        setAnilistAuthStatus("authorized", () => {});
+      } else {
+        setAnilistAuthStatus("error", () => {});
+      }
+    })();
   }
 });
 
