@@ -21,7 +21,7 @@ export const convertToSeconds = (time: string) => {
 };
 
 export const formatTimestamp = (timestamp: number) => {
-  return format(new Date(timestamp), "dd-MM-yyyy");
+  return format(new Date(timestamp), "yyyy-MM-dd");
 };
 
 const createTab = (url: string) => {
@@ -47,5 +47,5 @@ const pageNaginator = async (page: string) => {
   await createTab(settingsUrl);
 };
 
-export const settingsNavigation = async () => pageNaginator(SETTINGS_PAGE_NAME);
-export const statisticsNavigation = async () => pageNaginator(STATISTICS_PAGE_NAME);
+export const settingsNavigation = async () => await pageNaginator(SETTINGS_PAGE_NAME);
+export const statisticsNavigation = async () => await pageNaginator(STATISTICS_PAGE_NAME);

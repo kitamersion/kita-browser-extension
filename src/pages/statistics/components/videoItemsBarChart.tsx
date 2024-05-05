@@ -28,8 +28,10 @@ const VideoBarChart = () => {
     return acc;
   }, {});
 
-  // convert to array of objects
-  const data = Object.entries(videosPerDay).map(([date, count]) => ({ date, count }));
+  // convert to array of objects and sort by date
+  const data = Object.entries(videosPerDay)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (!isInitialized) {
     return <LoadingState />;
