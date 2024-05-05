@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.1.2...v2.2.0) (2024-05-05)
+
+
+### Features
+
+* statistics page + content script interaction placement ([#93](https://github.com/kitamersion/kita-browser-extension/issues/93)) ([bcf3570](https://github.com/kitamersion/kita-browser-extension/commit/bcf357007c3bd0820b7eaba4e10d19a245b3cbca))
+
+
+### Bug Fixes
+
+* remove unused component breaking build ([#98](https://github.com/kitamersion/kita-browser-extension/issues/98)) ([8165119](https://github.com/kitamersion/kita-browser-extension/commit/816511988f4aa3247c236f083ff0806fe973da45))
+
 ### [2.1.2](https://github.com/kitamersion/kita-browser-extension/compare/v2.1.1...v2.1.2) (2024-05-01)
 
 ### [2.1.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.1.0...v2.1.1) (2024-05-01)
