@@ -1,29 +1,9 @@
+import SummaryItem from "@/components/summaryItem";
 import { useVideoContext } from "@/context/videoContext";
 import useScreenSize from "@/hooks/useScreenSize";
 import { formatDuration } from "@/utils";
-import { Flex, Grid, Text } from "@chakra-ui/react";
-import React, { PropsWithChildren, useMemo } from "react";
-
-// @todo: extract to separate file
-export const SummaryItem = ({ children }: PropsWithChildren<any>) => {
-  return (
-    <Flex flexDirection={"column"} rounded={"2xl"} p={4} alignItems={"center"} boxShadow={"dark-lg"}>
-      {children}
-    </Flex>
-  );
-};
-
-SummaryItem.Value = function SummaryItemValue({ value }: { value: string | number }) {
-  return <Text as={"b"}>{value}</Text>;
-};
-
-SummaryItem.Title = function SummaryItemTitle({ children }: PropsWithChildren<any>) {
-  return (
-    <Text fontSize={12} color={"tomato"}>
-      {children}
-    </Text>
-  );
-};
+import { Grid } from "@chakra-ui/react";
+import React, { useMemo } from "react";
 
 const Summary = () => {
   const { isMobile, columns } = useScreenSize();

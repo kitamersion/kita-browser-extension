@@ -3,7 +3,7 @@ import React, { Suspense } from "react";
 import AddTag from "../components/addTag";
 import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
-import { SummaryItem } from "@/pages/popup/components/summary";
+import SummaryItem from "@/components/summaryItem";
 
 const TagItem = React.lazy(() => import("@/pages/settings/components/tagItem"));
 
