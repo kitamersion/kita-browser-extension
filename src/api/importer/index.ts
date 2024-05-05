@@ -3,6 +3,7 @@ import { ITag } from "@/types/tag";
 import { kitaSchema } from "@/data/kitaschema";
 import { KitaSchema } from "@/types/kitaschema";
 import IndexedDB from "@/db/index";
+import { calculateTotalDuration } from "../statistics";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
@@ -49,9 +50,21 @@ const importFromJSON = (file: File): Promise<void> => {
           data.ApplicationSettings.IsApplicationEnabled
         );
 
-        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos, data.UserItems.Total.Videos);
-        await setItemsForKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags, data.UserItems.Total.Tags);
+        await setItemsForKey<number>(
+          kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey,
+          videosToAdd.length
+        );
 
+        const totalDurationSeconds = calculateTotalDuration(videosToAdd);
+        await setItemsForKey<number>(
+          kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey,
+          totalDurationSeconds
+        );
+
+        await setItemsForKey<number>(
+          kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey,
+          tagsToAdd.length
+        );
         // pause for 3 seconds to allow data to be saved
         await new Promise((resolve) => setTimeout(resolve, ON_SAVE_TIMEOUT_MS));
 

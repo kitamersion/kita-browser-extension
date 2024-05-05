@@ -3,11 +3,12 @@ import React, { Suspense } from "react";
 import AddTag from "../components/addTag";
 import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
+import SummaryItem from "@/components/summaryItem";
 
 const TagItem = React.lazy(() => import("@/pages/settings/components/tagItem"));
 
 const TagTab = () => {
-  const { tags, isInitialized } = useTagContext();
+  const { totalTagCount, tags, isInitialized } = useTagContext();
 
   if (!isInitialized) {
     return <LoadingState />;
@@ -16,6 +17,10 @@ const TagTab = () => {
     <TabPanel>
       <Suspense fallback={<LoadingState />}>
         <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
+          <SummaryItem>
+            <SummaryItem.Value value={totalTagCount} />
+            <SummaryItem.Title>Total Tags</SummaryItem.Title>
+          </SummaryItem>
           <AddTag />
           <Flex gap={2} flexWrap={"wrap"}>
             {tags.map((tag) => (

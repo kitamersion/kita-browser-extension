@@ -58,8 +58,13 @@ const getApplicationEnabled = (callback: Callback<boolean>) => {
 
   chrome.storage.local.get(TAG_KEY, (data) => {
     const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: true };
-    setApplicationState(value.IsApplicationEnabled);
-    callback(value.IsApplicationEnabled);
+    try {
+      setApplicationState(value.IsApplicationEnabled);
+      callback(value.IsApplicationEnabled);
+    } catch (error) {
+      console.error("Error getting application enabled state", error);
+      callback(value.IsApplicationEnabled);
+    }
   });
 };
 

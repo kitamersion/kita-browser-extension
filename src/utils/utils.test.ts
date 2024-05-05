@@ -28,10 +28,10 @@ describe("convertToSeconds function", () => {
 
 describe("formatTimestamp function", () => {
   test.each([
-    [1709958630709, "09-03-2024"],
-    [1646402400000, "04-03-2022"],
-    [1664371200000, "28-09-2022"],
-    [1686105600000, "07-06-2023"],
+    [1709958630709, "2024-03-09"],
+    [1646402400000, "2022-03-04"],
+    [1664371200000, "2022-09-28"],
+    [1686105600000, "2023-06-07"],
   ])("should return formatted date from %i to => %s", (timestamp, expectedDate) => {
     const formattedDate = formatTimestamp(timestamp);
 

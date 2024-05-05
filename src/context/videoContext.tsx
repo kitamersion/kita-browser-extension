@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import { IVideo } from "@/types/video";
-import { deleteAllVideos, deleteVideoById, setVideos, updateVideoById } from "@/api/videostorage";
 import eventBus, { PublishData } from "@/api/eventbus";
 import {
   CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID,
@@ -11,16 +10,28 @@ import {
   VIDEO_UPDATED_BY_ID,
 } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
-import { decrementTotalVideos, resetTotalVideos } from "@/api/summaryStorage/totalVideos";
+import {
+  decrementTotalVideoDuration,
+  decrementTotalVideos,
+  getTotalVideoCount,
+  getTotalVideoDuration,
+  incrementTotalVideoDuration,
+  incrementTotalVideos,
+  resetTotalVideoDuration,
+  resetTotalVideos,
+} from "@/api/summaryStorage/video";
 import IndexedDB from "@/db/index";
 
+const DAY_IN_DAYS = 1;
 const WEEK_IN_DAYS = 7;
 const MONTH_IN_DAYS = 30;
 const YEAR_IN_DAYS = 365;
 
 type VideoContextType = {
   totalVideos: IVideo[];
+  totalVideoCount: number;
   totalDuration: number;
+  totalDurationDay: number;
   totalDurationWeek: number;
   totalDurationMonth: number;
   totalDurationYear: number;
@@ -40,7 +51,9 @@ export const useVideoContext = () => {
 export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   const { showToast } = useToastContext();
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
+  const [totalVideoCount, setTotalVideoCount] = useState<number>(0);
   const [totalDuration, setTotalDuration] = useState<number>(0);
+  const [totalDurationDay, setTotalDurationDay] = useState<number>(0);
   const [totalDurationWeek, setTotalDurationWeek] = useState<number>(0);
   const [totalDurationMonth, setTotalDurationMonth] = useState<number>(0);
   const [totalDurationYear, setTotalDurationYear] = useState<number>(0);
@@ -67,39 +80,51 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     return calculateTotalDuration(filteredVideos);
   }, []);
 
+  const handleGetVideoSummary = useCallback(() => {
+    getTotalVideoDuration((duration) => {
+      setTotalDuration(duration);
+    });
+
+    getTotalVideoCount((count) => {
+      setTotalVideoCount(count);
+    });
+  }, []);
+
   const handleGetVideos = useCallback(async () => {
     const allVideos = await IndexedDB.getAllVideos();
     setTotalVideos(allVideos);
 
-    const totalTimeInSeconds = calculateTotalDuration(allVideos);
+    const totalDurationDay = calculateDurationByDate(allVideos, DAY_IN_DAYS);
     const totalDurationWeek = calculateDurationByDate(allVideos, WEEK_IN_DAYS);
     const totalDurationMonth = calculateDurationByDate(allVideos, MONTH_IN_DAYS);
     const totalDurationYear = calculateDurationByDate(allVideos, YEAR_IN_DAYS);
-    setTotalDuration(totalTimeInSeconds);
+    setTotalDurationDay(totalDurationDay);
     setTotalDurationWeek(totalDurationWeek);
     setTotalDurationMonth(totalDurationMonth);
     setTotalDurationYear(totalDurationYear);
   }, [calculateDurationByDate]);
 
   const handleDeleteAllVideos = useCallback(async () => {
-    deleteAllVideos(() => {
-      setTotalVideos([]);
-      setTotalDuration(0);
-      setTotalDurationWeek(0);
-      setTotalDurationMonth(0);
-      setTotalDurationYear(0);
-
-      resetTotalVideos();
-    });
-
     await IndexedDB.deleteAllVideos();
     await IndexedDB.deleteAllVideoTags();
+
+    resetTotalVideos();
+    resetTotalVideoDuration();
+
+    setTotalVideos([]);
+    setTotalDuration(0);
+    setTotalDurationDay(0);
+    setTotalDurationWeek(0);
+    setTotalDurationMonth(0);
+    setTotalDurationYear(0);
+
+    handleGetVideoSummary();
 
     showToast({
       title: "Videos deleted",
       status: "success",
     });
-  }, [showToast]);
+  }, [handleGetVideoSummary, showToast]);
 
   const handleDeleteById = useCallback(
     async (eventData: any) => {
@@ -108,21 +133,18 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         console.warn("No video id found from event handler");
         return;
       }
-      deleteVideoById(id, totalVideos, (data) => {
-        setTotalVideos(data);
-        const totalTimeInSeconds = calculateTotalDuration(data);
-        const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
-        const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
-        const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
-        setTotalDuration(totalTimeInSeconds);
-        setTotalDurationWeek(totalDurationWeek);
-        setTotalDurationMonth(totalDurationMonth);
-        setTotalDurationYear(totalDurationYear);
 
-        decrementTotalVideos();
-      });
+      const videoToDeleteDuration = totalVideos.find((video) => video.id === id);
+
       await IndexedDB.deleteVideoById(id);
       await IndexedDB.deleteVideoTagByVideoId(id);
+      decrementTotalVideos();
+
+      if (videoToDeleteDuration) {
+        decrementTotalVideoDuration(videoToDeleteDuration.video_duration);
+      }
+
+      handleGetVideoSummary();
       handleGetVideos();
 
       showToast({
@@ -130,7 +152,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         status: "success",
       });
     },
-    [calculateDurationByDate, handleGetVideos, showToast, totalVideos]
+    [handleGetVideoSummary, handleGetVideos, showToast, totalVideos]
   );
 
   const handleUpdateVideoById = useCallback(
@@ -139,31 +161,26 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         console.warn("No video data found from event handler");
         return;
       }
-
       const updatedVideo = eventData.value as IVideo;
 
-      updateVideoById(updatedVideo.id, updatedVideo, totalVideos, (data) => {
-        setTotalVideos(data);
-        const totalTimeInSeconds = calculateTotalDuration(data);
-        const totalDurationWeek = calculateDurationByDate(data, WEEK_IN_DAYS);
-        const totalDurationMonth = calculateDurationByDate(data, MONTH_IN_DAYS);
-        const totalDurationYear = calculateDurationByDate(data, YEAR_IN_DAYS);
-        setTotalDuration(totalTimeInSeconds);
-        setTotalDurationWeek(totalDurationWeek);
-        setTotalDurationMonth(totalDurationMonth);
-        setTotalDurationYear(totalDurationYear);
-
-        decrementTotalVideos();
-      });
+      // calculate how much duration needs to increase or decrease.
+      const oldVideo = totalVideos.find((v) => v.id === updatedVideo.id);
+      let durationDifference = 0;
+      if (oldVideo) {
+        durationDifference = updatedVideo.video_duration - oldVideo.video_duration;
+        incrementTotalVideoDuration(durationDifference);
+      }
 
       await IndexedDB.updateVideoById(updatedVideo);
+      handleGetVideoSummary();
+      handleGetVideos();
 
       showToast({
         title: "Video updated",
         status: "success",
       });
     },
-    [calculateDurationByDate, showToast, totalVideos]
+    [handleGetVideoSummary, handleGetVideos, showToast, totalVideos]
   );
 
   const handleRemoveTagFromVideoById = useCallback(
@@ -181,17 +198,16 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         }
         return video;
       });
-      setVideos(updatedVideos, () => {
-        setTotalVideos(updatedVideos);
-        const totalTimeInSeconds = calculateTotalDuration(updatedVideos);
-        const totalDurationWeek = calculateDurationByDate(updatedVideos, WEEK_IN_DAYS);
-        const totalDurationMonth = calculateDurationByDate(updatedVideos, MONTH_IN_DAYS);
-        const totalDurationYear = calculateDurationByDate(updatedVideos, YEAR_IN_DAYS);
-        setTotalDuration(totalTimeInSeconds);
-        setTotalDurationWeek(totalDurationWeek);
-        setTotalDurationMonth(totalDurationMonth);
-        setTotalDurationYear(totalDurationYear);
-      });
+
+      setTotalVideos(updatedVideos);
+      const totalDurationDay = calculateDurationByDate(updatedVideos, DAY_IN_DAYS);
+      const totalDurationWeek = calculateDurationByDate(updatedVideos, WEEK_IN_DAYS);
+      const totalDurationMonth = calculateDurationByDate(updatedVideos, MONTH_IN_DAYS);
+      const totalDurationYear = calculateDurationByDate(updatedVideos, YEAR_IN_DAYS);
+      setTotalDurationDay(totalDurationDay);
+      setTotalDurationWeek(totalDurationWeek);
+      setTotalDurationMonth(totalDurationMonth);
+      setTotalDurationYear(totalDurationYear);
 
       await IndexedDB.deleteVideoTagByTagId(id);
     },
@@ -206,22 +222,27 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         return;
       }
       await IndexedDB.addVideo(videoToAdd);
+      incrementTotalVideos();
+      incrementTotalVideoDuration(videoToAdd.video_duration);
+
       handleGetVideos();
+      handleGetVideoSummary();
       showToast({
         title: "Video added",
         status: "success",
       });
     },
-    [handleGetVideos, showToast]
+    [handleGetVideoSummary, handleGetVideos, showToast]
   );
 
   useEffect(() => {
     if (!isInitialized) {
       handleGetVideos();
+      handleGetVideoSummary();
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetVideos, isInitialized]);
+  }, [handleGetVideoSummary, handleGetVideos, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -279,7 +300,9 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     <VideoContext.Provider
       value={{
         totalVideos,
+        totalVideoCount,
         totalDuration,
+        totalDurationDay,
         totalDurationWeek,
         totalDurationMonth,
         totalDurationYear,

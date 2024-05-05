@@ -1,9 +1,10 @@
 import LoadingState from "@/components/states/LoadingState";
 import { useApplicationContext } from "@/context/applicationContext";
-import { Button, Tooltip } from "@chakra-ui/react";
+import { IconButton, Tooltip } from "@chakra-ui/react";
 import React, { useCallback } from "react";
 import eventBus from "@/api/eventbus";
 import { APPLICATION_ENABLE } from "@/data/events";
+import { FaPowerOff } from "react-icons/fa6";
 
 const IsApplicationEnabledToggle = () => {
   const { isInitialized, isApplicationEnabled } = useApplicationContext();
@@ -18,17 +19,14 @@ const IsApplicationEnabledToggle = () => {
 
   return (
     <Tooltip placement="bottom" label={`Click to turn ${isApplicationEnabled ? "OFF" : "ON"}`} rounded={"full"}>
-      <Button
+      <IconButton
+        icon={<FaPowerOff color={isApplicationEnabled ? "green" : "red"} />}
+        variant="ghost"
+        rounded="full"
         title={`Click to turn ${isApplicationEnabled ? "OFF" : "ON"}`}
         aria-label={`Application is ${isApplicationEnabled ? "OFF" : "ON"}`}
-        size={"xs"}
-        rounded={"full"}
         onClick={handleApplicationStatusChange}
-        color={isApplicationEnabled ? "green" : "red.600"}
-        px={4}
-      >
-        {isApplicationEnabled ? "ON" : "OFF"}
-      </Button>
+      />
     </Tooltip>
   );
 };

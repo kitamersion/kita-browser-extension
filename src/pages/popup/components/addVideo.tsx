@@ -67,27 +67,24 @@ const AddVideoButton = () => {
   };
 
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setHour(parseInt(value));
   };
 
   const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setMinute(parseInt(value));
   };
 
   const handleSecondChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setSecond(parseInt(value));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formatDuration = `${hour}h ${minute}m ${second}s`;
+    const formatDuration = `${hour} ${minute} ${second}`;
 
     const videoToAdd: IVideo = {
       ...video,
@@ -110,6 +107,9 @@ const AddVideoButton = () => {
     onClose();
     setVideo(initialState);
     setSelectedTags([]);
+    setSecond(0);
+    setMinute(0);
+    setHour(0);
   };
 
   return (

@@ -1,9 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
-import { kitaSchema, setVideo } from "../../api/videostorage";
+import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
-import { incrementTotalVideos } from "@/api/summaryStorage/totalVideos";
+import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { VIDEO_ADD } from "@/data/events";
+import { getApplicationEnabled } from "@/api/applicationStorage";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -26,9 +27,9 @@ const siteConfig: SiteConfigDictionary = {
   },
 };
 
-const BUTTON_RESET_DELAY_MS = 1800;
-const TIMELINE_CAPTURE_BUTTON_ID = "kitamersion-capture-button";
-const TIMELINE_CAPTURE_IMAGE_ID = "kitamersion-capture-img";
+const BUTTON_RESET_DELAY_MS = 1500;
+const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
+const CAPTURE_IMAGE_ID = "kitamersion-capture-img";
 
 class VideoTracker {
   private static instance: VideoTracker;
@@ -122,6 +123,7 @@ class VideoTracker {
 
     setVideo(newRecord, () => {
       incrementTotalVideos();
+      incrementTotalVideoDuration(newRecord.video_duration);
     });
 
     const payload = JSON.stringify(newRecord);
@@ -166,14 +168,13 @@ class VideoTracker {
     document.addEventListener("keydown", this.keyboardShortcutHandler);
   }
 
-  _youtubeTimelineButton() {
-    const parentDiv = document.querySelector(".ytp-right-controls");
+  _kitamersionCaptureButton() {
+    const parentDiv = document.body;
 
     if (parentDiv) {
       const newButton = document.createElement("button");
 
-      newButton.id = TIMELINE_CAPTURE_BUTTON_ID;
-      newButton.classList.add("ytp-button", "ytp-settings-button");
+      newButton.id = CAPTURE_BUTTON_ID;
       newButton.title = "Capture Video (Shortcut: Shift+A)";
 
       newButton.addEventListener("click", () => {
@@ -183,21 +184,30 @@ class VideoTracker {
 
       const baseUrl = this._extensionBaseUrl();
       const newImg = document.createElement("img");
-      newImg.id = TIMELINE_CAPTURE_IMAGE_ID;
+      newImg.id = CAPTURE_IMAGE_ID;
       newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "54%";
+      newImg.style.width = "100%";
 
       newButton.appendChild(newImg);
-      newButton.style.cssText = "margin-top: 9px; vertical-align: top; text-align: center;";
+      newButton.style.cssText =
+        "width: 3.5em; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; position: fixed; bottom: 1em; right: 1em; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
 
-      parentDiv.insertBefore(newButton, parentDiv.firstChild);
+      newButton.onmouseover = function () {
+        (this as HTMLButtonElement).style.opacity = "1";
+      };
+
+      newButton.onmouseout = function () {
+        (this as HTMLButtonElement).style.opacity = "0.5";
+      };
+
+      parentDiv.appendChild(newButton); // Changed to appendChild to add button at the end
     } else {
       console.error("[KITA_BROWSER] unable to find parent div");
     }
   }
 
   _buttonCapturedIndication() {
-    const image = document.getElementById(TIMELINE_CAPTURE_IMAGE_ID) as HTMLImageElement;
+    const image = document.getElementById(CAPTURE_IMAGE_ID) as HTMLImageElement;
     if (image) {
       const baseUrl = this._extensionBaseUrl();
       image.src = `${baseUrl}icons/saved/icon128.png`;
@@ -211,64 +221,20 @@ class VideoTracker {
         image.src = `${baseUrl}icons/enabled/icon128.png`;
       }, BUTTON_RESET_DELAY_MS);
     } else {
-      console.error(`[KITA_BROWSER] unable to find image with id ${TIMELINE_CAPTURE_IMAGE_ID}`);
-    }
-  }
-
-  _crunchyrollTimelineButton() {
-    const parentDiv = document.querySelector(".current-media-parent-ref");
-
-    if (parentDiv) {
-      const newButton = document.createElement("button");
-
-      newButton.id = TIMELINE_CAPTURE_BUTTON_ID;
-      newButton.title = "Capture Video (Shortcut: Shift+A)";
-      newButton.style.width = "22%";
-
-      newButton.addEventListener("click", () => {
-        this._handleVideoCapture();
-        this._buttonCapturedIndication();
-      });
-
-      const baseUrl = this._extensionBaseUrl();
-      const newImg = document.createElement("img");
-      newImg.id = TIMELINE_CAPTURE_IMAGE_ID;
-      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "40%";
-
-      newButton.appendChild(newImg);
-
-      parentDiv.appendChild(newButton);
-    } else {
-      console.error("[KITA_BROWSER] unable to find parent div");
+      console.error(`[KITA_BROWSER] unable to find image with id ${CAPTURE_IMAGE_ID}`);
     }
   }
 
   initialize() {
-    const origin = this._getOrigin();
-    if (origin) {
-      this.setupKeyboardShortcut();
-
-      switch (origin) {
-        case SiteKey.YOUTUBE:
-        case SiteKey.YOUTUBE_MUSIC:
-          this._youtubeTimelineButton();
-          break;
-        case SiteKey.CRUNCHYROLL:
-          this._crunchyrollTimelineButton();
-          break;
-        default:
-          console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
-          break;
-      }
-    }
+    this.setupKeyboardShortcut();
+    this._kitamersionCaptureButton();
   }
 
   destroy() {
-    const timelineButton = document.getElementById(TIMELINE_CAPTURE_BUTTON_ID);
+    const captureButton = document.getElementById(CAPTURE_BUTTON_ID);
 
-    if (timelineButton) {
-      timelineButton.remove();
+    if (captureButton) {
+      captureButton.remove();
     }
     if (this.keyboardShortcutHandler) {
       document.removeEventListener("keydown", this.keyboardShortcutHandler);
@@ -276,27 +242,18 @@ class VideoTracker {
   }
 }
 
-(() => {
-  const videoTracker = VideoTracker.getInstance();
+const videoTracker = VideoTracker.getInstance();
 
-  // @todo: move to service worker (background)
-  // check users settings to see if the application should be enabled
-  const IsApplicationEnabledKey = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
-  chrome.storage.local.get(IsApplicationEnabledKey, (result) => {
-    if (result[IsApplicationEnabledKey].IsApplicationEnabled) {
-      videoTracker.initialize();
-    } else {
-      videoTracker.destroy();
-    }
-  });
+getApplicationEnabled((IsApplicationEnabled) => {
+  IsApplicationEnabled ? videoTracker.initialize() : videoTracker.destroy();
+});
 
-  // listen for messages to disable/enable the application
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log(`content script received message: ${JSON.stringify(request)}`);
-    if (!request.IsApplicationEnabled) {
-      videoTracker.destroy();
-    } else {
-      videoTracker.initialize();
-    }
-  });
-})();
+// listen for messages to disable/enable the application
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log(`content script received message: ${JSON.stringify(request)}`);
+  if (!request.IsApplicationEnabled) {
+    videoTracker?.destroy();
+  } else {
+    videoTracker?.initialize();
+  }
+});

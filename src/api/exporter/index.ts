@@ -29,8 +29,9 @@ const exportToJSON = (data: KitaSchema, fileName: string): Promise<KitaSchema | 
   return new Promise((resolve, reject) => {
     try {
       console.log("exporting data...");
-      data.UserItems.Total.Videos = data.UserItems.Videos.length;
-      data.UserItems.Total.Tags = data.UserItems.Tags.length;
+      data.Statistics.VideoStatistics.TotalVideos = data.UserItems.Videos.length ?? 0;
+      data.Statistics.VideoStatistics.TotalDurationSeconds = data.Statistics.VideoStatistics.TotalDurationSeconds ?? 0;
+      data.Statistics.TagStatistics.TotalTags = data.UserItems.Tags.length ?? 0;
       const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
 
       const url = URL.createObjectURL(blob);

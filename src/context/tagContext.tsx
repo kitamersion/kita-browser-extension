@@ -4,11 +4,12 @@ import { ITag } from "@/types/tag";
 import { deleteAllTags, deleteTagById, setTag } from "@/api/tags";
 import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
-import { decrementTotalTags, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/totalTags";
 import IndexedDB from "@/db/index";
+import { decrementTotalTags, getTotalTagCount, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/tag";
 
 interface TagContextType {
   tags: ITag[];
+  totalTagCount: number;
   isInitialized: boolean;
 }
 
@@ -26,10 +27,17 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const { showToast } = useToastContext();
   const [tags, setTags] = useState<ITag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [totalTagCount, SetTotalTagCount] = useState<number>(0);
 
   const handleGetTags = useCallback(async () => {
     const allTags = await IndexedDB.getAllTags();
     setTags(allTags);
+  }, []);
+
+  const handleGetTagSummary = useCallback(() => {
+    getTotalTagCount((count) => {
+      SetTotalTagCount(count);
+    });
   }, []);
 
   const handleDeleteAllTags = useCallback(async () => {
@@ -37,13 +45,14 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       setTags([]);
 
       resetTotalTags();
+      handleGetTagSummary();
     });
 
     showToast({
       title: "Tags deleted",
       status: "success",
     });
-  }, [showToast]);
+  }, [handleGetTagSummary, showToast]);
 
   const handleDeleteById = useCallback(
     async (eventData: any) => {
@@ -61,13 +70,13 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
       await IndexedDB.deleteTagById(id);
       await IndexedDB.deleteVideoTagByTagId(id);
-
+      handleGetTagSummary();
       showToast({
         title: "Tag deleted",
         status: "success",
       });
     },
-    [showToast, tags]
+    [handleGetTagSummary, showToast, tags]
   );
 
   const handleSetTag = useCallback(
@@ -84,21 +93,23 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       });
 
       await IndexedDB.addTag(name);
+      handleGetTagSummary();
       showToast({
         title: "Tag added",
         status: "success",
       });
     },
-    [showToast, tags]
+    [handleGetTagSummary, showToast, tags]
   );
 
   useEffect(() => {
     if (!isInitialized) {
       handleGetTags();
+      handleGetTagSummary();
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetTags, isInitialized]);
+  }, [handleGetTagSummary, handleGetTags, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -128,5 +139,5 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     };
   }, [handleSetTag]);
 
-  return <TagContext.Provider value={{ tags, isInitialized }}>{children}</TagContext.Provider>;
+  return <TagContext.Provider value={{ tags, totalTagCount, isInitialized }}>{children}</TagContext.Provider>;
 };

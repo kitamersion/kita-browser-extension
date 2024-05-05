@@ -7,13 +7,8 @@ export type StorageKeys = {
   VideoKey: string;
   TagKey: string;
   ThemeKey: string;
-  TotalKeys: TotalKeys;
   IntegrationKeys: IntegrationKeys;
-};
-
-export type TotalKeys = {
-  Videos: string;
-  Tags: string;
+  StatisticsKeys: StatisticsKeys;
 };
 
 export type ApplicationSettings = {
@@ -26,12 +21,6 @@ export type UserItems = {
   Videos: IVideo[];
   Tags: ITag[];
   VideoTagRelationships: IVideoTag[];
-  Total: Total;
-};
-
-export type Total = {
-  Videos: number;
-  Tags: number;
 };
 
 export type IntegrationKeys = {
@@ -44,9 +33,38 @@ export type AnilistKeys = {
   AuthStatus: string;
 };
 
+export type StatisticsKeys = {
+  VideoStatisticsKeys: VideoStatisticsKeys;
+  TagStatisticsKeys: TagStatisticsKeys;
+};
+
+export type VideoStatisticsKeys = {
+  TotalVideosKey: string;
+  TotalDurationSecondsKey: string;
+};
+
+export type TagStatisticsKeys = {
+  TotalTagsKey: string;
+};
+
+export type Statistics = {
+  VideoStatistics: VideoStatistics;
+  TagStatistics: TagStatistics;
+};
+
+export type VideoStatistics = {
+  TotalVideos: number;
+  TotalDurationSeconds: number;
+};
+
+export type TagStatistics = {
+  TotalTags: number;
+};
+
 export type AuthStatus = "initial" | "pending" | "authorized" | "unauthorized" | "error";
 
 export type KitaSchema = {
   UserItems: UserItems;
   ApplicationSettings: ApplicationSettings;
+  Statistics: Statistics;
 };

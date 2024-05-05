@@ -8,18 +8,19 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
   const tags = await IndexedDB.getAllTags();
   const videoTagRelationships = await IndexedDB.getAllVideoTags();
   const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
-  const totalVideos = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos);
-  const totalTags = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags);
+  const totalVideos = await getItemsFromKey<number>(
+    kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey
+  );
+  const totalTags = await getItemsFromKey<number>(kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey);
+  const totalDurationSeconds = await getItemsFromKey<number>(
+    kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey
+  );
 
   return {
     UserItems: {
       Videos: videos ?? [],
       Tags: tags ?? [],
       VideoTagRelationships: videoTagRelationships ?? [],
-      Total: {
-        Videos: totalVideos ?? 0,
-        Tags: totalTags ?? 0,
-      },
     },
     ApplicationSettings: {
       IsReady: false, // @todo: implement
@@ -29,10 +30,6 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
         VideoKey: kitaSchema.ApplicationSettings.StorageKeys.VideoKey,
         TagKey: kitaSchema.ApplicationSettings.StorageKeys.TagKey,
         ThemeKey: kitaSchema.ApplicationSettings.StorageKeys.ThemeKey,
-        TotalKeys: {
-          Videos: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Videos,
-          Tags: kitaSchema.ApplicationSettings.StorageKeys.TotalKeys.Tags,
-        },
         IntegrationKeys: {
           AnilistKeys: {
             AnilistAuthKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey,
@@ -40,6 +37,24 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
             AuthStatus: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus,
           },
         },
+        StatisticsKeys: {
+          VideoStatisticsKeys: {
+            TotalVideosKey: kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey,
+            TotalDurationSecondsKey: kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey,
+          },
+          TagStatisticsKeys: {
+            TotalTagsKey: kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey,
+          },
+        },
+      },
+    },
+    Statistics: {
+      VideoStatistics: {
+        TotalVideos: totalVideos ?? 0,
+        TotalDurationSeconds: totalDurationSeconds ?? 0,
+      },
+      TagStatistics: {
+        TotalTags: totalTags ?? 0,
       },
     },
   };

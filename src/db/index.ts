@@ -56,7 +56,8 @@ class IndexedDB {
       this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
 
       // tag store
-      this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
+      const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
+      tagStore.createIndex("code", "code", { unique: true });
 
       // video and tag aggregate store
       const videoTagStore = this.db.createObjectStore(OBJECT_STORE_VIDEO_TAGS, { keyPath: "id" });
@@ -227,6 +228,23 @@ class IndexedDB {
     });
   }
 
+  // get tag by code
+  getTagByCode(code: string): Promise<ITag | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
+      const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
+      const index = tagStore.index("code");
+      const request = index.get(code);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
   // add tag
   addTag(name: string, id?: string, created_at?: number): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -235,7 +253,9 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
 
-      const tagItem: ITag = { id: id ?? uuidv4(), name, created_at: created_at ?? Date.now() };
+      const code = name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
+
+      const tagItem: ITag = { id: id ?? uuidv4(), name, code: code, created_at: created_at ?? Date.now() };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();

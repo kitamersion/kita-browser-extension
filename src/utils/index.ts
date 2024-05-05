@@ -1,5 +1,9 @@
 import { format } from "date-fns";
 
+const ENV = process.env.APPLICATION_ENVIRONMENT;
+const SETTINGS_PAGE_NAME = "settings.html";
+const STATISTICS_PAGE_NAME = "statistics.html";
+
 export const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -12,15 +16,14 @@ export const convertToSeconds = (time: string) => {
   const hours = parseInt(timeParts[0]) * 3600;
   const minutes = parseInt(timeParts[1]) * 60;
   const seconds = parseInt(timeParts[2]);
+
   return hours + minutes + seconds;
 };
 
 export const formatTimestamp = (timestamp: number) => {
-  return format(new Date(timestamp), "dd-MM-yyyy");
+  return format(new Date(timestamp), "yyyy-MM-dd");
 };
 
-const ENV = process.env.APPLICATION_ENVIRONMENT;
-const PAGE_NAME = "settings.html";
 const createTab = (url: string) => {
   return new Promise((resolve, reject) => {
     chrome.tabs.create({ url }, (tab) => {
@@ -34,12 +37,15 @@ const createTab = (url: string) => {
   });
 };
 
-export const settingsNavigation = async () => {
+const pageNaginator = async (page: string) => {
   if (ENV === "dev") {
-    window.open(PAGE_NAME, "_blank");
+    window.open(page, "_blank");
     return;
   }
 
-  const settingsUrl = chrome.runtime.getURL(`/${PAGE_NAME}`);
+  const settingsUrl = chrome.runtime.getURL(`/${page}`);
   await createTab(settingsUrl);
 };
+
+export const settingsNavigation = async () => await pageNaginator(SETTINGS_PAGE_NAME);
+export const statisticsNavigation = async () => await pageNaginator(STATISTICS_PAGE_NAME);

@@ -27,7 +27,7 @@ import {
   Tag,
   TagLabel,
 } from "@chakra-ui/react";
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { MdEdit } from "react-icons/md";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
 
@@ -67,32 +67,19 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
   const [second, setSecond] = useState(durationSplit[2]);
 
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setHour(parseInt(value));
-    handleDurationChange();
   };
 
   const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setMinute(parseInt(value));
-    handleDurationChange();
   };
 
   const handleSecondChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) return;
+    const value = e.target.value ? e.target.value : "0";
     setSecond(parseInt(value));
-    handleDurationChange();
   };
-
-  const handleDurationChange = useCallback(() => {
-    const formatDuration = `${hour}h ${minute}m ${second}s`;
-    setVideo((prevVideo) => {
-      return { ...prevVideo, video_duration: convertToSeconds(formatDuration) };
-    });
-  }, [hour, minute, second]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
@@ -118,10 +105,13 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const formatDuration = `${hour} ${minute} ${second}`;
     const updatedVideo = {
       ...video,
       updated_at: Date.now(),
+      video_duration: convertToSeconds(formatDuration),
     };
+
     eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video", value: updatedVideo });
 
     const relationshipToAdd = video.tags?.filter((tagId) => !selectedTagIdsForVideo.includes(tagId)) ?? [];

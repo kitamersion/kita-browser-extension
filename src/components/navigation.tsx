@@ -13,7 +13,7 @@ const Navigation = () => {
   return (
     <Flex as="nav" align="center" alignContent="center" justify="space-between" m={3} py={2} px={6}>
       <Flex alignItems={"center"} gap={2}>
-        <Heading as={"h1"} fontSize="medium">
+        <Heading as={"h1"} fontSize="small">
           {TITLE}
         </Heading>
         <IsApplicationEnabledToggle />

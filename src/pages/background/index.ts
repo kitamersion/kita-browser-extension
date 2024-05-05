@@ -1,4 +1,4 @@
-import { getAnilistConfig, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
+import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
@@ -11,7 +11,7 @@ export type RuntimeResponse = {
 type RuntimeStatus = "error" | "success" | "unknown";
 
 // EVENT HANDLERS
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   let parsedPayload;
   try {
     parsedPayload = JSON.parse(request.payload);
@@ -23,18 +23,22 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   }
 
   if (request.type === VIDEO_ADD) {
-    console.log("Received ADD_VIDEO with payload:", parsedPayload);
-    await IndexedDB.addVideo(parsedPayload);
+    (async () => {
+      console.log("Received ADD_VIDEO with payload:", parsedPayload);
+      await IndexedDB.addVideo(parsedPayload);
+    })();
     return;
   }
 
   if (request.type === INTEGRATION_ANILIST_AUTH_CONNECT) {
-    const success = await authorizeAnilist(parsedPayload);
-    if (success) {
-      setAnilistAuthStatus("authorized", () => {});
-    } else {
-      setAnilistAuthStatus("error", () => {});
-    }
+    (async () => {
+      const success = await authorizeAnilist(parsedPayload);
+      if (success) {
+        setAnilistAuthStatus("authorized", () => {});
+      } else {
+        setAnilistAuthStatus("error", () => {});
+      }
+    })();
   }
 });
 
@@ -57,9 +61,8 @@ const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
 };
 
 const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> => {
-  const authUrl = `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistConfig.anilistId}&response_type=token`;
-
   try {
+    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId);
     const redirectUrl = await launchWebAuthFlow(authUrl);
 
     const url = new URL(redirectUrl ?? "");

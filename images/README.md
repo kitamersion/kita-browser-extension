@@ -8,7 +8,7 @@ To version:
 
 ## Content script
 
-Shows on websites enabled for kita browser
+Shows on websites enabled for kita browser on bottom right of window.
 
 ### Default State
 ![kita-enabled](/images/app/kita-enabled.png)
@@ -73,3 +73,10 @@ Shows on websites enabled for kita browser
 
 
 ![kita-settings-tags-lightmode](/images/app/kita-settings-tags-lightmode.png)
+
+### Statistics
+
+![kita-stats-darkmode](/images/app/kita-stats-darkmode.png)
+
+
+![kita-stats-lightmode](/images/app/kita-stats-lightmode.png)
