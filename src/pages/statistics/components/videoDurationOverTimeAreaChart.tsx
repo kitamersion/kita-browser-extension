@@ -41,9 +41,9 @@ const VideoDurationOverTimeAreaChart = () => {
   });
 
   // get the first and last dates
-  const firstDate = data[0].date;
   const today = new Date().toISOString().split("T")[0]; // current date
-  const lastDate = data[data.length - 1].date === today ? today : data[data.length - 1].date;
+  const firstDate = data.length > 0 ? data[0].date : today;
+  const lastDate = data.length > 0 ? (data[data.length - 1].date === today ? today : data[data.length - 1].date) : today;
 
   return (
     <Box width={"full"} height={"500px"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
