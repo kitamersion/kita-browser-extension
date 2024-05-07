@@ -99,3 +99,13 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
     }
   });
 })();
+
+chrome.runtime.onInstalled.addListener(() => {
+  (async () => {
+    // get and check if tags are initialized
+
+    await IndexedDB.initializeDefaultTags();
+
+    // set tags are initialized
+  })();
+});

@@ -1,3 +1,4 @@
+import { DEFAULT_TAG } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
@@ -73,6 +74,23 @@ class IndexedDB {
       console.log("Error opening DB", event);
     };
   }
+
+  // ================================================================================
+  // ======================     INITIALIZE DEFAULT TAGS         =====================
+  // ================================================================================
+
+  // initialize default tags
+  initializeDefaultTags = async (): Promise<void> => {
+    // Check if the tags have been initialized
+    const isInitialized = localStorage.getItem("tagsInitialized");
+    if (isInitialized) return;
+
+    for (const tag of DEFAULT_TAG) {
+      await this.addTag({ name: tag.name });
+    }
+
+    localStorage.setItem("tagsInitialized", "true");
+  };
 
   // ================================================================================
   // ======================     VIDEO STORE         =================================
@@ -246,16 +264,16 @@ class IndexedDB {
   }
 
   // add tag
-  addTag(name: string, id?: string, created_at?: number): Promise<void> {
+  addTag({ id, name, code, created_at }: ITag): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
 
-      const code = name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
+      const codeOrFromName = code ?? name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
 
-      const tagItem: ITag = { id: id ?? uuidv4(), name, code: code, created_at: created_at ?? Date.now() };
+      const tagItem: ITag = { id: id ?? uuidv4(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();

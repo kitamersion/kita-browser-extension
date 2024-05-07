@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { SHA256 } from "crypto-js";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const SETTINGS_PAGE_NAME = "settings.html";
@@ -49,3 +50,9 @@ const pageNaginator = async (page: string) => {
 
 export const settingsNavigation = async () => await pageNaginator(SETTINGS_PAGE_NAME);
 export const statisticsNavigation = async () => await pageNaginator(STATISTICS_PAGE_NAME);
+
+export const generateUniqueCode = (video_title: string, origin: string): string => {
+  const hash = SHA256(video_title + origin);
+
+  return hash.toString();
+};

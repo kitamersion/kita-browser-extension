@@ -37,7 +37,7 @@ const importFromJSON = (file: File): Promise<void> => {
 
         const tagsToAdd = data.UserItems.Tags;
         tagsToAdd.forEach(async (tag: ITag) => {
-          await IndexedDB.addTag(tag.name, tag.id, tag.created_at);
+          await IndexedDB.addTag({ id: tag.id, name: tag.name, created_at: tag.created_at });
         });
 
         const videoTagRelationshipsToAdd = data.UserItems.VideoTagRelationships;

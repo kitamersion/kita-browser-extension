@@ -1,4 +1,4 @@
-import { convertToSeconds, formatDuration, formatTimestamp } from ".";
+import { convertToSeconds, formatDuration, formatTimestamp, generateUniqueCode } from ".";
 
 describe("formatDuration function", () => {
   test.each([
@@ -36,5 +36,19 @@ describe("formatTimestamp function", () => {
     const formattedDate = formatTimestamp(timestamp);
 
     expect(formattedDate).toBe(expectedDate);
+  });
+});
+
+describe("generateUniqueCode function", () => {
+  test("generates unique code for video", () => {
+    const video = {
+      video_title: "Sample Video",
+      origin: "RANDOM_ORIGIN",
+    };
+
+    const uniqueCode = generateUniqueCode(video.video_title, video.origin);
+
+    expect(uniqueCode).toBeDefined();
+    expect(typeof uniqueCode).toBe("string");
   });
 });

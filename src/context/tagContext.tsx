@@ -92,7 +92,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
         incrementTotalTags();
       });
 
-      await IndexedDB.addTag(name);
+      await IndexedDB.addTag({ name: name });
       handleGetTagSummary();
       showToast({
         title: "Tag added",

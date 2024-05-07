@@ -1,10 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
-import { setVideo } from "../../api/videostorage";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
+import { generateUniqueCode } from "@/utils";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -118,16 +118,15 @@ class VideoTracker {
       video_url: url,
       origin: origin,
       created_at: timestamp,
+      unquie_code: generateUniqueCode(videoTitle, origin),
       tags: [],
     };
 
-    setVideo(newRecord, () => {
-      incrementTotalVideos();
-      incrementTotalVideoDuration(newRecord.video_duration);
-    });
-
     const payload = JSON.stringify(newRecord);
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
+
+    incrementTotalVideos();
+    incrementTotalVideoDuration(newRecord.video_duration);
 
     console.log("[KITA_BROWSER] video added from content");
   }
