@@ -1,4 +1,4 @@
-import { DEFAULT_TAG } from "@/data/contants";
+import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
@@ -54,7 +54,8 @@ class IndexedDB {
       this.db = (event.target as IDBOpenDBRequest).result;
 
       // video store
-      this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
+      const videoStore = this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
+      videoStore.createIndex("unquie_code", "unquie_code", { unique: true });
 
       // tag store
       const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
@@ -79,17 +80,35 @@ class IndexedDB {
   // ======================     INITIALIZE DEFAULT TAGS         =====================
   // ================================================================================
 
-  // initialize default tags
-  initializeDefaultTags = async (): Promise<void> => {
-    // Check if the tags have been initialized
-    const isInitialized = localStorage.getItem("tagsInitialized");
-    if (isInitialized) return;
+  /*
+   * Add missing default tags
+   */
+  initializeDefaultTags = async (): Promise<number> => {
+    const getCurrentTags = await this.getAllTags();
 
-    for (const tag of DEFAULT_TAG) {
+    if (!getCurrentTags) {
+      for (const tag of DEFAULT_TAGS) {
+        await this.addTag(tag);
+      }
+
+      return DEFAULT_TAGS.length;
+    }
+
+    // get tags from default that are not in the current tags
+    const missingTags = DEFAULT_TAGS.filter((defaultTag) => {
+      return !getCurrentTags.find((tag) => tag.code === defaultTag.code);
+    });
+
+    if (!missingTags || missingTags.length === 0) {
+      return 0;
+    }
+
+    // add missing tags by name from default tag
+    for (const tag of missingTags) {
       await this.addTag({ name: tag.name });
     }
 
-    localStorage.setItem("tagsInitialized", "true");
+    return missingTags.length;
   };
 
   // ================================================================================
@@ -204,6 +223,26 @@ class IndexedDB {
       request.onsuccess = () => {
         resolve();
       };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get video by unique code
+  getVideoByUniqueCode(unquie_code: string): Promise<IVideo | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
+      const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const index = videoStore.index("unquie_code");
+      const request = index.get(unquie_code);
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
       request.onerror = () => {
         reject(request.error);
       };

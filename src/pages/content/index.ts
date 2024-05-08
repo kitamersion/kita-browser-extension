@@ -4,7 +4,6 @@ import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
-import { generateUniqueCode } from "@/utils";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -118,7 +117,6 @@ class VideoTracker {
       video_url: url,
       origin: origin,
       created_at: timestamp,
-      unquie_code: generateUniqueCode(videoTitle, origin),
       tags: [],
     };
 

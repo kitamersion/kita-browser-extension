@@ -1,7 +1,11 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
+import { incrementTotalTags } from "@/api/summaryStorage/tag";
+import { getDefaultTagsInitialized, setDefaultTagsInitialized } from "@/api/tags";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { IVideo } from "@/types/video";
+import { generateUniqueCode } from "@/utils";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -24,8 +28,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.type === VIDEO_ADD) {
     (async () => {
-      console.log("Received ADD_VIDEO with payload:", parsedPayload);
-      await IndexedDB.addVideo(parsedPayload);
+      console.log("[KITA_BROWSER] received ADD_VIDEO event");
+      const { video_title, origin } = parsedPayload as IVideo;
+      const unquieCode = generateUniqueCode(video_title, origin);
+
+      const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(unquieCode);
+      if (hasExistingVideoItem) {
+        console.log("[KITA_BROWSER] video already exists, skipping...");
+        return;
+      }
+      await IndexedDB.addVideo({ ...parsedPayload, unquie_code: unquieCode });
     })();
     return;
   }
@@ -102,10 +114,13 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
 
 chrome.runtime.onInstalled.addListener(() => {
   (async () => {
-    // get and check if tags are initialized
-
-    await IndexedDB.initializeDefaultTags();
-
-    // set tags are initialized
+    // initialize default tags
+    getDefaultTagsInitialized(async (isInitialized) => {
+      if (!isInitialized) {
+        const addedTagsCount = await IndexedDB.initializeDefaultTags();
+        incrementTotalTags(addedTagsCount);
+        setDefaultTagsInitialized(() => {});
+      }
+    });
   })();
 });
