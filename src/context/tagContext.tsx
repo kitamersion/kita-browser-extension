@@ -4,7 +4,7 @@ import { ITag } from "@/types/tag";
 import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
-import { decrementTotalTags, getTotalTagCount, incrementTotalTags } from "@/api/summaryStorage/tag";
+import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
 
 interface TagContextType {
   tags: ITag[];
