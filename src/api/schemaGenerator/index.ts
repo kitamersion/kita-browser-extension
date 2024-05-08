@@ -27,6 +27,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
       IsApplicationEnabled: isApplicationEnabled ?? true,
       StorageKeys: {
         ApplicationEnabledKey: kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
+        DefaultTagsInitializedKey: kitaSchema.ApplicationSettings.StorageKeys.DefaultTagsInitializedKey,
         VideoKey: kitaSchema.ApplicationSettings.StorageKeys.VideoKey,
         TagKey: kitaSchema.ApplicationSettings.StorageKeys.TagKey,
         ThemeKey: kitaSchema.ApplicationSettings.StorageKeys.ThemeKey,

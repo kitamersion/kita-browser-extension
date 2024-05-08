@@ -4,6 +4,7 @@ import { IVideo } from "./video";
 
 export type StorageKeys = {
   ApplicationEnabledKey: string;
+  DefaultTagsInitializedKey: string;
   VideoKey: string;
   TagKey: string;
   ThemeKey: string;

@@ -2,7 +2,7 @@ import LoadingState from "@/components/states/LoadingState";
 import { useVideoContext } from "@/context/videoContext";
 import { IVideo } from "@/types/video";
 import { Box } from "@chakra-ui/react";
-import React from "react";
+import React, { useMemo } from "react";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from "recharts";
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
@@ -22,16 +22,20 @@ const VideoBarChart = () => {
   const { isInitialized, totalVideos } = useVideoContext();
 
   // transform data to count number of videos per day
-  const videosPerDay = totalVideos.reduce((acc: any, video: IVideo) => {
-    const date = new Date(video.created_at).toISOString().split("T")[0];
-    acc[date] = (acc[date] || 0) + 1; // increment count for this date
-    return acc;
-  }, {});
+  const videosPerDay = useMemo(() => {
+    return totalVideos.reduce((acc: any, video: IVideo) => {
+      const date = new Date(video.created_at).toISOString().split("T")[0];
+      acc[date] = (acc[date] || 0) + 1; // increment count for this date
+      return acc;
+    }, {});
+  }, [totalVideos]);
 
   // convert to array of objects and sort by date
-  const data = Object.entries(videosPerDay)
-    .map(([date, count]) => ({ date, count }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const data = useMemo(() => {
+    return Object.entries(videosPerDay)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [videosPerDay]);
 
   if (!isInitialized) {
     return <LoadingState />;

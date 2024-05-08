@@ -23,9 +23,9 @@ const getTotalTagCount = (callback: Callback<number>) => {
   });
 };
 
-const incrementTotalTags = () => {
+const incrementTotalTags = (value?: number) => {
   getTotalTagCount((count) => {
-    const newCount = count + 1;
+    const newCount = count + (value ?? 1);
     if (ENV === "dev") {
       console.log("incrementing tag total");
       localStorage.setItem(TAG_TOTAL_KEY, JSON.stringify(newCount));

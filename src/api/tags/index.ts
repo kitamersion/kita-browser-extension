@@ -4,6 +4,7 @@ import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
 
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.TagKey;
+const DEFAULT_TAGS_INITIALIZED_KEY = kitaSchema.ApplicationSettings.StorageKeys.DefaultTagsInitializedKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 // GET_BY_ID
@@ -132,4 +133,43 @@ const deleteAllTags = (callback: Callback<null>) => {
   });
 };
 
-export { getTagById, getTags, setTag, setTags, updateTagById, deleteTagById, deleteAllTags };
+// set DEFAULT_TAGS_INITIALIZED_KEY
+const setDefaultTagsInitialized = (callback: Callback<null>) => {
+  if (ENV === "dev") {
+    localStorage.setItem(DEFAULT_TAGS_INITIALIZED_KEY, "true");
+    console.log("[KITA_BROWSER] initialized default tags");
+    callback(null);
+    return;
+  }
+
+  chrome.storage.local.set({ [DEFAULT_TAGS_INITIALIZED_KEY]: true }, () => {
+    console.log("[KITA_BROWSER] initialized default tags");
+    callback(null);
+  });
+};
+
+// get DEFAULT_TAGS_INITIALIZED_KEY
+const getDefaultTagsInitialized = (callback: Callback<boolean>) => {
+  if (ENV === "dev") {
+    const value = localStorage.getItem(DEFAULT_TAGS_INITIALIZED_KEY);
+    callback(value === "true");
+    return;
+  }
+
+  chrome.storage.local.get(DEFAULT_TAGS_INITIALIZED_KEY, (data) => {
+    const value = data?.[DEFAULT_TAGS_INITIALIZED_KEY] ?? false;
+    callback(value);
+  });
+};
+
+export {
+  getTagById,
+  getTags,
+  setTag,
+  setTags,
+  updateTagById,
+  deleteTagById,
+  deleteAllTags,
+  setDefaultTagsInitialized,
+  getDefaultTagsInitialized,
+};

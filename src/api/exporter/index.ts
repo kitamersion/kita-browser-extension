@@ -28,7 +28,7 @@ const getItemsFromKey = <T>(key: string): Promise<T | null> => {
 const exportToJSON = (data: KitaSchema, fileName: string): Promise<KitaSchema | null> => {
   return new Promise((resolve, reject) => {
     try {
-      console.log("exporting data...");
+      console.log("[KITA_BROWSER] exporting...");
       data.Statistics.VideoStatistics.TotalVideos = data.UserItems.Videos.length ?? 0;
       data.Statistics.VideoStatistics.TotalDurationSeconds = data.Statistics.VideoStatistics.TotalDurationSeconds ?? 0;
       data.Statistics.TagStatistics.TotalTags = data.UserItems.Tags.length ?? 0;

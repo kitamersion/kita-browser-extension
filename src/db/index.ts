@@ -1,3 +1,4 @@
+import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
@@ -53,7 +54,8 @@ class IndexedDB {
       this.db = (event.target as IDBOpenDBRequest).result;
 
       // video store
-      this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
+      const videoStore = this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
+      videoStore.createIndex("unquie_code", "unquie_code", { unique: true });
 
       // tag store
       const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
@@ -73,6 +75,41 @@ class IndexedDB {
       console.log("Error opening DB", event);
     };
   }
+
+  // ================================================================================
+  // ======================     INITIALIZE DEFAULT TAGS         =====================
+  // ================================================================================
+
+  /*
+   * Add missing default tags
+   */
+  initializeDefaultTags = async (): Promise<number> => {
+    const getCurrentTags = await this.getAllTags();
+
+    if (!getCurrentTags) {
+      for (const tag of DEFAULT_TAGS) {
+        await this.addTag(tag);
+      }
+
+      return DEFAULT_TAGS.length;
+    }
+
+    // get tags from default that are not in the current tags
+    const missingTags = DEFAULT_TAGS.filter((defaultTag) => {
+      return !getCurrentTags.find((tag) => tag.code === defaultTag.code);
+    });
+
+    if (!missingTags || missingTags.length === 0) {
+      return 0;
+    }
+
+    // add missing tags by name from default tag
+    for (const tag of missingTags) {
+      await this.addTag({ name: tag.name });
+    }
+
+    return missingTags.length;
+  };
 
   // ================================================================================
   // ======================     VIDEO STORE         =================================
@@ -192,6 +229,26 @@ class IndexedDB {
     });
   }
 
+  // get video by unique code
+  getVideoByUniqueCode(unquie_code: string): Promise<IVideo | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
+      const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const index = videoStore.index("unquie_code");
+      const request = index.get(unquie_code);
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
   // ================================================================================
   // ======================     TAG STORE           =================================
   // ================================================================================
@@ -246,16 +303,16 @@ class IndexedDB {
   }
 
   // add tag
-  addTag(name: string, id?: string, created_at?: number): Promise<void> {
+  addTag({ id, name, code, created_at }: ITag): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
 
-      const code = name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
+      const codeOrFromName = code ?? name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
 
-      const tagItem: ITag = { id: id ?? uuidv4(), name, code: code, created_at: created_at ?? Date.now() };
+      const tagItem: ITag = { id: id ?? uuidv4(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();
