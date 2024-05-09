@@ -55,7 +55,7 @@ class IndexedDB {
 
       // video store
       const videoStore = this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
-      videoStore.createIndex("unquie_code", "unquie_code", { unique: true });
+      videoStore.createIndex("unique_code", "unique_code", { unique: true });
 
       // tag store
       const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
@@ -230,14 +230,14 @@ class IndexedDB {
   }
 
   // get video by unique code
-  getVideoByUniqueCode(unquie_code: string): Promise<IVideo | undefined> {
+  getVideoByUniqueCode(unique_code: string): Promise<IVideo | undefined> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
-      const index = videoStore.index("unquie_code");
-      const request = index.get(unquie_code);
+      const index = videoStore.index("unique_code");
+      const request = index.get(unique_code);
 
       request.onsuccess = () => {
         resolve(request.result);

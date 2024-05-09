@@ -31,15 +31,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       console.log("[KITA_BROWSER] received ADD_VIDEO event");
       const { video_title, origin, video_duration } = parsedPayload as IVideo;
-      const unquieCode = generateUniqueCode(video_title, origin);
+      const uniqueCode = generateUniqueCode(video_title, origin);
 
       try {
-        const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(unquieCode);
+        const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
         if (hasExistingVideoItem) {
           console.log("[KITA_BROWSER] video already exists, skipping...");
           return;
         }
-        await IndexedDB.addVideo({ ...parsedPayload, unquie_code: unquieCode });
+        await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
         incrementTotalVideos();
         incrementTotalVideoDuration(video_duration ?? 0);
       } catch (error) {

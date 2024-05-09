@@ -33,13 +33,13 @@ const importFromJSON = (file: File): Promise<void> => {
 
         const videosToAdd = data.UserItems.Videos;
         videosToAdd.forEach(async (video: IVideo) => {
-          if (video.unquie_code) {
+          if (video.unique_code) {
             await IndexedDB.addVideo(video);
           }
 
-          if (!video.unquie_code) {
-            const unquieCode = generateUniqueCode(video.video_title, video.origin);
-            await IndexedDB.addVideo({ ...video, unquie_code: unquieCode });
+          if (!video.unique_code) {
+            const uniqueCode = generateUniqueCode(video.video_title, video.origin);
+            await IndexedDB.addVideo({ ...video, unique_code: uniqueCode });
           }
         });
 
