@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.3.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.3.0...v2.3.1) (2024-05-09)
+
+
+### Bug Fixes
+
+* increment total in background ([#106](https://github.com/kitamersion/kita-browser-extension/issues/106)) ([cdb6add](https://github.com/kitamersion/kita-browser-extension/commit/cdb6add0019b3db8eb0263cfcadb572f80c285d8))
+
 ## [2.3.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.2.1...v2.3.0) (2024-05-08)
 
 
