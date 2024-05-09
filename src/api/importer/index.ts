@@ -4,6 +4,7 @@ import { kitaSchema } from "@/data/kitaschema";
 import { KitaSchema } from "@/types/kitaschema";
 import IndexedDB from "@/db/index";
 import { calculateTotalDuration } from "../statistics";
+import { generateUniqueCode } from "@/utils";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
@@ -32,7 +33,14 @@ const importFromJSON = (file: File): Promise<void> => {
 
         const videosToAdd = data.UserItems.Videos;
         videosToAdd.forEach(async (video: IVideo) => {
-          await IndexedDB.addVideo(video);
+          if (video.unquie_code) {
+            await IndexedDB.addVideo(video);
+          }
+
+          if (!video.unquie_code) {
+            const unquieCode = generateUniqueCode(video.video_title, video.origin);
+            await IndexedDB.addVideo({ ...video, unquie_code: unquieCode });
+          }
         });
 
         const tagsToAdd = data.UserItems.Tags;

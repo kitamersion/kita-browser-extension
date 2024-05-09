@@ -1,5 +1,6 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { incrementTotalTags } from "@/api/summaryStorage/tag";
+import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { getDefaultTagsInitialized, setDefaultTagsInitialized } from "@/api/tags";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
@@ -29,15 +30,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === VIDEO_ADD) {
     (async () => {
       console.log("[KITA_BROWSER] received ADD_VIDEO event");
-      const { video_title, origin } = parsedPayload as IVideo;
+      const { video_title, origin, video_duration } = parsedPayload as IVideo;
       const unquieCode = generateUniqueCode(video_title, origin);
 
-      const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(unquieCode);
-      if (hasExistingVideoItem) {
-        console.log("[KITA_BROWSER] video already exists, skipping...");
-        return;
+      try {
+        const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(unquieCode);
+        if (hasExistingVideoItem) {
+          console.log("[KITA_BROWSER] video already exists, skipping...");
+          return;
+        }
+        await IndexedDB.addVideo({ ...parsedPayload, unquie_code: unquieCode });
+        incrementTotalVideos();
+        incrementTotalVideoDuration(video_duration ?? 0);
+      } catch (error) {
+        console.error("[KITA_BROWSER] error while adding video: ", error);
       }
-      await IndexedDB.addVideo({ ...parsedPayload, unquie_code: unquieCode });
     })();
     return;
   }
