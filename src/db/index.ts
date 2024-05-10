@@ -1,3 +1,4 @@
+/* eslint-disable no-fallthrough */
 import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
@@ -48,31 +49,51 @@ class IndexedDB {
   // ======================     INITIALIZE SCHEMA         ===========================
   // ================================================================================
   private openDatabase() {
-    const request = indexedDB.open(DB_NAME, 1);
+    const DB_VERSION = 2;
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       this.db = (event.target as IDBOpenDBRequest).result;
+      const db = this.db;
 
-      // video store
-      const videoStore = this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
-      videoStore.createIndex("unique_code", "unique_code", { unique: true });
+      // Handle schema changes
+      // Each case block handles migration from the version to the next
+      // We want switch case to fall through so that we can handle multiple migrations (last case will break the fall through)
+      switch (event.oldVersion) {
+        case 0: {
+          console.log("[KITA_BROWSER] index db creating initial database structure...");
 
-      // tag store
-      const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
-      tagStore.createIndex("code", "code", { unique: true });
+          // video store
+          db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
 
-      // video and tag aggregate store
-      const videoTagStore = this.db.createObjectStore(OBJECT_STORE_VIDEO_TAGS, { keyPath: "id" });
-      videoTagStore.createIndex("video_id", "video_id", { unique: false });
-      videoTagStore.createIndex("tag_id", "tag_id", { unique: false });
-    };
+          // tag store
+          const tagStore = db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
+          tagStore.createIndex("code", "code", { unique: true });
 
-    request.onsuccess = (event) => {
-      this.db = (event.target as IDBOpenDBRequest).result;
-    };
+          // video and tag aggregate store
+          const videoTagStore = db.createObjectStore(OBJECT_STORE_VIDEO_TAGS, { keyPath: "id" });
+          videoTagStore.createIndex("video_id", "video_id", { unique: false });
+          videoTagStore.createIndex("tag_id", "tag_id", { unique: false });
+        }
+        case 1: {
+          console.log(`[KITA_BROWSER] index db performing migration ${event.oldVersion + 1}...`);
+          const videoStore = db.transaction(OBJECT_STORE_VIDEOS, "readwrite").objectStore(OBJECT_STORE_VIDEOS);
+          videoStore.createIndex("unique_code", "unique_code", { unique: true });
+          break;
+        }
+        default: {
+          console.log(`[KITA_BROWSER] index db no specific upgrade steps needed for version ${event.oldVersion}`);
+          break;
+        }
+      }
 
-    request.onerror = (event) => {
-      console.log("Error opening DB", event);
+      request.onsuccess = (event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
+      };
+
+      request.onerror = (event) => {
+        console.log("Error opening DB", event);
+      };
     };
   }
 

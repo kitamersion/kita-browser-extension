@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
         if (hasExistingVideoItem) {
-          console.log("[KITA_BROWSER] video already exists, skipping...");
+          console.info("[KITA_BROWSER] video already exists, skipping...");
           return;
         }
         await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
