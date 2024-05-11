@@ -4,9 +4,18 @@ import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
 import { v4 as uuidv4 } from "uuid";
-import { DB_NAME, DB_VERSION, DB_SCHEMAS, OBJECT_STORE_VIDEOS, OBJECT_STORE_TAGS, OBJECT_STORE_VIDEO_TAGS } from "./schema";
+import {
+  DB_NAME,
+  DB_VERSION,
+  DB_SCHEMAS,
+  OBJECT_STORE_VIDEOS,
+  OBJECT_STORE_TAGS,
+  OBJECT_STORE_VIDEO_TAGS,
+  OBJECT_STORE_AUTO_TAG,
+} from "./schema";
 import { setApplicationEnabled } from "@/api/applicationStorage";
 import logger from "@/config/logger";
+import { IAutoTag } from "@/types/autotag";
 
 class IndexedDB {
   private static instance: IndexedDB;
@@ -45,9 +54,11 @@ class IndexedDB {
   // ================================================================================
   public openDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
+      logger.info("connecting database...");
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event) => {
+        logger.warn("database upgrade needed...");
         setApplicationEnabled(false, () => {
           this.db = (event.target as IDBOpenDBRequest).result;
           const db = this.db;
@@ -57,15 +68,18 @@ class IndexedDB {
             for (const storeSchema of schema.stores) {
               let store: IDBObjectStore | null = null;
               if (!db.objectStoreNames.contains(storeSchema.name)) {
+                logger.debug(`creating object store: ${storeSchema.name}`);
                 store = db.createObjectStore(storeSchema.name, storeSchema.options);
               } else {
                 // get the existing object store
+                logger.debug(`getting existing object store: ${storeSchema.name}`);
                 store = transaction?.objectStore(storeSchema.name) ?? null;
               }
 
               if (store && storeSchema.indexes) {
                 for (const indexSchema of storeSchema.indexes) {
                   if (!store.indexNames.contains(indexSchema.name)) {
+                    logger.debug(`creating index: ${indexSchema.name}`);
                     store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
                   }
                 }
@@ -77,12 +91,13 @@ class IndexedDB {
 
       request.onsuccess = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result;
+        logger.info("database connected successfully!");
         setApplicationEnabled(true, () => {});
         resolve(this.db);
       };
 
       request.onerror = (event) => {
-        logger.error(`error opening database ${event}`);
+        logger.error(`error opening database: ${event}`);
         setApplicationEnabled(true, () => {});
         reject(event);
       };
@@ -468,13 +483,82 @@ class IndexedDB {
       };
     });
   }
+
+  // ================================================================================
+  // =======================     AUTO ASSIGN TAGS         ===========================
+  // ================================================================================
+
+  // add auto tag
+  addAutoTag({ id, origin, tags }: IAutoTag): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+
+      const itemId = id ?? window.crypto.randomUUID();
+      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags });
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get auto tag by origin
+  getAutoTagByOrigin(origin: string): Promise<IAutoTag | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      const index = autoTagStore.index("origin");
+      const request = index.get(origin);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get all auto tag
+  getAllAutoTags(): Promise<IAutoTag[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      const request = autoTagStore.getAll();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // delete auto tag by id
+  deleteAutoTagById(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      autoTagStore.delete(id);
+      transaction.oncomplete = () => {
+        resolve();
+      };
+      transaction.onerror = () => {
+        reject(transaction.error);
+      };
+    });
+  }
 }
 
 const db = IndexedDB.getInstance();
 (async () => {
-  logger.info("opening database...");
   await db.openDatabase();
-  logger.info("database ready!");
 })();
 
 export default db;

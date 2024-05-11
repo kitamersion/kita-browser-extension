@@ -1,30 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
-import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
+import { SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
 import logger from "@/config/logger";
-
-const siteConfig: SiteConfigDictionary = {
-  [SiteKey.YOUTUBE]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- YouTube",
-    originUrl: "www.youtube.com",
-    durationKey: ".ytp-time-duration",
-  },
-  [SiteKey.YOUTUBE_MUSIC]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- YouTube",
-    originUrl: "music.youtube.com",
-    durationKey: ".time-info",
-  },
-  [SiteKey.CRUNCHYROLL]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- Watch on Crunchyroll",
-    originUrl: "www.crunchyroll.com",
-    durationKey: "meta[property='video:duration']",
-  },
-};
+import { CONTENT_SITE_CONFIG } from "@/data/contants";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
@@ -56,7 +36,7 @@ class VideoTracker {
 
   _getTitle() {
     let title = document.title;
-    Object.values(siteConfig).forEach(({ replaceString }) => {
+    Object.values(CONTENT_SITE_CONFIG).forEach(({ replaceString }) => {
       title = title.replace(replaceString, "").trim();
     });
     return title;
@@ -65,8 +45,8 @@ class VideoTracker {
   _getOrigin() {
     const url = new URL(window.location.href);
     const hostname = url.hostname;
-    for (const key of Object.keys(siteConfig)) {
-      const site = siteConfig[key as SiteKey];
+    for (const key of Object.keys(CONTENT_SITE_CONFIG)) {
+      const site = CONTENT_SITE_CONFIG[key as SiteKey];
       if (hostname === site.originUrl) {
         return key as SiteKey;
       }
@@ -84,7 +64,7 @@ class VideoTracker {
     const videoTitle = this._getTitle();
 
     const origin = this._getOrigin();
-    const site = siteConfig[origin];
+    const site = CONTENT_SITE_CONFIG[origin];
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);

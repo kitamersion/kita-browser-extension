@@ -7,6 +7,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
   const videos = await IndexedDB.getAllVideos();
   const tags = await IndexedDB.getAllTags();
   const videoTagRelationships = await IndexedDB.getAllVideoTags();
+  const autoTags = await IndexedDB.getAllAutoTags();
   const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
   const totalVideos = await getItemsFromKey<number>(
     kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey
@@ -21,6 +22,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
       Videos: videos ?? [],
       Tags: tags ?? [],
       VideoTagRelationships: videoTagRelationships ?? [],
+      AutoTags: autoTags ?? [],
     },
     ApplicationSettings: {
       IsReady: false, // @todo: implement

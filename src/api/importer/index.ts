@@ -54,6 +54,11 @@ const importFromJSON = (file: File): Promise<void> => {
           await IndexedDB.addVideoTag(relationship);
         });
 
+        const autoTagsToAdd = data.UserItems.AutoTags;
+        autoTagsToAdd.forEach(async (autoTag) => {
+          await IndexedDB.addAutoTag(autoTag);
+        });
+
         await setItemsForKey<boolean>(
           kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
           data.ApplicationSettings.IsApplicationEnabled
