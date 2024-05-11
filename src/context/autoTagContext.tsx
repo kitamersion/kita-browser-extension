@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import eventBus from "@/api/eventbus";
-import { AUTO_TAG_ADD, AUTO_TAG_DELETE_BY_ID } from "@/data/events";
+import { AUTO_TAG_ADD_OR_UPDATE, AUTO_TAG_DELETE_BY_ID } from "@/data/events";
 import { useApplicationContext } from "./applicationContext";
 import { IAutoTag } from "@/types/autotag";
 import IndexedDB from "@/db/index";
@@ -8,6 +8,7 @@ import logger from "@/config/logger";
 
 type AutoTagContextType = {
   totalAutoTags: IAutoTag[];
+  isInitialized: boolean;
 };
 
 const AutoTagContext = createContext<AutoTagContextType | undefined>(undefined);
@@ -25,29 +26,37 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [totalAutoTags, setTotalAutoTags] = useState<IAutoTag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const handleAddAutoTag = useCallback(async (eventData: any) => {
-    const autoTagToAdd = eventData.value as IAutoTag;
-    if (!autoTagToAdd) {
-      logger.warn("No auto tag to add");
-      return;
-    }
-    await IndexedDB.addAutoTag(autoTagToAdd);
-    setTotalAutoTags((prev) => [...prev, autoTagToAdd]);
+  const handleGetAutoTags = useCallback(async () => {
+    setIsInitialized(false);
+    const allAutoTags = await IndexedDB.getAllAutoTags();
+    setTotalAutoTags(allAutoTags);
+    setIsInitialized(true);
   }, []);
+
+  const handleAddOrUpdateAutoTag = useCallback(
+    async (eventData: any) => {
+      logger.debug(eventData.message);
+      const autoTagToAdd = eventData.value as IAutoTag;
+      if (!autoTagToAdd) {
+        logger.warn("no auto tag to add");
+        return;
+      }
+      logger.debug("auto tag added");
+      console.log(autoTagToAdd);
+      await IndexedDB.addAutoTag(autoTagToAdd);
+      handleGetAutoTags();
+    },
+    [handleGetAutoTags]
+  );
 
   const handleDeleteAutoTagById = useCallback(async (eventData: any) => {
     const autoTagId = eventData.value as string;
     if (!autoTagId) {
-      logger.warn("No auto tag id to delete");
+      logger.warn("no auto tag id to delete");
       return;
     }
     await IndexedDB.deleteAutoTagById(autoTagId);
     setTotalAutoTags((prev) => prev.filter((tag) => tag.id !== autoTagId));
-  }, []);
-
-  const handleGetAutoTags = useCallback(async () => {
-    const allAutoTags = await IndexedDB.getAllAutoTags();
-    setTotalAutoTags(allAutoTags);
   }, []);
 
   useEffect(() => {
@@ -62,13 +71,13 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
   // ======================     EVENT HANDLERS      =================================
   // ================================================================================
 
-  // handle AUTO_TAG_ADD
+  // handle AUTO_TAG_ADD_OR_UPDATE
   useEffect(() => {
-    eventBus.subscribe(AUTO_TAG_ADD, handleAddAutoTag);
+    eventBus.subscribe(AUTO_TAG_ADD_OR_UPDATE, handleAddOrUpdateAutoTag);
     return () => {
-      eventBus.unsubscribe(AUTO_TAG_ADD, handleAddAutoTag);
+      eventBus.unsubscribe(AUTO_TAG_ADD_OR_UPDATE, handleAddOrUpdateAutoTag);
     };
-  }, [handleAddAutoTag]);
+  }, [handleAddOrUpdateAutoTag]);
 
   // handle AUTO_TAG_DELETE_BY_ID
   useEffect(() => {
@@ -81,6 +90,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
   return (
     <AutoTagContext.Provider
       value={{
+        isInitialized: isInitialized,
         totalAutoTags: totalAutoTags,
       }}
     >
