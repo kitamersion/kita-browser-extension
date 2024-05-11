@@ -471,17 +471,10 @@ class IndexedDB {
 }
 
 const db = IndexedDB.getInstance();
-
-localStorage.debug = "KITA_BROWSER";
-logger.info("info test");
-
-logger.debug("debug test");
-
-logger.error("error test");
 (async () => {
-  logger.info("Opening database...");
+  logger.info("opening database...");
   await db.openDatabase();
-  logger.error("Database opened");
+  logger.info("database ready!");
 })();
 
 export default db;
