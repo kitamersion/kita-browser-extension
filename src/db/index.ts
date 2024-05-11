@@ -4,20 +4,15 @@ import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
 import { v4 as uuidv4 } from "uuid";
-
-const DB_NAME = "kitamersiondb";
-const OBJECT_STORE_VIDEOS = "videos";
-const OBJECT_STORE_TAGS = "tags";
-const OBJECT_STORE_VIDEO_TAGS = "video_tags";
+import { DB_NAME, DB_VERSION, DB_SCHEMAS, OBJECT_STORE_VIDEOS, OBJECT_STORE_TAGS, OBJECT_STORE_VIDEO_TAGS } from "./schema";
+import { setApplicationEnabled } from "@/api/applicationStorage";
+import logger from "@/config/logger";
 
 class IndexedDB {
   private static instance: IndexedDB;
   private db: IDBDatabase | null = null;
 
-  private constructor() {
-    this.openDatabase();
-    this.requestPersistentStorage();
-  }
+  private constructor() {}
 
   static getInstance(): IndexedDB {
     if (!IndexedDB.instance) {
@@ -26,20 +21,20 @@ class IndexedDB {
     return IndexedDB.instance;
   }
 
-  requestPersistentStorage(): Promise<boolean> {
+  public requestPersistentStorage(): Promise<boolean> {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().then((granted) => {
           if (granted) {
-            console.log("Storage will not be cleared except by explicit user action");
+            logger.info("Storage will not be cleared except by explicit user action");
             resolve(true);
           } else {
-            console.log("Storage may be cleared by the UA under storage pressure.");
+            logger.info("Storage may be cleared by the UA under storage pressure.");
             resolve(false);
           }
         });
       } else {
-        console.log("Persistent storage API not supported");
+        logger.info("Persistent storage API not supported");
         resolve(false);
       }
     });
@@ -48,53 +43,50 @@ class IndexedDB {
   // ================================================================================
   // ======================     INITIALIZE SCHEMA         ===========================
   // ================================================================================
-  private openDatabase() {
-    const DB_VERSION = 2;
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+  public openDatabase(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = (event) => {
-      this.db = (event.target as IDBOpenDBRequest).result;
-      const db = this.db;
+      request.onupgradeneeded = (event) => {
+        setApplicationEnabled(false, () => {
+          this.db = (event.target as IDBOpenDBRequest).result;
+          const db = this.db;
+          const transaction = (event.target as IDBOpenDBRequest).transaction;
 
-      // Handle schema changes
-      // Each case block handles migration from the version to the next
-      // We want switch case to fall through so that we can handle multiple migrations (last case will break the fall through)
-      switch (event.oldVersion) {
-        case 0: {
-          console.log("[KITA_BROWSER] index db creating initial database structure...");
+          for (const schema of DB_SCHEMAS) {
+            for (const storeSchema of schema.stores) {
+              let store: IDBObjectStore | null = null;
+              if (!db.objectStoreNames.contains(storeSchema.name)) {
+                store = db.createObjectStore(storeSchema.name, storeSchema.options);
+              } else {
+                // get the existing object store
+                store = transaction?.objectStore(storeSchema.name) ?? null;
+              }
 
-          // video store
-          db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
-
-          // tag store
-          const tagStore = db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
-          tagStore.createIndex("code", "code", { unique: true });
-
-          // video and tag aggregate store
-          const videoTagStore = db.createObjectStore(OBJECT_STORE_VIDEO_TAGS, { keyPath: "id" });
-          videoTagStore.createIndex("video_id", "video_id", { unique: false });
-          videoTagStore.createIndex("tag_id", "tag_id", { unique: false });
-        }
-        case 1: {
-          console.log(`[KITA_BROWSER] index db performing migration ${event.oldVersion + 1}...`);
-          const videoStore = db.transaction(OBJECT_STORE_VIDEOS, "readwrite").objectStore(OBJECT_STORE_VIDEOS);
-          videoStore.createIndex("unique_code", "unique_code", { unique: true });
-          break;
-        }
-        default: {
-          console.log(`[KITA_BROWSER] index db no specific upgrade steps needed for version ${event.oldVersion}`);
-          break;
-        }
-      }
+              if (store && storeSchema.indexes) {
+                for (const indexSchema of storeSchema.indexes) {
+                  if (!store.indexNames.contains(indexSchema.name)) {
+                    store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
+                  }
+                }
+              }
+            }
+          }
+        });
+      };
 
       request.onsuccess = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result;
+        setApplicationEnabled(true, () => {});
+        resolve(this.db);
       };
 
       request.onerror = (event) => {
-        console.log("Error opening DB", event);
+        logger.error(`error opening database ${event}`);
+        setApplicationEnabled(true, () => {});
+        reject(event);
       };
-    };
+    });
   }
 
   // ================================================================================
@@ -479,12 +471,17 @@ class IndexedDB {
 }
 
 const db = IndexedDB.getInstance();
-db.requestPersistentStorage().then((granted) => {
-  if (granted) {
-    console.log("Persistent storage granted");
-  } else {
-    console.log("Persistent storage not granted");
-  }
-});
+
+localStorage.debug = "KITA_BROWSER";
+logger.info("info test");
+
+logger.debug("debug test");
+
+logger.error("error test");
+(async () => {
+  logger.info("Opening database...");
+  await db.openDatabase();
+  logger.error("Database opened");
+})();
 
 export default db;

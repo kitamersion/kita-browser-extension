@@ -5,6 +5,7 @@ import { KitaSchema } from "@/types/kitaschema";
 import IndexedDB from "@/db/index";
 import { calculateTotalDuration } from "../statistics";
 import { generateUniqueCode } from "@/utils";
+import logger from "@/config/logger";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
@@ -12,14 +13,14 @@ const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
 const setItemsForKey = async <T>(key: string, items: T) => {
   if (ENV === "dev") {
     localStorage.setItem(key, JSON.stringify(items, null, 2));
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
     return;
   }
 
   const data: { [key: string]: T } = {};
   data[key] = items;
   chrome.storage.local.set(data, () => {
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
   });
 };
 

@@ -5,6 +5,8 @@ import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
+import { useApplicationContext } from "./applicationContext";
+import logger from "@/config/logger";
 
 interface TagContextType {
   tags: ITag[];
@@ -23,6 +25,7 @@ export const useTagContext = () => {
 };
 
 export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const { showToast } = useToastContext();
   const [tags, setTags] = useState<ITag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
@@ -47,7 +50,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        console.warn("No tag id found from event handler");
+        logger.warn("No tag id found from event handler");
         return;
       }
 
@@ -67,7 +70,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const name = eventData.value.name as string;
       if (!name) {
-        console.warn("Empty or null tag name");
+        logger.warn("Empty or null tag name");
         return;
       }
 
@@ -83,12 +86,12 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
   );
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
       handleGetTags();
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetTags, isInitialized]);
+  }, [handleGetTags, isAppInitialized, isApplicationEnabled, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

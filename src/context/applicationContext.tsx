@@ -3,6 +3,7 @@ import { getApplicationEnabled, setApplicationEnabled } from "@/api/applicationS
 import { APPLICATION_ENABLE } from "@/data/events";
 import eventBus from "@/api/eventbus";
 
+const IS_APPLICATION_READY_MS = 1000; // 1 second
 interface ApplicationContextType {
   isApplicationEnabled: boolean;
   isInitialized: boolean;
@@ -25,6 +26,7 @@ export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) =>
   const handleGetApplicationEnabledStatus = useCallback(() => {
     getApplicationEnabled((data) => {
       setIsAppEnabled(data);
+      setIsInitialized(data);
     });
   }, []);
 
@@ -35,12 +37,17 @@ export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) =>
   }, []);
 
   useEffect(() => {
-    if (!isInitialized) {
+    const intervalId = setInterval(() => {
       handleGetApplicationEnabledStatus();
-      setIsInitialized(true);
-      return () => {};
-    }
-  }, [handleGetApplicationEnabledStatus, isInitialized]);
+      if (isAppEnabled) {
+        clearInterval(intervalId);
+      }
+    }, IS_APPLICATION_READY_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [handleGetApplicationEnabledStatus, isAppEnabled]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

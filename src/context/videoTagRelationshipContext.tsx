@@ -7,6 +7,8 @@ import {
 import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
 import IndexedDB from "@/db/index";
+import { useApplicationContext } from "./applicationContext";
+import logger from "@/config/logger";
 
 type VideoTagRelationshipContextType = {
   videoTagRelationship: IVideoTag[];
@@ -23,13 +25,14 @@ export const useVideoTagRelationshipContext = () => {
 };
 
 export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const [relationships, setRelationships] = useState<IVideoTag[]>([]);
 
   const handleVideoTagAddRelationship = useCallback((eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
 
     if (!videoTagRelationship || videoTagRelationship.length === 0) {
-      console.warn("No video tag relationship found from event handler");
+      logger.warn("No video tag relationship found from event handler");
       return;
     }
 
@@ -44,7 +47,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     const tagId = eventData.value as string;
 
     if (!tagId) {
-      console.warn("No tag id found from event handler");
+      logger.warn("No tag id found from event handler");
       return;
     }
 
@@ -56,7 +59,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     const videoId = eventData.value as string;
 
     if (!videoId) {
-      console.warn("No video id found from event handler");
+      logger.warn("No video id found from event handler");
       return;
     }
 
@@ -73,8 +76,10 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     async function fetchData() {
       await fetchRelationships();
     }
-    fetchData();
-  }, [fetchRelationships]);
+    if (isAppInitialized && isApplicationEnabled) {
+      fetchData();
+    }
+  }, [fetchRelationships, isAppInitialized, isApplicationEnabled]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
+import logger from "@/config/logger";
 
 const siteConfig: SiteConfigDictionary = {
   [SiteKey.YOUTUBE]: {
@@ -104,7 +105,7 @@ class VideoTracker {
         videoDuration = parseInt(videoDurationText ?? "0");
         break;
       default:
-        console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+        logger.error("UNKNOWN ORIGIN");
         break;
     }
 
@@ -122,7 +123,7 @@ class VideoTracker {
     const payload = JSON.stringify(newRecord);
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
 
-    console.log("[KITA_BROWSER] video added from content");
+    logger.info("video added from content");
   }
 
   getTotalDuration(duration: string): string {
@@ -195,7 +196,7 @@ class VideoTracker {
 
       parentDiv.appendChild(newButton); // Changed to appendChild to add button at the end
     } else {
-      console.error("[KITA_BROWSER] unable to find parent div");
+      logger.error("unable to find parent div");
     }
   }
 
@@ -206,7 +207,7 @@ class VideoTracker {
       image.src = `${baseUrl}icons/saved/icon128.png`;
 
       if (this.timeoutId) {
-        console.log("[KITA_BROWSER] timeout cleared");
+        logger.info("timeout cleared");
         clearTimeout(this.timeoutId);
       }
 
@@ -214,7 +215,7 @@ class VideoTracker {
         image.src = `${baseUrl}icons/enabled/icon128.png`;
       }, BUTTON_RESET_DELAY_MS);
     } else {
-      console.error(`[KITA_BROWSER] unable to find image with id ${CAPTURE_IMAGE_ID}`);
+      logger.error(`unable to find image with id ${CAPTURE_IMAGE_ID}`);
     }
   }
 
@@ -243,7 +244,7 @@ getApplicationEnabled((IsApplicationEnabled) => {
 
 // listen for messages to disable/enable the application
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`content script received message: ${JSON.stringify(request)}`);
+  logger.info(`content script received message: ${JSON.stringify(request)}`);
   if (!request.IsApplicationEnabled) {
     videoTracker?.destroy();
   } else {

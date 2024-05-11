@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { kitaSchema } from "../videostorage";
 import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
+import logger from "@/config/logger";
 
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.TagKey;
 const DEFAULT_TAGS_INITIALIZED_KEY = kitaSchema.ApplicationSettings.StorageKeys.DefaultTagsInitializedKey;
@@ -15,7 +16,7 @@ const getTagById = (id: string, tags: ITag[]) => {
 // GET_ALL
 const getTags = (callback: Callback<ITag[]>) => {
   if (ENV === "dev") {
-    console.log("fetching tags");
+    logger.info("fetching tags");
     const items = localStorage.getItem(TAG_KEY);
     if (!items) {
       callback([]);
@@ -28,7 +29,7 @@ const getTags = (callback: Callback<ITag[]>) => {
 
   chrome.storage.local.get(TAG_KEY, (data) => {
     const items: ITag[] = data?.[TAG_KEY] || [];
-    console.log(`get all tags: ${items.length}`);
+    logger.info(`get all tags: ${items.length}`);
     callback(items);
   });
 };
@@ -36,7 +37,7 @@ const getTags = (callback: Callback<ITag[]>) => {
 // SET
 const setTag = (name: string, callback: Callback<ITag>) => {
   if (!name) {
-    console.error("tag name can not be empty or null");
+    logger.error("tag name can not be empty or null");
     return;
   }
   getTags((data) => {
@@ -45,14 +46,14 @@ const setTag = (name: string, callback: Callback<ITag>) => {
     localTags.push(newTag);
 
     if (ENV === "dev") {
-      console.log("setting single tag");
+      logger.info("setting single tag");
       localStorage.setItem(TAG_KEY, JSON.stringify(localTags));
       callback(newTag);
       return;
     }
 
     chrome.storage.local.set({ [TAG_KEY]: localTags }, () => {
-      console.log("setting single tag");
+      logger.info("setting single tag");
       callback(newTag);
     });
   });
@@ -60,14 +61,14 @@ const setTag = (name: string, callback: Callback<ITag>) => {
 
 const setTags = (tags: ITag[], callback: Callback<null>) => {
   if (ENV === "dev") {
-    console.log("setting tags");
+    logger.info("setting tags");
     localStorage.setItem(TAG_KEY, JSON.stringify(tags));
     callback(null);
     return;
   }
 
   chrome.storage.local.set({ [TAG_KEY]: tags }, () => {
-    console.log("setting tags");
+    logger.info("setting tags");
     callback(null);
   });
 };
@@ -82,14 +83,14 @@ const updateTagById = (id: string, tagNext: ITag, tags: ITag[], callback: Callba
   });
 
   if (ENV === "dev") {
-    console.log("updating tag with id: ", id);
+    logger.info(`updating tag with id: ${id}`);
     localStorage.setItem(TAG_KEY, JSON.stringify(updatedTag));
     callback(updatedTag);
     return;
   }
 
   chrome.storage.local.set({ [TAG_KEY]: updatedTag }, () => {
-    console.log("updating tag with id: ", id);
+    logger.info(`updating tag with id: ${id}`);
     callback(updatedTag);
   });
 };
@@ -99,21 +100,21 @@ const deleteTagById = (id: string, tags: ITag[], callback: Callback<ITag[]>) => 
   const localTags = tags;
   const index = localTags.findIndex((t) => t.id === id);
   if (index === -1) {
-    console.warn(`tag with id ${id} not found.`);
+    logger.warn(`tag with id ${id} not found.`);
     callback(localTags);
     return;
   }
   localTags.splice(index, 1);
 
   if (ENV === "dev") {
-    console.log("delete tag index: ", index);
+    logger.info(`delete tag index: ${index}`);
     localStorage.setItem(TAG_KEY, JSON.stringify(localTags));
     callback(localTags);
     return;
   }
 
   chrome.storage.local.set({ [TAG_KEY]: localTags }, () => {
-    console.log("delete tag index: ", index);
+    logger.info(`delete tag index: ${index}`);
     callback(localTags);
   });
 };
@@ -121,14 +122,14 @@ const deleteTagById = (id: string, tags: ITag[], callback: Callback<ITag[]>) => 
 // DELETE
 const deleteAllTags = (callback: Callback<null>) => {
   if (ENV === "dev") {
-    console.log("deleting all tags");
+    logger.info("deleting all tags");
     localStorage.removeItem(TAG_KEY);
     callback(null);
     return;
   }
 
   chrome.storage.local.remove(TAG_KEY, () => {
-    console.log("deleting all tags");
+    logger.info("deleting all tags");
     callback(null);
   });
 };
@@ -137,13 +138,13 @@ const deleteAllTags = (callback: Callback<null>) => {
 const setDefaultTagsInitialized = (callback: Callback<null>) => {
   if (ENV === "dev") {
     localStorage.setItem(DEFAULT_TAGS_INITIALIZED_KEY, "true");
-    console.log("[KITA_BROWSER] initialized default tags");
+    logger.info("initialized default tags");
     callback(null);
     return;
   }
 
   chrome.storage.local.set({ [DEFAULT_TAGS_INITIALIZED_KEY]: true }, () => {
-    console.log("[KITA_BROWSER] initialized default tags");
+    logger.info("initialized default tags");
     callback(null);
   });
 };
