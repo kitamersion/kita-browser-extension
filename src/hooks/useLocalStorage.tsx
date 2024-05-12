@@ -1,3 +1,4 @@
+import logger from "@/config/logger";
 import { useState, useEffect, useRef } from "react";
 
 type SetValue<T> = (value: T | ((prevValue: T) => T)) => void;
@@ -10,7 +11,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
         return JSON.parse(storedValue);
       }
     } catch (error) {
-      console.error(`Error reading from local storage for key '${key}':`, error);
+      logger.error(`Error reading from local storage for key '${key}': ${error}`);
     }
     return initialValue;
   });
@@ -26,7 +27,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       try {
         localStorage.setItem(key, JSON.stringify(value));
       } catch (error) {
-        console.error(`Error writing to local storage for key '${key}':`, error);
+        logger.error(`Error writing to local storage for key '${key}': ${error}`);
       }
     }, 200);
 

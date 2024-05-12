@@ -21,6 +21,9 @@ import {
   resetTotalVideos,
 } from "@/api/summaryStorage/video";
 import IndexedDB from "@/db/index";
+import { useApplicationContext } from "./applicationContext";
+import { generateUniqueCode } from "@/utils";
+import logger from "@/config/logger";
 
 const DAY_IN_DAYS = 1;
 const WEEK_IN_DAYS = 7;
@@ -49,6 +52,7 @@ export const useVideoContext = () => {
 };
 
 export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const { showToast } = useToastContext();
   const [totalVideos, setTotalVideos] = useState<IVideo[]>([]);
   const [totalVideoCount, setTotalVideoCount] = useState<number>(0);
@@ -130,7 +134,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        console.warn("No video id found from event handler");
+        logger.warn("No video id found from event handler");
         return;
       }
 
@@ -158,7 +162,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleUpdateVideoById = useCallback(
     async (eventData: PublishData) => {
       if (!eventData) {
-        console.warn("No video data found from event handler");
+        logger.warn("No video data found from event handler");
         return;
       }
       const updatedVideo = eventData.value as IVideo;
@@ -187,7 +191,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        console.warn("No tag id found from event handler");
+        logger.warn("No tag id found from event handler");
         return;
       }
       // check totalVideos for videos with tag id and remove the tag from the video tags property the record then call setVideos to update storage
@@ -218,12 +222,23 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const videoToAdd = eventData.value as IVideo;
       if (!videoToAdd) {
-        console.warn("No video data found from event handler");
+        logger.warn("No video data found from event handler");
         return;
       }
-      await IndexedDB.addVideo(videoToAdd);
-      incrementTotalVideos();
-      incrementTotalVideoDuration(videoToAdd.video_duration);
+
+      try {
+        const uniqueCode = generateUniqueCode(videoToAdd.video_title, origin);
+        const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
+        if (hasExistingVideoItem) {
+          logger.info("video already exists, skipping...");
+          return;
+        }
+        await IndexedDB.addVideo({ ...videoToAdd, unique_code: uniqueCode });
+        incrementTotalVideos();
+        incrementTotalVideoDuration(videoToAdd.video_duration ?? 0);
+      } catch (error) {
+        logger.error(`error while adding video: ${error}`);
+      }
 
       handleGetVideos();
       handleGetVideoSummary();
@@ -236,13 +251,13 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   );
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
       handleGetVideos();
       handleGetVideoSummary();
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetVideoSummary, handleGetVideos, isInitialized]);
+  }, [handleGetVideoSummary, handleGetVideos, isAppInitialized, isApplicationEnabled, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

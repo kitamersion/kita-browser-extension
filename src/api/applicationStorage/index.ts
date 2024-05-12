@@ -2,6 +2,7 @@ import { Callback } from "@/types/callback";
 import { kitaSchema } from "../videostorage";
 import { IApplication } from "@/types/application";
 import { TITLE_OFF, TITLE_ON } from "@/data/contants";
+import logger from "@/config/logger";
 
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
@@ -21,14 +22,14 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
   };
 
   if (ENV === "dev") {
-    console.log(`setting application enabled state to: ${value}`);
+    logger.info(`setting application enabled state to: ${value}`);
     localStorage.setItem(TAG_KEY, JSON.stringify(storageValue));
     callback(value);
     return;
   }
 
   chrome.storage.local.set({ [TAG_KEY]: storageValue }, () => {
-    console.log(`setting application enabled state to: ${value}`);
+    logger.info(`setting application enabled state to: ${value}`);
     setApplicationState(value);
     callback(value);
 
@@ -45,10 +46,10 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
 // @todo: make this generic for future use
 const getApplicationEnabled = (callback: Callback<boolean>) => {
   if (ENV === "dev") {
-    console.log("fetching application enabled state");
+    logger.info("fetching application enabled state");
     const items = localStorage.getItem(TAG_KEY);
     if (!items) {
-      callback(true);
+      callback(false);
       return;
     }
     const value: IApplication = JSON.parse(items);
@@ -57,12 +58,12 @@ const getApplicationEnabled = (callback: Callback<boolean>) => {
   }
 
   chrome.storage.local.get(TAG_KEY, (data) => {
-    const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: true };
+    const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: false };
     try {
       setApplicationState(value.IsApplicationEnabled);
       callback(value.IsApplicationEnabled);
     } catch (error) {
-      console.error("Error getting application enabled state", error);
+      logger.error(`Error getting application enabled state ${error}`);
       callback(value.IsApplicationEnabled);
     }
   });

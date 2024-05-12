@@ -18,6 +18,7 @@ import {
 } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import { AuthStatus } from "@/types/kitaschema";
+import { useApplicationContext } from "./applicationContext";
 
 interface AnilistContextType {
   isInitialized: boolean;
@@ -52,6 +53,7 @@ export const useAnilistContext = () => {
 };
 
 export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const { showToast } = useToastContext();
   const [anilistAuth, setAnilistAuthState] = useState<AnilistAuth>(initialAnilistAuthState);
   const [anilistConfig, setAnilistConfigState] = useState<AnilistConfig>(initialAnilistConfigState);
@@ -171,14 +173,14 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
   }, [showToast]);
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
       handleGetAnilistConfig();
       handleGetAnilistAuth();
       handleGetAnilistAuthStatus();
       setIsInitialized(true);
       return () => {};
     }
-  }, [anilistAuth, anilistConfig, handleGetAnilistAuth, handleGetAnilistAuthStatus, handleGetAnilistConfig, isInitialized]);
+  }, [handleGetAnilistAuth, handleGetAnilistAuthStatus, handleGetAnilistConfig, isAppInitialized, isApplicationEnabled, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

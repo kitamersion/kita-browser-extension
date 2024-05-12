@@ -5,6 +5,7 @@ import { KitaSchema } from "@/types/kitaschema";
 import IndexedDB from "@/db/index";
 import { calculateTotalDuration } from "../statistics";
 import { generateUniqueCode } from "@/utils";
+import logger from "@/config/logger";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
@@ -12,14 +13,14 @@ const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
 const setItemsForKey = async <T>(key: string, items: T) => {
   if (ENV === "dev") {
     localStorage.setItem(key, JSON.stringify(items, null, 2));
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
     return;
   }
 
   const data: { [key: string]: T } = {};
   data[key] = items;
   chrome.storage.local.set(data, () => {
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
   });
 };
 
@@ -33,13 +34,13 @@ const importFromJSON = (file: File): Promise<void> => {
 
         const videosToAdd = data.UserItems.Videos;
         videosToAdd.forEach(async (video: IVideo) => {
-          if (video.unquie_code) {
+          if (video.unique_code) {
             await IndexedDB.addVideo(video);
           }
 
-          if (!video.unquie_code) {
-            const unquieCode = generateUniqueCode(video.video_title, video.origin);
-            await IndexedDB.addVideo({ ...video, unquie_code: unquieCode });
+          if (!video.unique_code) {
+            const uniqueCode = generateUniqueCode(video.video_title, video.origin);
+            await IndexedDB.addVideo({ ...video, unique_code: uniqueCode });
           }
         });
 
@@ -51,6 +52,11 @@ const importFromJSON = (file: File): Promise<void> => {
         const videoTagRelationshipsToAdd = data.UserItems.VideoTagRelationships;
         videoTagRelationshipsToAdd.forEach(async (relationship) => {
           await IndexedDB.addVideoTag(relationship);
+        });
+
+        const autoTagsToAdd = data.UserItems.AutoTags;
+        autoTagsToAdd.forEach(async (autoTag) => {
+          await IndexedDB.addAutoTag(autoTag);
         });
 
         await setItemsForKey<boolean>(

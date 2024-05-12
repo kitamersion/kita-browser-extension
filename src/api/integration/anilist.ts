@@ -1,3 +1,4 @@
+import logger from "@/config/logger";
 import { kitaSchema } from "@/data/kitaschema";
 import { Callback } from "@/types/callback";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
@@ -11,7 +12,7 @@ const ANILIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.Integr
 // get anlist config
 const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
   if (ENV === "dev") {
-    console.log("fetching anilist config");
+    logger.info("fetching anilist config");
     const anilist = localStorage.getItem(ANILIST_CONFIG_KEY);
     if (!anilist) {
       callback({ anilistId: "", secret: "", redirectUrl: window.location.origin });
@@ -30,14 +31,14 @@ const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
 // set anilist config
 const setAnilistConfig = (anilist: AnilistConfig, callback: Callback<AnilistConfig>) => {
   if (ENV === "dev") {
-    console.log("setting anilist config");
+    logger.info("setting anilist config");
     localStorage.setItem(ANILIST_CONFIG_KEY, JSON.stringify(anilist));
     callback(anilist);
     return;
   }
 
   chrome.storage.local.set({ [ANILIST_CONFIG_KEY]: anilist }, () => {
-    console.log("setting anilist config");
+    logger.info("setting anilist config");
     callback(anilist);
   });
 };
@@ -45,14 +46,14 @@ const setAnilistConfig = (anilist: AnilistConfig, callback: Callback<AnilistConf
 // delete anilist config
 const deleteAnilistConfig = (callback: Callback<void>) => {
   if (ENV === "dev") {
-    console.log("deleting anilist config");
+    logger.info("deleting anilist config");
     localStorage.removeItem(ANILIST_CONFIG_KEY);
     callback();
     return;
   }
 
   chrome.storage.local.remove(ANILIST_CONFIG_KEY, () => {
-    console.log("deleting anilist config");
+    logger.info("deleting anilist config");
     callback();
   });
 };
@@ -60,7 +61,7 @@ const deleteAnilistConfig = (callback: Callback<void>) => {
 // get anilist auth
 const getAnilistAuth = (callback: Callback<AnilistAuth | null>) => {
   if (ENV === "dev") {
-    console.log("fetching anilist auth");
+    logger.info("fetching anilist auth");
     const anilist = localStorage.getItem(ANILIST_AUTH_KEY);
     if (!anilist) {
       callback(null);
@@ -71,7 +72,7 @@ const getAnilistAuth = (callback: Callback<AnilistAuth | null>) => {
   }
 
   chrome.storage.local.get(ANILIST_AUTH_KEY, (data) => {
-    console.log("fetching anilist auth");
+    logger.info("fetching anilist auth");
     const anilist = data?.[ANILIST_AUTH_KEY] || null;
     callback(anilist);
   });
@@ -80,14 +81,14 @@ const getAnilistAuth = (callback: Callback<AnilistAuth | null>) => {
 // set anilist auth
 const setAnilistAuth = (anilist: AnilistAuth, callback: Callback<AnilistAuth>) => {
   if (ENV === "dev") {
-    console.log("setting anilist auth");
+    logger.info("setting anilist auth");
     localStorage.setItem(ANILIST_AUTH_KEY, JSON.stringify(anilist));
     callback(anilist);
     return;
   }
 
   chrome.storage.local.set({ [ANILIST_AUTH_KEY]: anilist }, () => {
-    console.log("setting anilist auth");
+    logger.info("setting anilist auth");
     callback(anilist);
   });
 };
@@ -95,14 +96,14 @@ const setAnilistAuth = (anilist: AnilistAuth, callback: Callback<AnilistAuth>) =
 // delete anilist auth
 const deleteAnilistAuth = (callback: Callback<void>) => {
   if (ENV === "dev") {
-    console.log("deleting anilist auth");
+    logger.info("deleting anilist auth");
     localStorage.removeItem(ANILIST_AUTH_KEY);
     callback();
     return;
   }
 
   chrome.storage.local.remove(ANILIST_AUTH_KEY, () => {
-    console.log("deleting anilist auth");
+    logger.info("deleting anilist auth");
     callback();
   });
 };
@@ -110,7 +111,7 @@ const deleteAnilistAuth = (callback: Callback<void>) => {
 // get anilist auth status
 const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
   if (ENV === "dev") {
-    console.log("fetching anilist auth state");
+    logger.info("fetching anilist auth state");
     const state = localStorage.getItem(ANILIST_AUTH_STATE_KEY);
     if (!state) {
       callback(null);
@@ -121,7 +122,7 @@ const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
   }
 
   chrome.storage.local.get(ANILIST_AUTH_STATE_KEY, (data) => {
-    console.log("fetching anilist auth state");
+    logger.info("fetching anilist auth state");
     const state = data?.[ANILIST_AUTH_STATE_KEY] || null;
     callback(state);
   });
@@ -130,14 +131,14 @@ const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
 // set anilist auth status
 const setAnilistAuthStatus = (status: AuthStatus, callback: Callback<AuthStatus>) => {
   if (ENV === "dev") {
-    console.log("setting anilist auth status");
+    logger.info("setting anilist auth status");
     localStorage.setItem(ANILIST_AUTH_STATE_KEY, status);
     callback(status);
     return;
   }
 
   chrome.storage.local.set({ [ANILIST_AUTH_STATE_KEY]: status }, () => {
-    console.log("setting anilist auth state");
+    logger.info("setting anilist auth state");
     callback(status);
   });
 };
@@ -145,14 +146,14 @@ const setAnilistAuthStatus = (status: AuthStatus, callback: Callback<AuthStatus>
 // delete anilist auth status
 const deleteAnilistAuthStatus = (callback: Callback<void>) => {
   if (ENV === "dev") {
-    console.log("deleting anilist auth status");
+    logger.info("deleting anilist auth status");
     localStorage.removeItem(ANILIST_AUTH_STATE_KEY);
     callback();
     return;
   }
 
   chrome.storage.local.remove(ANILIST_AUTH_STATE_KEY, () => {
-    console.log("deleting anilist auth status");
+    logger.info("deleting anilist auth status");
     callback();
   });
 };
@@ -160,18 +161,18 @@ const deleteAnilistAuthStatus = (callback: Callback<void>) => {
 const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
   getAnilistAuth((data) => {
     if (!data) {
-      console.log("no anilist auth data");
+      logger.info("no anilist auth data");
       callback("initial");
       return;
     }
     if (!data?.access_token) {
-      console.log("no access token");
+      logger.info("no access token");
       callback("initial");
       return;
     }
 
     if (!data?.issued_at) {
-      console.log("no issued_at");
+      logger.info("no issued_at");
       callback("unauthorized");
       return;
     }
@@ -179,11 +180,11 @@ const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
     const nowInSeconds = Date.now() / 1000;
     const issuedInSeconds = data?.issued_at / 1000;
     if (nowInSeconds > issuedInSeconds + data?.expires_in) {
-      console.log("access token expired");
+      logger.info("access token expired");
       callback("unauthorized");
       return;
     }
-    console.log("authorized with anilist");
+    logger.info("authorized with anilist");
     callback("authorized");
   });
 };

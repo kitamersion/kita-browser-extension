@@ -1,33 +1,20 @@
-import { Flex, TabPanel } from "@chakra-ui/react";
+import { Grid, TabPanel } from "@chakra-ui/react";
 import React, { Suspense } from "react";
-import AddTag from "../components/addTag";
-import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
-import SummaryItem from "@/components/summaryItem";
-
-const TagItem = React.lazy(() => import("@/pages/settings/components/tagItem"));
+import useScreenSize from "@/hooks/useScreenSize";
+import TagGroup from "../components/tagGroup";
+import AutoTagGroup from "../components/autoTagGroup";
 
 const TagTab = () => {
-  const { totalTagCount, tags, isInitialized } = useTagContext();
+  const { columns } = useScreenSize();
 
-  if (!isInitialized) {
-    return <LoadingState />;
-  }
   return (
     <TabPanel>
       <Suspense fallback={<LoadingState />}>
-        <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
-          <SummaryItem>
-            <SummaryItem.Value value={totalTagCount} />
-            <SummaryItem.Title>Total Tags</SummaryItem.Title>
-          </SummaryItem>
-          <AddTag />
-          <Flex gap={2} flexWrap={"wrap"}>
-            {tags.map((tag) => (
-              <TagItem key={tag.id} tag={tag} showDelete />
-            ))}
-          </Flex>
-        </Flex>
+        <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
+          <TagGroup />
+          <AutoTagGroup />
+        </Grid>
       </Suspense>
     </TabPanel>
   );

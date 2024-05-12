@@ -1,22 +1,27 @@
+/* eslint-disable no-fallthrough */
 import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
 import { v4 as uuidv4 } from "uuid";
-
-const DB_NAME = "kitamersiondb";
-const OBJECT_STORE_VIDEOS = "videos";
-const OBJECT_STORE_TAGS = "tags";
-const OBJECT_STORE_VIDEO_TAGS = "video_tags";
+import {
+  DB_NAME,
+  DB_VERSION,
+  DB_SCHEMAS,
+  OBJECT_STORE_VIDEOS,
+  OBJECT_STORE_TAGS,
+  OBJECT_STORE_VIDEO_TAGS,
+  OBJECT_STORE_AUTO_TAG,
+} from "./schema";
+import { setApplicationEnabled } from "@/api/applicationStorage";
+import logger from "@/config/logger";
+import { IAutoTag } from "@/types/autotag";
 
 class IndexedDB {
   private static instance: IndexedDB;
   private db: IDBDatabase | null = null;
 
-  private constructor() {
-    this.openDatabase();
-    this.requestPersistentStorage();
-  }
+  private constructor() {}
 
   static getInstance(): IndexedDB {
     if (!IndexedDB.instance) {
@@ -25,20 +30,20 @@ class IndexedDB {
     return IndexedDB.instance;
   }
 
-  requestPersistentStorage(): Promise<boolean> {
+  public requestPersistentStorage(): Promise<boolean> {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().then((granted) => {
           if (granted) {
-            console.log("Storage will not be cleared except by explicit user action");
+            logger.info("Storage will not be cleared except by explicit user action");
             resolve(true);
           } else {
-            console.log("Storage may be cleared by the UA under storage pressure.");
+            logger.info("Storage may be cleared by the UA under storage pressure.");
             resolve(false);
           }
         });
       } else {
-        console.log("Persistent storage API not supported");
+        logger.info("Persistent storage API not supported");
         resolve(false);
       }
     });
@@ -47,33 +52,56 @@ class IndexedDB {
   // ================================================================================
   // ======================     INITIALIZE SCHEMA         ===========================
   // ================================================================================
-  private openDatabase() {
-    const request = indexedDB.open(DB_NAME, 1);
+  public openDatabase(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      logger.info("connecting database...");
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onupgradeneeded = (event) => {
-      this.db = (event.target as IDBOpenDBRequest).result;
+      request.onupgradeneeded = (event) => {
+        logger.warn("database upgrade needed...");
+        setApplicationEnabled(false, () => {
+          this.db = (event.target as IDBOpenDBRequest).result;
+          const db = this.db;
+          const transaction = (event.target as IDBOpenDBRequest).transaction;
 
-      // video store
-      const videoStore = this.db.createObjectStore(OBJECT_STORE_VIDEOS, { keyPath: "id" });
-      videoStore.createIndex("unquie_code", "unquie_code", { unique: true });
+          for (const schema of DB_SCHEMAS) {
+            for (const storeSchema of schema.stores) {
+              let store: IDBObjectStore | null = null;
+              if (!db.objectStoreNames.contains(storeSchema.name)) {
+                logger.debug(`creating object store: ${storeSchema.name}`);
+                store = db.createObjectStore(storeSchema.name, storeSchema.options);
+              } else {
+                // get the existing object store
+                logger.debug(`getting existing object store: ${storeSchema.name}`);
+                store = transaction?.objectStore(storeSchema.name) ?? null;
+              }
 
-      // tag store
-      const tagStore = this.db.createObjectStore(OBJECT_STORE_TAGS, { keyPath: "id" });
-      tagStore.createIndex("code", "code", { unique: true });
+              if (store && storeSchema.indexes) {
+                for (const indexSchema of storeSchema.indexes) {
+                  if (!store.indexNames.contains(indexSchema.name)) {
+                    logger.debug(`creating index: ${indexSchema.name}`);
+                    store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
+                  }
+                }
+              }
+            }
+          }
+        });
+      };
 
-      // video and tag aggregate store
-      const videoTagStore = this.db.createObjectStore(OBJECT_STORE_VIDEO_TAGS, { keyPath: "id" });
-      videoTagStore.createIndex("video_id", "video_id", { unique: false });
-      videoTagStore.createIndex("tag_id", "tag_id", { unique: false });
-    };
+      request.onsuccess = (event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
+        logger.info("database connected successfully!");
+        setApplicationEnabled(true, () => {});
+        resolve(this.db);
+      };
 
-    request.onsuccess = (event) => {
-      this.db = (event.target as IDBOpenDBRequest).result;
-    };
-
-    request.onerror = (event) => {
-      console.log("Error opening DB", event);
-    };
+      request.onerror = (event) => {
+        logger.error(`error opening database: ${event}`);
+        setApplicationEnabled(true, () => {});
+        reject(event);
+      };
+    });
   }
 
   // ================================================================================
@@ -230,14 +258,14 @@ class IndexedDB {
   }
 
   // get video by unique code
-  getVideoByUniqueCode(unquie_code: string): Promise<IVideo | undefined> {
+  getVideoByUniqueCode(unique_code: string): Promise<IVideo | undefined> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
-      const index = videoStore.index("unquie_code");
-      const request = index.get(unquie_code);
+      const index = videoStore.index("unique_code");
+      const request = index.get(unique_code);
 
       request.onsuccess = () => {
         resolve(request.result);
@@ -455,15 +483,82 @@ class IndexedDB {
       };
     });
   }
+
+  // ================================================================================
+  // =======================     AUTO ASSIGN TAGS         ===========================
+  // ================================================================================
+
+  // add auto tag
+  addAutoTag({ id, origin, tags }: IAutoTag): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+
+      const itemId = id ?? window.crypto.randomUUID();
+      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags });
+      request.onsuccess = () => {
+        resolve();
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get auto tag by origin
+  getAutoTagByOrigin(origin: string): Promise<IAutoTag | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      const index = autoTagStore.index("origin");
+      const request = index.get(origin);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get all auto tag
+  getAllAutoTags(): Promise<IAutoTag[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      const request = autoTagStore.getAll();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // delete auto tag by id
+  deleteAutoTagById(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
+      const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
+      autoTagStore.delete(id);
+      transaction.oncomplete = () => {
+        resolve();
+      };
+      transaction.onerror = () => {
+        reject(transaction.error);
+      };
+    });
+  }
 }
 
 const db = IndexedDB.getInstance();
-db.requestPersistentStorage().then((granted) => {
-  if (granted) {
-    console.log("Persistent storage granted");
-  } else {
-    console.log("Persistent storage not granted");
-  }
-});
+(async () => {
+  await db.openDatabase();
+})();
 
 export default db;

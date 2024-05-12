@@ -1,29 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { v4 as uuidv4 } from "uuid";
-import { SiteConfigDictionary, SiteKey, IVideo } from "../../types/video";
+import { SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
 import { getApplicationEnabled } from "@/api/applicationStorage";
-
-const siteConfig: SiteConfigDictionary = {
-  [SiteKey.YOUTUBE]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- YouTube",
-    originUrl: "www.youtube.com",
-    durationKey: ".ytp-time-duration",
-  },
-  [SiteKey.YOUTUBE_MUSIC]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- YouTube",
-    originUrl: "music.youtube.com",
-    durationKey: ".time-info",
-  },
-  [SiteKey.CRUNCHYROLL]: {
-    titleLookup: "DOCUMENT_TITLE",
-    replaceString: "- Watch on Crunchyroll",
-    originUrl: "www.crunchyroll.com",
-    durationKey: "meta[property='video:duration']",
-  },
-};
+import logger from "@/config/logger";
+import { CONTENT_SITE_CONFIG } from "@/data/contants";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
@@ -55,7 +36,7 @@ class VideoTracker {
 
   _getTitle() {
     let title = document.title;
-    Object.values(siteConfig).forEach(({ replaceString }) => {
+    Object.values(CONTENT_SITE_CONFIG).forEach(({ replaceString }) => {
       title = title.replace(replaceString, "").trim();
     });
     return title;
@@ -64,8 +45,8 @@ class VideoTracker {
   _getOrigin() {
     const url = new URL(window.location.href);
     const hostname = url.hostname;
-    for (const key of Object.keys(siteConfig)) {
-      const site = siteConfig[key as SiteKey];
+    for (const key of Object.keys(CONTENT_SITE_CONFIG)) {
+      const site = CONTENT_SITE_CONFIG[key as SiteKey];
       if (hostname === site.originUrl) {
         return key as SiteKey;
       }
@@ -83,7 +64,7 @@ class VideoTracker {
     const videoTitle = this._getTitle();
 
     const origin = this._getOrigin();
-    const site = siteConfig[origin];
+    const site = CONTENT_SITE_CONFIG[origin];
 
     const durationKey = site?.durationKey;
     const videoDurationElement = document.querySelector(durationKey);
@@ -104,7 +85,7 @@ class VideoTracker {
         videoDuration = parseInt(videoDurationText ?? "0");
         break;
       default:
-        console.error("[KITA_BROWSER] UNKNOWN ORIGIN");
+        logger.error("UNKNOWN ORIGIN");
         break;
     }
 
@@ -122,7 +103,7 @@ class VideoTracker {
     const payload = JSON.stringify(newRecord);
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
 
-    console.log("[KITA_BROWSER] video added from content");
+    logger.info("video added from content");
   }
 
   getTotalDuration(duration: string): string {
@@ -195,7 +176,7 @@ class VideoTracker {
 
       parentDiv.appendChild(newButton); // Changed to appendChild to add button at the end
     } else {
-      console.error("[KITA_BROWSER] unable to find parent div");
+      logger.error("unable to find parent div");
     }
   }
 
@@ -206,7 +187,7 @@ class VideoTracker {
       image.src = `${baseUrl}icons/saved/icon128.png`;
 
       if (this.timeoutId) {
-        console.log("[KITA_BROWSER] timeout cleared");
+        logger.info("timeout cleared");
         clearTimeout(this.timeoutId);
       }
 
@@ -214,7 +195,7 @@ class VideoTracker {
         image.src = `${baseUrl}icons/enabled/icon128.png`;
       }, BUTTON_RESET_DELAY_MS);
     } else {
-      console.error(`[KITA_BROWSER] unable to find image with id ${CAPTURE_IMAGE_ID}`);
+      logger.error(`unable to find image with id ${CAPTURE_IMAGE_ID}`);
     }
   }
 
@@ -238,12 +219,12 @@ class VideoTracker {
 const videoTracker = VideoTracker.getInstance();
 
 getApplicationEnabled((IsApplicationEnabled) => {
-  IsApplicationEnabled ? videoTracker.initialize() : videoTracker.destroy();
+  videoTracker.initialize();
 });
 
 // listen for messages to disable/enable the application
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`content script received message: ${JSON.stringify(request)}`);
+  logger.info(`content script received message: ${JSON.stringify(request)}`);
   if (!request.IsApplicationEnabled) {
     videoTracker?.destroy();
   } else {

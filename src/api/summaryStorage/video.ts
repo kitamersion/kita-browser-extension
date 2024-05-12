@@ -1,5 +1,6 @@
 import { Callback } from "@/types/callback";
 import { kitaSchema } from "../videostorage";
+import logger from "@/config/logger";
 
 const VIDEO_TOTAL_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey;
 const VIDEO_TOTAL_DURATION_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey;
@@ -7,7 +8,7 @@ const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 const getTotalVideoCount = (callback: Callback<number>) => {
   if (ENV === "dev") {
-    console.log("fetching videos");
+    logger.info("fetching videos");
     const items = localStorage.getItem(VIDEO_TOTAL_KEY);
     if (!items) {
       callback(0);
@@ -18,7 +19,7 @@ const getTotalVideoCount = (callback: Callback<number>) => {
     return;
   }
   chrome.storage.local.get(VIDEO_TOTAL_KEY, (data) => {
-    console.log("fetching videos");
+    logger.info("fetching videos");
     const items = data?.[VIDEO_TOTAL_KEY] || 0;
     callback(items);
   });
@@ -28,10 +29,10 @@ const incrementTotalVideos = () => {
   getTotalVideoCount((count) => {
     const newCount = count + 1;
     if (ENV === "dev") {
-      console.log("incrementing video total");
+      logger.info("incrementing video total");
       localStorage.setItem(VIDEO_TOTAL_KEY, JSON.stringify(newCount));
     } else {
-      console.log("incrementing video total");
+      logger.info("incrementing video total");
       chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
     }
   });
@@ -43,10 +44,10 @@ const decrementTotalVideos = () => {
 
     const newCount = count - 1;
     if (ENV === "dev") {
-      console.log("decrementing video total");
+      logger.info("decrementing video total");
       localStorage.setItem(VIDEO_TOTAL_KEY, JSON.stringify(newCount));
     } else {
-      console.log("decrementing video total");
+      logger.info("decrementing video total");
       chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
     }
   });
@@ -54,10 +55,10 @@ const decrementTotalVideos = () => {
 
 const resetTotalVideos = () => {
   if (ENV === "dev") {
-    console.log("resetting video total");
+    logger.info("resetting video total");
     localStorage.setItem(VIDEO_TOTAL_KEY, JSON.stringify(0));
   } else {
-    console.log("resetting video total");
+    logger.info("resetting video total");
     chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: 0 });
   }
 };
@@ -65,7 +66,7 @@ const resetTotalVideos = () => {
 // get total video duration
 const getTotalVideoDuration = (callback: Callback<number>) => {
   if (ENV === "dev") {
-    console.log("fetching video duration");
+    logger.info("fetching video duration");
     const items = localStorage.getItem(VIDEO_TOTAL_DURATION_KEY);
     if (!items) {
       callback(0);
@@ -76,7 +77,7 @@ const getTotalVideoDuration = (callback: Callback<number>) => {
     return;
   }
   chrome.storage.local.get(VIDEO_TOTAL_DURATION_KEY, (data) => {
-    console.log("fetching video duration");
+    logger.info("fetching video duration");
     const items = data?.[VIDEO_TOTAL_DURATION_KEY] || 0;
     callback(items);
   });
@@ -87,10 +88,10 @@ const incrementTotalVideoDuration = (duration: number) => {
   getTotalVideoDuration((totalDuration) => {
     const newDuration = totalDuration + duration;
     if (ENV === "dev") {
-      console.log("incrementing video duration");
+      logger.info("incrementing video duration");
       localStorage.setItem(VIDEO_TOTAL_DURATION_KEY, JSON.stringify(newDuration));
     } else {
-      console.log("incrementing video duration");
+      logger.info("incrementing video duration");
       chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
     }
   });
@@ -103,10 +104,10 @@ const decrementTotalVideoDuration = (duration: number) => {
 
     const newDuration = totalDuration - duration;
     if (ENV === "dev") {
-      console.log("decrementing video duration");
+      logger.info("decrementing video duration");
       localStorage.setItem(VIDEO_TOTAL_DURATION_KEY, JSON.stringify(newDuration));
     } else {
-      console.log("decrementing video duration");
+      logger.info("decrementing video duration");
       chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
     }
   });
@@ -115,10 +116,10 @@ const decrementTotalVideoDuration = (duration: number) => {
 // reset total video duration
 const resetTotalVideoDuration = () => {
   if (ENV === "dev") {
-    console.log("resetting video duration");
+    logger.info("resetting video duration");
     localStorage.setItem(VIDEO_TOTAL_DURATION_KEY, JSON.stringify(0));
   } else {
-    console.log("resetting video duration");
+    logger.info("resetting video duration");
     chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: 0 });
   }
 };
