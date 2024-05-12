@@ -1,7 +1,7 @@
 import { Callback } from "@/types/callback";
 import { kitaSchema } from "../../data/kitaschema";
 import { IVideo } from "../../types/video";
-import logger from "@/config/logger";
+import logger from "../../config/logger";
 
 const VIDEO_KEY = kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;

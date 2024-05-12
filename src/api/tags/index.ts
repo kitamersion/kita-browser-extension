@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { kitaSchema } from "../videostorage";
 import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
-import logger from "@/config/logger";
+import logger from "../../config/logger";
 
 const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.TagKey;
 const DEFAULT_TAGS_INITIALIZED_KEY = kitaSchema.ApplicationSettings.StorageKeys.DefaultTagsInitializedKey;
