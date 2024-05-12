@@ -3,7 +3,7 @@ import { getApplicationEnabled, setApplicationEnabled } from "@/api/applicationS
 import { APPLICATION_ENABLE } from "@/data/events";
 import eventBus from "@/api/eventbus";
 
-const IS_APPLICATION_READY_MS = 1000; // 1 second
+const IS_APPLICATION_READY_MS = 250; // quarter second
 interface ApplicationContextType {
   isApplicationEnabled: boolean;
   isInitialized: boolean;
