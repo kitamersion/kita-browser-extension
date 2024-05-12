@@ -11,7 +11,7 @@ const TagTab = () => {
   return (
     <TabPanel>
       <Suspense fallback={<LoadingState />}>
-        <Grid templateColumns={`repeat(${columns - 1}, 1fr)`} gap={4} mt={4} mx={2}>
+        <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
           <TagGroup />
           <AutoTagGroup />
         </Grid>

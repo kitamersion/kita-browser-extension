@@ -12,6 +12,7 @@ import logger from "@/config/logger";
 
 type VideoTagRelationshipContextType = {
   videoTagRelationship: IVideoTag[];
+  isInitialized: boolean;
 };
 
 const VideoTagRelationshipContext = createContext<VideoTagRelationshipContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ export const useVideoTagRelationshipContext = () => {
 export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unknown>) => {
   const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const [relationships, setRelationships] = useState<IVideoTag[]>([]);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const handleVideoTagAddRelationship = useCallback((eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
@@ -36,7 +38,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
       return;
     }
 
-    // for earch items in videoTagRelationship, add to indexedDB
+    // for each items in videoTagRelationship, add to indexedDB
     videoTagRelationship.forEach(async (videoTagRelationship) => {
       await IndexedDB.addVideoTag(videoTagRelationship);
       setRelationships((prev) => [...prev, videoTagRelationship]);
@@ -73,13 +75,11 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, []);
 
   useEffect(() => {
-    async function fetchData() {
-      await fetchRelationships();
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
+      fetchRelationships();
+      setIsInitialized(true);
     }
-    if (isAppInitialized && isApplicationEnabled) {
-      fetchData();
-    }
-  }, [fetchRelationships, isAppInitialized, isApplicationEnabled]);
+  }, [fetchRelationships, isApplicationEnabled, isAppInitialized, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -110,6 +110,8 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, [handleVideoTagDeleteRelationshipByVideoId]);
 
   return (
-    <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships }}>{children}</VideoTagRelationshipContext.Provider>
+    <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships, isInitialized: isInitialized }}>
+      {children}
+    </VideoTagRelationshipContext.Provider>
   );
 };

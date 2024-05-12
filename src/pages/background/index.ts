@@ -6,8 +6,10 @@ import logger from "@/config/logger";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateUniqueCode } from "@/utils";
+import { v4 as uuidv4 } from "uuid";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -31,7 +33,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === VIDEO_ADD) {
     (async () => {
       logger.info("received VIDEO_ADD event");
-      const { video_title, origin, video_duration } = parsedPayload as IVideo;
+      const { id, video_title, origin, video_duration } = parsedPayload as IVideo;
       const uniqueCode = generateUniqueCode(video_title, origin);
 
       try {
@@ -40,9 +42,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           logger.info("video already exists, skipping...");
           return;
         }
+
+        // apply auto tags
+        const autoTag = await IndexedDB.getAutoTagByOrigin(origin);
+        if (autoTag) {
+          parsedPayload.tags = autoTag.tags;
+        }
+
         await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
         incrementTotalVideos();
         incrementTotalVideoDuration(video_duration ?? 0);
+
+        if (autoTag) {
+          const videoTagRelationship: IVideoTag[] = autoTag.tags.map((tag_id) => {
+            return {
+              id: uuidv4(),
+              video_id: id,
+              tag_id: tag_id,
+            };
+          });
+
+          if (videoTagRelationship.length === 0) {
+            logger.warn("no video tag relationship to add");
+            return;
+          }
+          videoTagRelationship.forEach(async (videoTagRelationship) => {
+            await IndexedDB.addVideoTag(videoTagRelationship);
+          });
+        }
       } catch (error) {
         logger.error(`error while adding video: ${error}`);
       }

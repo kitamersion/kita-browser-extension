@@ -2,16 +2,16 @@ const PREFIX = "[KITA_BROWSER]";
 
 const logger = {
   info: (message: string) => {
-    console.log(`%c${PREFIX} ${message}`, "color: DodgerBlue");
+    console.log(`${PREFIX} ${message}`);
   },
   debug: (message: string) => {
-    console.info(`%c${PREFIX} ${message}`, "color: MediumSeaGreen");
+    console.info(`${PREFIX} ${message}`);
   },
   warn: (message: string) => {
-    console.warn(`%c${PREFIX} ${message}`, "color: Orange");
+    console.warn(`${PREFIX} ${message}`);
   },
   error: (message: string) => {
-    console.error(`%c${PREFIX} ${message}`, "color: Tomato");
+    console.error(`${PREFIX} ${message}`);
   },
 };
 

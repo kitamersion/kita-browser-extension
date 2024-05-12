@@ -219,7 +219,7 @@ class VideoTracker {
 const videoTracker = VideoTracker.getInstance();
 
 getApplicationEnabled((IsApplicationEnabled) => {
-  IsApplicationEnabled ? videoTracker.initialize() : videoTracker.destroy();
+  videoTracker.initialize();
 });
 
 // listen for messages to disable/enable the application

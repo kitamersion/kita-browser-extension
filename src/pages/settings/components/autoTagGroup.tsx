@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useCallback } from "react";
 import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
 import { SiteKey } from "@/types/video";
@@ -9,15 +9,29 @@ const AutoTagGroup = () => {
   const { isInitialized: isTagsInitialized } = useTagContext();
   const { isInitialized: isAutoTagsInitialized, totalAutoTags } = useAutoTagContext();
 
-  const siteKeys = Object.values(SiteKey);
+  const siteKeys = useMemo(() => Object.values(SiteKey), []);
+  const totalAutoTagsOrigins = useMemo(() => totalAutoTags.map((autoTag) => autoTag.origin), [totalAutoTags]);
+  const remainingOrigins = useMemo(() => siteKeys.filter((site) => !totalAutoTagsOrigins.includes(site)), [siteKeys, totalAutoTagsOrigins]);
+
+  const getAutoTagByOrigin = useCallback(
+    (origin: string) => {
+      const autoTagToRender = totalAutoTags.find((autoTag) => autoTag.origin === origin);
+      return autoTagToRender;
+    },
+    [totalAutoTags]
+  );
 
   if (!isTagsInitialized && !isAutoTagsInitialized) {
     return <LoadingState />;
   }
+
   return (
     <>
-      {siteKeys.map((site) => (
-        <AutoTagByOrigin key={site} origin={site} autoTag={totalAutoTags.find((autoTag) => autoTag.origin === site)} />
+      {totalAutoTags.map((autoTag) => (
+        <AutoTagByOrigin key={autoTag.origin} origin={autoTag.origin} autoTag={autoTag} />
+      ))}
+      {remainingOrigins.map((origin) => (
+        <AutoTagByOrigin key={origin} origin={origin} autoTag={getAutoTagByOrigin(origin)} />
       ))}
     </>
   );
