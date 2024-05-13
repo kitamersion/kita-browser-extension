@@ -1,9 +1,11 @@
+import { IAutoTag } from "./autotag";
 import { IVideoTag } from "./relationship";
 import { ITag } from "./tag";
 import { IVideo } from "./video";
 
 export type StorageKeys = {
   ApplicationEnabledKey: string;
+  DefaultTagsInitializedKey: string;
   VideoKey: string;
   TagKey: string;
   ThemeKey: string;
@@ -21,6 +23,7 @@ export type UserItems = {
   Videos: IVideo[];
   Tags: ITag[];
   VideoTagRelationships: IVideoTag[];
+  AutoTags: IAutoTag[];
 };
 
 export type IntegrationKeys = {

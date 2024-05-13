@@ -4,6 +4,8 @@ import { kitaSchema } from "@/data/kitaschema";
 import { KitaSchema } from "@/types/kitaschema";
 import IndexedDB from "@/db/index";
 import { calculateTotalDuration } from "../statistics";
+import { generateUniqueCode } from "@/utils";
+import logger from "@/config/logger";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
@@ -11,14 +13,14 @@ const ON_SAVE_TIMEOUT_MS = 3000; // 3 seconds
 const setItemsForKey = async <T>(key: string, items: T) => {
   if (ENV === "dev") {
     localStorage.setItem(key, JSON.stringify(items, null, 2));
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
     return;
   }
 
   const data: { [key: string]: T } = {};
   data[key] = items;
   chrome.storage.local.set(data, () => {
-    console.log(`importing items for key: ${key}`);
+    logger.info(`importing items for key: ${key}`);
   });
 };
 
@@ -31,19 +33,39 @@ const importFromJSON = (file: File): Promise<void> => {
         const data: KitaSchema = JSON.parse(text);
 
         const videosToAdd = data.UserItems.Videos;
-        videosToAdd.forEach(async (video: IVideo) => {
-          await IndexedDB.addVideo(video);
-        });
+        if (videosToAdd && videosToAdd.length > 0) {
+          videosToAdd.forEach(async (video: IVideo) => {
+            if (video.unique_code) {
+              await IndexedDB.addVideo(video);
+            }
+
+            if (!video.unique_code) {
+              const uniqueCode = generateUniqueCode(video.video_title, video.origin);
+              await IndexedDB.addVideo({ ...video, unique_code: uniqueCode });
+            }
+          });
+        }
 
         const tagsToAdd = data.UserItems.Tags;
-        tagsToAdd.forEach(async (tag: ITag) => {
-          await IndexedDB.addTag(tag.name, tag.id, tag.created_at);
-        });
+        if (tagsToAdd && tagsToAdd.length > 0) {
+          tagsToAdd.forEach(async (tag: ITag) => {
+            await IndexedDB.addTag({ id: tag.id, name: tag.name, created_at: tag.created_at });
+          });
+        }
 
         const videoTagRelationshipsToAdd = data.UserItems.VideoTagRelationships;
-        videoTagRelationshipsToAdd.forEach(async (relationship) => {
-          await IndexedDB.addVideoTag(relationship);
-        });
+        if (videoTagRelationshipsToAdd && videoTagRelationshipsToAdd.length > 0) {
+          videoTagRelationshipsToAdd.forEach(async (relationship) => {
+            await IndexedDB.addVideoTag(relationship);
+          });
+        }
+
+        const autoTagsToAdd = data.UserItems.AutoTags;
+        if (autoTagsToAdd && autoTagsToAdd.length > 0) {
+          autoTagsToAdd.forEach(async (autoTag) => {
+            await IndexedDB.addAutoTag(autoTag);
+          });
+        }
 
         await setItemsForKey<boolean>(
           kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
@@ -52,24 +74,25 @@ const importFromJSON = (file: File): Promise<void> => {
 
         await setItemsForKey<number>(
           kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey,
-          videosToAdd.length
+          videosToAdd.length ?? 0
         );
 
         const totalDurationSeconds = calculateTotalDuration(videosToAdd);
         await setItemsForKey<number>(
           kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey,
-          totalDurationSeconds
+          totalDurationSeconds ?? 0
         );
 
         await setItemsForKey<number>(
           kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey,
-          tagsToAdd.length
+          tagsToAdd.length ?? 0
         );
         // pause for 3 seconds to allow data to be saved
         await new Promise((resolve) => setTimeout(resolve, ON_SAVE_TIMEOUT_MS));
 
         resolve();
       } catch (error) {
+        logger.error(`error while importing data: ${error}`);
         reject(error);
       }
     };

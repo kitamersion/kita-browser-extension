@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.4.2](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.1...v2.4.2) (2024-05-13)
+
+### [2.4.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.0...v2.4.1) (2024-05-12)
+
+
+### Bug Fixes
+
+* import change list empty or null ([#108](https://github.com/kitamersion/kita-browser-extension/issues/108)) ([1c94c42](https://github.com/kitamersion/kita-browser-extension/commit/1c94c4234766048c07c7cfb5d3181c607483b77f))
+
+## [2.4.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.3.1...v2.4.0) (2024-05-12)
+
+
+### Features
+
+* auto tagging input to add or update + indexdb scalability  ([#107](https://github.com/kitamersion/kita-browser-extension/issues/107)) ([5ab50ef](https://github.com/kitamersion/kita-browser-extension/commit/5ab50efa287bfa16e4532bc8437c3e12eae673c9))
+
+### [2.3.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.3.0...v2.3.1) (2024-05-09)
+
+
+### Bug Fixes
+
+* increment total in background ([#106](https://github.com/kitamersion/kita-browser-extension/issues/106)) ([cdb6add](https://github.com/kitamersion/kita-browser-extension/commit/cdb6add0019b3db8eb0263cfcadb572f80c285d8))
+
+## [2.3.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.2.1...v2.3.0) (2024-05-08)
+
+
+### Features
+
+* prevent duplicate items + initialize default tags on first install ([#104](https://github.com/kitamersion/kita-browser-extension/issues/104)) ([30c4405](https://github.com/kitamersion/kita-browser-extension/commit/30c4405f128a8eec7f016a2c41fb93d3a8f7e67d))
+
 ### [2.2.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.2.0...v2.2.1) (2024-05-06)
 
 

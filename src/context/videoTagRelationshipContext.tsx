@@ -7,9 +7,12 @@ import {
 import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
 import IndexedDB from "@/db/index";
+import { useApplicationContext } from "./applicationContext";
+import logger from "@/config/logger";
 
 type VideoTagRelationshipContextType = {
   videoTagRelationship: IVideoTag[];
+  isInitialized: boolean;
 };
 
 const VideoTagRelationshipContext = createContext<VideoTagRelationshipContextType | undefined>(undefined);
@@ -23,17 +26,19 @@ export const useVideoTagRelationshipContext = () => {
 };
 
 export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const [relationships, setRelationships] = useState<IVideoTag[]>([]);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const handleVideoTagAddRelationship = useCallback((eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
 
     if (!videoTagRelationship || videoTagRelationship.length === 0) {
-      console.warn("No video tag relationship found from event handler");
+      logger.warn("No video tag relationship found from event handler");
       return;
     }
 
-    // for earch items in videoTagRelationship, add to indexedDB
+    // for each items in videoTagRelationship, add to indexedDB
     videoTagRelationship.forEach(async (videoTagRelationship) => {
       await IndexedDB.addVideoTag(videoTagRelationship);
       setRelationships((prev) => [...prev, videoTagRelationship]);
@@ -44,7 +49,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     const tagId = eventData.value as string;
 
     if (!tagId) {
-      console.warn("No tag id found from event handler");
+      logger.warn("No tag id found from event handler");
       return;
     }
 
@@ -56,7 +61,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     const videoId = eventData.value as string;
 
     if (!videoId) {
-      console.warn("No video id found from event handler");
+      logger.warn("No video id found from event handler");
       return;
     }
 
@@ -70,11 +75,11 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, []);
 
   useEffect(() => {
-    async function fetchData() {
-      await fetchRelationships();
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
+      fetchRelationships();
+      setIsInitialized(true);
     }
-    fetchData();
-  }, [fetchRelationships]);
+  }, [fetchRelationships, isApplicationEnabled, isAppInitialized, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -105,6 +110,8 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, [handleVideoTagDeleteRelationshipByVideoId]);
 
   return (
-    <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships }}>{children}</VideoTagRelationshipContext.Provider>
+    <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships, isInitialized: isInitialized }}>
+      {children}
+    </VideoTagRelationshipContext.Provider>
   );
 };

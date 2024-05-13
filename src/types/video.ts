@@ -5,8 +5,10 @@ export type IVideo = {
   video_url: string;
   origin: SiteKey;
   created_at: number;
+  unique_code?: string;
   updated_at?: number;
   tags?: string[];
+  episode_number?: number;
 };
 
 export enum SiteKey {

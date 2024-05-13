@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
-import { deleteAllTags, deleteTagById, setTag } from "@/api/tags";
-import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID } from "@/data/events";
+import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
-import { decrementTotalTags, getTotalTagCount, incrementTotalTags, resetTotalTags } from "@/api/summaryStorage/tag";
+import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
+import { useApplicationContext } from "./applicationContext";
+import logger from "@/config/logger";
 
 interface TagContextType {
   tags: ITag[];
@@ -24,92 +25,73 @@ export const useTagContext = () => {
 };
 
 export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
+  const { isInitialized: isAppInitialized, isApplicationEnabled } = useApplicationContext();
   const { showToast } = useToastContext();
   const [tags, setTags] = useState<ITag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-  const [totalTagCount, SetTotalTagCount] = useState<number>(0);
+  const [totalTagCount, setTotalTagCount] = useState<number>(0);
 
   const handleGetTags = useCallback(async () => {
     const allTags = await IndexedDB.getAllTags();
     setTags(allTags);
-  }, []);
 
-  const handleGetTagSummary = useCallback(() => {
-    getTotalTagCount((count) => {
-      SetTotalTagCount(count);
-    });
+    setTotalTagCount(allTags.length);
   }, []);
 
   const handleDeleteAllTags = useCallback(async () => {
-    deleteAllTags(() => {
-      setTags([]);
-
-      resetTotalTags();
-      handleGetTagSummary();
-    });
-
+    // @todo cascade remove tags from videos
     showToast({
       title: "Tags deleted",
       status: "success",
     });
-  }, [handleGetTagSummary, showToast]);
+  }, [showToast]);
 
   const handleDeleteById = useCallback(
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        console.warn("No tag id found from event handler");
+        logger.warn("No tag id found from event handler");
         return;
       }
-      deleteTagById(id, tags, (data) => {
-        eventBus.publish(CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID, { message: "remove tag from video", value: { id: id } });
-        setTags([...data]);
-
-        decrementTotalTags();
-      });
 
       await IndexedDB.deleteTagById(id);
       await IndexedDB.deleteVideoTagByTagId(id);
-      handleGetTagSummary();
+      decrementTotalTags();
+      await handleGetTags();
       showToast({
         title: "Tag deleted",
         status: "success",
       });
     },
-    [handleGetTagSummary, showToast, tags]
+    [handleGetTags, showToast]
   );
 
   const handleSetTag = useCallback(
     async (eventData: any) => {
       const name = eventData.value.name as string;
       if (!name) {
-        console.warn("Empty or null tag name");
+        logger.warn("Empty or null tag name");
         return;
       }
-      setTag(name, (data) => {
-        setTags([...tags, data]);
 
-        incrementTotalTags();
-      });
-
-      await IndexedDB.addTag(name);
-      handleGetTagSummary();
+      await IndexedDB.addTag({ name: name });
+      incrementTotalTags();
+      await handleGetTags();
       showToast({
         title: "Tag added",
         status: "success",
       });
     },
-    [handleGetTagSummary, showToast, tags]
+    [handleGetTags, showToast]
   );
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && isAppInitialized && isApplicationEnabled) {
       handleGetTags();
-      handleGetTagSummary();
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetTagSummary, handleGetTags, isInitialized]);
+  }, [handleGetTags, isAppInitialized, isApplicationEnabled, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

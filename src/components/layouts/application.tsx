@@ -11,6 +11,7 @@ import { ToastProvider } from "@/context/toastNotificationContext";
 import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipContext";
 import { AnilistProvider } from "@/context/anilistContext";
 import { GraphqlProvider } from "@/context/apolloContext";
+import { AutoTagProvider } from "@/context/autoTagContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -23,10 +24,12 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
               <VideoTagRelationshipProvider>
                 <VideoProvider>
                   <TagProvider>
-                    <GlobalLayoutWrapper>
-                      <Navigation />
-                      <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                    </GlobalLayoutWrapper>
+                    <AutoTagProvider>
+                      <GlobalLayoutWrapper>
+                        <Navigation />
+                        <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                      </GlobalLayoutWrapper>
+                    </AutoTagProvider>
                   </TagProvider>
                 </VideoProvider>
               </VideoTagRelationshipProvider>
