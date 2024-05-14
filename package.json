@@ -1,6 +1,6 @@
 {
     "name": "kita-browser-extension",
-    "version": "2.4.4",
+    "version": "2.4.5",
     "scripts": {
         "build": "npm run graphql:codegen && npm run lint && webpack --mode production && npm run ext:copy",
         "build:firefox": "TARGET_BROWSER=firefox npm run ext:manifest",
