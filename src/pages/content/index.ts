@@ -1,8 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { v4 as uuidv4 } from "uuid";
 import { SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
-import { getApplicationEnabled } from "@/api/applicationStorage";
 import logger from "@/config/logger";
 import { CONTENT_SITE_CONFIG } from "@/data/contants";
 
@@ -91,7 +89,7 @@ class VideoTracker {
 
     // Create the video data object
     const newRecord: IVideo = {
-      id: uuidv4(),
+      id: self.crypto.randomUUID(),
       video_title: videoTitle,
       video_duration: videoDuration,
       video_url: url,
@@ -218,9 +216,7 @@ class VideoTracker {
 
 const videoTracker = VideoTracker.getInstance();
 
-getApplicationEnabled((IsApplicationEnabled) => {
-  videoTracker.initialize();
-});
+videoTracker.initialize();
 
 // listen for messages to disable/enable the application
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

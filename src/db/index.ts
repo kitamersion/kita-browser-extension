@@ -3,7 +3,6 @@ import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
 import { IVideo } from "@/types/video";
-import { v4 as uuidv4 } from "uuid";
 import {
   DB_NAME,
   DB_VERSION,
@@ -59,34 +58,33 @@ class IndexedDB {
 
       request.onupgradeneeded = (event) => {
         logger.warn("database upgrade needed...");
-        setApplicationEnabled(false, () => {
-          this.db = (event.target as IDBOpenDBRequest).result;
-          const db = this.db;
-          const transaction = (event.target as IDBOpenDBRequest).transaction;
+        this.db = (event.target as IDBOpenDBRequest).result;
+        const db = this.db;
+        const transaction = (event.target as IDBOpenDBRequest).transaction;
 
-          for (const schema of DB_SCHEMAS) {
-            for (const storeSchema of schema.stores) {
-              let store: IDBObjectStore | null = null;
-              if (!db.objectStoreNames.contains(storeSchema.name)) {
-                logger.debug(`creating object store: ${storeSchema.name}`);
-                store = db.createObjectStore(storeSchema.name, storeSchema.options);
-              } else {
-                // get the existing object store
-                logger.debug(`getting existing object store: ${storeSchema.name}`);
-                store = transaction?.objectStore(storeSchema.name) ?? null;
-              }
+        for (const schema of DB_SCHEMAS) {
+          for (const storeSchema of schema.stores) {
+            let store: IDBObjectStore | null = null;
+            if (!db.objectStoreNames.contains(storeSchema.name)) {
+              logger.debug(`creating object store: ${storeSchema.name}`);
+              store = db.createObjectStore(storeSchema.name, storeSchema.options);
+            } else {
+              // get the existing object store
+              logger.debug(`getting existing object store: ${storeSchema.name}`);
+              store = transaction?.objectStore(storeSchema.name) ?? null;
+            }
 
-              if (store && storeSchema.indexes) {
-                for (const indexSchema of storeSchema.indexes) {
-                  if (!store.indexNames.contains(indexSchema.name)) {
-                    logger.debug(`creating index: ${indexSchema.name}`);
-                    store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
-                  }
+            if (store && storeSchema.indexes) {
+              for (const indexSchema of storeSchema.indexes) {
+                if (!store.indexNames.contains(indexSchema.name)) {
+                  logger.debug(`creating index: ${indexSchema.name}`);
+                  store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
                 }
               }
             }
           }
-        });
+        }
+        setApplicationEnabled(false, () => {});
       };
 
       request.onsuccess = (event) => {
@@ -340,7 +338,7 @@ class IndexedDB {
 
       const codeOrFromName = code ?? name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
 
-      const tagItem: ITag = { id: id ?? uuidv4(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
+      const tagItem: ITag = { id: id ?? self.crypto.randomUUID(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();

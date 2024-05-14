@@ -1,7 +1,6 @@
 import { IVideo, SiteKey } from "@/types/video";
 import { convertToSeconds, settingsNavigation } from "@/utils";
 import eventbus from "@/api/eventbus";
-import { v4 as uuidv4 } from "uuid";
 import {
   IconButton,
   Box,
@@ -88,14 +87,14 @@ const AddVideoButton = () => {
 
     const videoToAdd: IVideo = {
       ...video,
-      id: uuidv4(),
+      id: self.crypto.randomUUID(),
       video_duration: convertToSeconds(formatDuration),
       created_at: Date.now(),
     };
 
     const videoTagRelationship: IVideoTag[] = selectedTags.map((tagId) => {
       return {
-        id: uuidv4(),
+        id: self.crypto.randomUUID(),
         video_id: videoToAdd.id,
         tag_id: tagId,
       };

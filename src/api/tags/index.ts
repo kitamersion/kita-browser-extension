@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import { kitaSchema } from "../videostorage";
 import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
@@ -41,7 +40,7 @@ const setTag = (name: string, callback: Callback<ITag>) => {
     return;
   }
   getTags((data) => {
-    const newTag: ITag = { id: uuidv4(), name: name };
+    const newTag: ITag = { id: self.crypto.randomUUID(), name: name };
     const localTags = data;
     localTags.push(newTag);
 

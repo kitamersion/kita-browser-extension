@@ -1,7 +1,5 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
-import { incrementTotalTags } from "@/api/summaryStorage/tag";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
-import { getDefaultTagsInitialized, setDefaultTagsInitialized } from "@/api/tags";
 import logger from "@/config/logger";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
@@ -9,7 +7,6 @@ import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateUniqueCode } from "@/utils";
-import { v4 as uuidv4 } from "uuid";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -56,7 +53,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (autoTag) {
           const videoTagRelationship: IVideoTag[] = autoTag.tags.map((tag_id) => {
             return {
-              id: uuidv4(),
+              id: self.crypto.randomUUID(),
               video_id: id,
               tag_id: tag_id,
             };
@@ -150,12 +147,7 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
 chrome.runtime.onInstalled.addListener(() => {
   (async () => {
     // initialize default tags
-    getDefaultTagsInitialized(async (isInitialized) => {
-      if (!isInitialized) {
-        const addedTagsCount = await IndexedDB.initializeDefaultTags();
-        incrementTotalTags(addedTagsCount);
-        setDefaultTagsInitialized(() => {});
-      }
-    });
+    await IndexedDB.openDatabase();
+    console.log("default tags initialized");
   })();
 });

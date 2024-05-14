@@ -4,7 +4,6 @@ import { VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID, VI
 import { IVideoTag } from "@/types/relationship";
 import { IVideo, SiteKey } from "@/types/video";
 import { convertToSeconds, formatDuration, settingsNavigation } from "@/utils";
-import { v4 as uuidv4 } from "uuid";
 import {
   Button,
   Drawer,
@@ -121,7 +120,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
       const items: IVideoTag[] =
         video.tags?.map((tagId) => {
           return {
-            id: uuidv4(),
+            id: self.crypto.randomUUID(),
             video_id: video.id,
             tag_id: tagId,
           };
