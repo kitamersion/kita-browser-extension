@@ -12,6 +12,7 @@ export const kitaSchema: KitaSchema = {
     IsApplicationEnabled: true, // default enabled
     StorageKeys: {
       ApplicationEnabledKey: "kitamersion_application_enabled",
+      ContentScriptEnabledKey: "kitamersion_content_script_enabled",
       DefaultTagsInitializedKey: "kitamersion_default_tags_initialized",
       VideoKey: "kitamersion_video_logs",
       TagKey: "kitamersion_tag",

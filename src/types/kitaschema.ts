@@ -5,6 +5,7 @@ import { IVideo } from "./video";
 
 export type StorageKeys = {
   ApplicationEnabledKey: string;
+  ContentScriptEnabledKey: string;
   DefaultTagsInitializedKey: string;
   VideoKey: string;
   TagKey: string;
@@ -16,6 +17,7 @@ export type StorageKeys = {
 export type ApplicationSettings = {
   IsReady: boolean;
   IsApplicationEnabled: boolean;
+  IsContentScriptEnabled: boolean;
   StorageKeys: StorageKeys;
 };
 

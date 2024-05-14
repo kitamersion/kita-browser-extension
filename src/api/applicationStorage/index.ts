@@ -4,7 +4,8 @@ import { IApplication } from "@/types/application";
 import { TITLE_OFF, TITLE_ON } from "@/data/contants";
 import logger from "@/config/logger";
 
-const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
+const APPLICATION_ENABLED_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
+const CONTENT_SCRIPT_ENABLED_KEY = kitaSchema.ApplicationSettings.StorageKeys.ContentScriptEnabledKey;
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 const getExtensionBaseUrl = () => {
@@ -23,13 +24,60 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
 
   if (ENV === "dev") {
     logger.info(`setting application enabled state to: ${value}`);
-    localStorage.setItem(TAG_KEY, JSON.stringify(storageValue));
+    localStorage.setItem(APPLICATION_ENABLED_KEY, JSON.stringify(storageValue));
     callback(value);
     return;
   }
 
-  chrome.storage.local.set({ [TAG_KEY]: storageValue }, () => {
+  chrome.storage.local.set({ [APPLICATION_ENABLED_KEY]: storageValue }, () => {
     logger.info(`setting application enabled state to: ${value}`);
+    setApplicationState(value);
+    callback(value);
+  });
+};
+
+// GET
+// @todo: make this generic for future use
+const getApplicationEnabled = (callback: Callback<boolean>) => {
+  if (ENV === "dev") {
+    logger.info("fetching application enabled state");
+    const items = localStorage.getItem(APPLICATION_ENABLED_KEY);
+    if (!items) {
+      callback(false);
+      return;
+    }
+    const value: IApplication = JSON.parse(items);
+    callback(value.IsApplicationEnabled);
+    return;
+  }
+
+  chrome.storage.local.get(APPLICATION_ENABLED_KEY, (data) => {
+    const value: IApplication = data?.[APPLICATION_ENABLED_KEY] || { IsApplicationEnabled: false };
+    try {
+      setApplicationState(value.IsApplicationEnabled);
+      callback(value.IsApplicationEnabled);
+    } catch (error) {
+      logger.error(`Error getting application enabled state ${error}`);
+      callback(value.IsApplicationEnabled);
+    }
+  });
+};
+
+// set CONTENT_SCRIPT_ENABLED_KEY
+const setContentScriptEnabled = (value: boolean, callback: Callback<boolean>) => {
+  const storageValue = {
+    IsContentScriptEnabled: value,
+  };
+
+  if (ENV === "dev") {
+    logger.info(`setting content script enabled state to: ${value}`);
+    localStorage.setItem(CONTENT_SCRIPT_ENABLED_KEY, JSON.stringify(storageValue));
+    callback(value);
+    return;
+  }
+
+  chrome.storage.local.set({ [CONTENT_SCRIPT_ENABLED_KEY]: storageValue }, () => {
+    logger.info(`setting content script enabled state to: ${value}`);
     setApplicationState(value);
     callback(value);
 
@@ -42,29 +90,28 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
   });
 };
 
-// GET
-// @todo: make this generic for future use
-const getApplicationEnabled = (callback: Callback<boolean>) => {
+// get CONTENT_SCRIPT_ENABLED_KEY
+const getContentScriptEnabled = (callback: Callback<boolean>) => {
   if (ENV === "dev") {
-    logger.info("fetching application enabled state");
-    const items = localStorage.getItem(TAG_KEY);
+    logger.info("fetching content script enabled state");
+    const items = localStorage.getItem(CONTENT_SCRIPT_ENABLED_KEY);
     if (!items) {
-      callback(false);
+      callback(true);
       return;
     }
-    const value: IApplication = JSON.parse(items);
-    callback(value.IsApplicationEnabled);
+    const value = JSON.parse(items);
+    callback(value.IsContentScriptEnabled);
     return;
   }
 
-  chrome.storage.local.get(TAG_KEY, (data) => {
-    const value: IApplication = data?.[TAG_KEY] || { IsApplicationEnabled: false };
+  chrome.storage.local.get(CONTENT_SCRIPT_ENABLED_KEY, (data) => {
+    const value = data?.[CONTENT_SCRIPT_ENABLED_KEY] || { IsContentScriptEnabled: true };
     try {
-      setApplicationState(value.IsApplicationEnabled);
-      callback(value.IsApplicationEnabled);
+      setApplicationState(value.IsContentScriptEnabled);
+      callback(value.IsContentScriptEnabled);
     } catch (error) {
-      logger.error(`Error getting application enabled state ${error}`);
-      callback(value.IsApplicationEnabled);
+      logger.error(`Error getting content script enabled state ${error}`);
+      callback(value.IsContentScriptEnabled);
     }
   });
 };
@@ -79,4 +126,4 @@ const setApplicationState = (enabled: boolean) => {
   chrome.action.setTitle({ title: title });
 };
 
-export { getExtensionBaseUrl, getApplicationEnabled, setApplicationEnabled };
+export { getExtensionBaseUrl, getApplicationEnabled, setApplicationEnabled, getContentScriptEnabled, setContentScriptEnabled };

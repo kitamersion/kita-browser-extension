@@ -146,8 +146,6 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
 
 chrome.runtime.onInstalled.addListener(() => {
   (async () => {
-    // initialize default tags
     await IndexedDB.openDatabase();
-    console.log("default tags initialized");
   })();
 });
