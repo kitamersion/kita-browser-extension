@@ -1,7 +1,7 @@
 import { useAnilistContext } from "@/context/anilistContext";
 import { INTEGRATION_ANILIST_AUTH_DISCONNECT, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
 import { AnilistConfig } from "@/types/integrations/anilist";
-import { Box, Button, Flex, FormControl, FormLabel, Input, InputGroup, InputRightElement, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, FormControl, FormLabel, Heading, Input, InputGroup, InputRightElement, Text } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
@@ -10,7 +10,11 @@ import AnilistProfile from "../components/anilistProfile";
 
 const Anilist = () => {
   const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
-  const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig | null>(null);
+  const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig>({
+    anilistId: "",
+    secret: "",
+    redirectUrl: "",
+  });
 
   const [showPasswordInput, setShowPasswordInput] = React.useState(false);
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
@@ -48,9 +52,9 @@ const Anilist = () => {
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
       <Flex flexDirection={"column"} gap={4}>
         <Flex justifyContent={"space-between"}>
-          <Text as="h2" fontWeight={"bold"} fontSize={"large"}>
+          <Heading as="h2" fontWeight={"bold"} fontSize={"large"}>
             Anilist
-          </Text>
+          </Heading>
           {anilistAuthStatus === "initial" && <Text>Not Connected</Text>}
           {anilistAuthStatus === "pending" && <Text>Connecting...</Text>}
           {anilistAuthStatus === "authorized" && <Text>Authorized</Text>}
