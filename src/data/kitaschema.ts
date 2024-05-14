@@ -9,7 +9,8 @@ export const kitaSchema: KitaSchema = {
   },
   ApplicationSettings: {
     IsReady: false, // @todo: implement
-    IsApplicationEnabled: true, // default enabled
+    IsApplicationEnabled: false, // default disabled application will decide when its ready
+    IsContentScriptEnabled: true, // default enabled
     StorageKeys: {
       ApplicationEnabledKey: "kitamersion_application_enabled",
       ContentScriptEnabledKey: "kitamersion_content_script_enabled",
