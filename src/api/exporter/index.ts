@@ -11,8 +11,13 @@ const getItemsFromKey = <T>(key: string): Promise<T | null> => {
         if (!items) {
           resolve(null);
         } else {
-          const parsedItems = JSON.parse(items);
-          resolve(parsedItems as T);
+          try {
+            const parsedItems = JSON.parse(items);
+            resolve(parsedItems as T);
+          } catch (error) {
+            logger.error(`Error parsing JSON from local storage for key ${key}: ${error}`);
+            resolve(null);
+          }
         }
       } else {
         chrome.storage.local.get(key, (data) => {

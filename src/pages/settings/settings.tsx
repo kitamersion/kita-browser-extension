@@ -8,7 +8,7 @@ const IntegrationTab = React.lazy(() => import("@/pages/settings/tabs/integratio
 const Settings = () => {
   return (
     <Box as="main">
-      <Tabs variant="soft-rounded" colorScheme="green" defaultIndex={1}>
+      <Tabs variant="soft-rounded" colorScheme="green" defaultIndex={0}>
         <TabList gap={1}>
           <Tab>Integration</Tab>
           <Tab>Tags</Tab>
