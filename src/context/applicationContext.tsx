@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
-import { getApplicationEnabled, setApplicationEnabled } from "@/api/applicationStorage";
-import { APPLICATION_ENABLE } from "@/data/events";
+import { getApplicationEnabled, setContentScriptEnabled } from "@/api/applicationStorage";
+import { CONTENT_SCRIPT_ENABLE } from "@/data/events";
 import eventBus from "@/api/eventbus";
 
 const IS_APPLICATION_READY_MS = 250; // quarter second
 interface ApplicationContextType {
   isApplicationEnabled: boolean;
+  isContentScriptEnabled: boolean;
   isInitialized: boolean;
 }
 
@@ -21,6 +22,7 @@ export const useApplicationContext = () => {
 
 export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isAppEnabled, setIsAppEnabled] = useState<boolean>(false);
+  const [isContentScriptEnabled, setIsContentScriptEnabled] = useState<boolean>(true);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const handleGetApplicationEnabledStatus = useCallback(() => {
@@ -30,9 +32,10 @@ export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) =>
     });
   }, []);
 
-  const handleApplicationStatusChange = useCallback((eventData: any) => {
-    setApplicationEnabled(eventData.value, (data) => {
+  const handleContentScriptStatusChange = useCallback((eventData: any) => {
+    setContentScriptEnabled(eventData.value, (data) => {
       setIsAppEnabled(data);
+      setIsContentScriptEnabled(data);
     });
   }, []);
 
@@ -53,15 +56,19 @@ export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) =>
   // ======================     EVENT HANDLERS      =================================
   // ================================================================================
 
-  // handle APPLICATION_ENABLE
+  // handle CONTENT_SCRIPT_ENABLE
   useEffect(() => {
-    eventBus.subscribe(APPLICATION_ENABLE, handleApplicationStatusChange);
+    eventBus.subscribe(CONTENT_SCRIPT_ENABLE, handleContentScriptStatusChange);
     return () => {
-      eventBus.unsubscribe(APPLICATION_ENABLE, handleApplicationStatusChange);
+      eventBus.unsubscribe(CONTENT_SCRIPT_ENABLE, handleContentScriptStatusChange);
     };
-  }, [handleApplicationStatusChange]);
+  }, [handleContentScriptStatusChange]);
 
   return (
-    <ApplicationContext.Provider value={{ isInitialized, isApplicationEnabled: isAppEnabled }}>{children}</ApplicationContext.Provider>
+    <ApplicationContext.Provider
+      value={{ isInitialized, isApplicationEnabled: isAppEnabled, isContentScriptEnabled: isContentScriptEnabled }}
+    >
+      {children}
+    </ApplicationContext.Provider>
   );
 };

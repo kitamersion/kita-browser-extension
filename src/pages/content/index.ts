@@ -3,6 +3,7 @@ import { SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
 import logger from "@/config/logger";
 import { CONTENT_SITE_CONFIG } from "@/data/contants";
+import { getContentScriptEnabled } from "@/api/applicationStorage";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
@@ -216,12 +217,14 @@ class VideoTracker {
 
 const videoTracker = VideoTracker.getInstance();
 
-videoTracker.initialize();
+getContentScriptEnabled((isContentEnabled) => {
+  isContentEnabled ? videoTracker.initialize() : videoTracker.destroy();
+});
 
-// listen for messages to disable/enable the application
+// listen for messages to disable/enable content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   logger.info(`content script received message: ${JSON.stringify(request)}`);
-  if (!request.IsApplicationEnabled) {
+  if (!request.IsContentScriptEnabled) {
     videoTracker?.destroy();
   } else {
     videoTracker?.initialize();

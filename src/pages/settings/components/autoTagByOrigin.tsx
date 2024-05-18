@@ -84,7 +84,7 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
       <Flex flexDirection={"column"} gap={4} px={2} my={2}>
         <Flex gap={1} flexDirection={"row"} justifyContent={"space-between"}>
-          <Flex gap={1}>
+          <Flex gap={1} alignItems={"center"}>
             <IoIosPricetags />
             <Text fontSize={14}>{origin}</Text>
           </Flex>
@@ -119,7 +119,7 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
             {memoizedTagItems}
             {newAutoTag.tags.length === 0 && (
               <Text fontSize={14} color={"tomato"}>
-                No tags assigned
+                No auto tags assigned
               </Text>
             )}
           </Flex>

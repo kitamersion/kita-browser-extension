@@ -72,6 +72,11 @@ const importFromJSON = (file: File): Promise<void> => {
           data.ApplicationSettings.IsApplicationEnabled
         );
 
+        await setItemsForKey<boolean>(
+          kitaSchema.ApplicationSettings.StorageKeys.ContentScriptEnabledKey,
+          data.ApplicationSettings.IsContentScriptEnabled
+        );
+
         await setItemsForKey<number>(
           kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey,
           videosToAdd.length ?? 0

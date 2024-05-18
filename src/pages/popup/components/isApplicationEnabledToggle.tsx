@@ -3,28 +3,28 @@ import { useApplicationContext } from "@/context/applicationContext";
 import { IconButton, Tooltip } from "@chakra-ui/react";
 import React, { useCallback } from "react";
 import eventBus from "@/api/eventbus";
-import { APPLICATION_ENABLE } from "@/data/events";
+import { CONTENT_SCRIPT_ENABLE } from "@/data/events";
 import { FaPowerOff } from "react-icons/fa6";
 
 const IsApplicationEnabledToggle = () => {
-  const { isInitialized, isApplicationEnabled } = useApplicationContext();
+  const { isInitialized, isContentScriptEnabled } = useApplicationContext();
 
   const handleApplicationStatusChange = useCallback(() => {
-    eventBus.publish(APPLICATION_ENABLE, { message: "updating application enabled state", value: !isApplicationEnabled });
-  }, [isApplicationEnabled]);
+    eventBus.publish(CONTENT_SCRIPT_ENABLE, { message: "updating content script enabled state", value: !isContentScriptEnabled });
+  }, [isContentScriptEnabled]);
 
   if (!isInitialized) {
     <LoadingState />;
   }
 
   return (
-    <Tooltip placement="bottom" label={`Click to turn ${isApplicationEnabled ? "OFF" : "ON"}`} rounded={"full"}>
+    <Tooltip placement="bottom" label={`Click to turn ${isContentScriptEnabled ? "OFF" : "ON"}`} rounded={"full"}>
       <IconButton
-        icon={<FaPowerOff color={isApplicationEnabled ? "green" : "red"} />}
+        icon={<FaPowerOff color={isContentScriptEnabled ? "green" : "red"} />}
         variant="ghost"
         rounded="full"
-        title={`Click to turn ${isApplicationEnabled ? "OFF" : "ON"}`}
-        aria-label={`Application is ${isApplicationEnabled ? "OFF" : "ON"}`}
+        title={`Click to turn ${isContentScriptEnabled ? "OFF" : "ON"}`}
+        aria-label={`Application is ${isContentScriptEnabled ? "OFF" : "ON"}`}
         onClick={handleApplicationStatusChange}
       />
     </Tooltip>

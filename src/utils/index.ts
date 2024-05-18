@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { SHA256 } from "crypto-js";
+import { IVideo } from "@/types/video";
 
 const ENV = process.env.APPLICATION_ENVIRONMENT;
 const SETTINGS_PAGE_NAME = "settings.html";
@@ -55,4 +56,15 @@ export const generateUniqueCode = (video_title: string, origin: string): string 
   const hash = SHA256(video_title + origin);
 
   return hash.toString();
+};
+
+export const filterVideos = (videos: IVideo[], date: Date): IVideo[] => {
+  const now = date.getTime();
+  return videos.filter((video) => video.created_at > now);
+};
+
+export const getDateFromNow = (days: number) => {
+  const now = new Date();
+  now.setDate(now.getDate() - days);
+  return now;
 };
