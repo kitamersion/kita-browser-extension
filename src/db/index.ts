@@ -2,7 +2,7 @@
 import { DEFAULT_TAGS } from "@/data/contants";
 import { IVideoTag } from "@/types/relationship";
 import { ITag } from "@/types/tag";
-import { IVideo } from "@/types/video";
+import { IPaginatedVideos, IVideo } from "@/types/video";
 import {
   DB_NAME,
   DB_VERSION,
@@ -267,6 +267,67 @@ class IndexedDB {
 
       request.onsuccess = () => {
         resolve(request.result);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get videos by pagination
+  getVideosByPagination(page: number, pageSize: number): Promise<IPaginatedVideos> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
+      const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const request = videoStore.count();
+
+      request.onsuccess = () => {
+        const totalRecords = request.result;
+        const totalPages = Math.ceil(totalRecords / pageSize);
+        const cursorRequest = videoStore.openCursor();
+        const results: IVideo[] = [];
+        let index = 0;
+
+        cursorRequest.onsuccess = () => {
+          const cursor = cursorRequest.result;
+          if (cursor) {
+            if (index >= page * pageSize && index < (page + 1) * pageSize) {
+              results.push(cursor.value);
+            }
+            index++;
+            if (results.length < pageSize) {
+              cursor.continue();
+            } else {
+              resolve({
+                page,
+                pageSize,
+                results,
+                totalPages,
+              });
+            }
+          } else if (results.length > 0) {
+            resolve({
+              page,
+              pageSize,
+              results,
+              totalPages,
+            });
+          } else {
+            resolve({
+              page,
+              pageSize,
+              results: [],
+              totalPages,
+            });
+          }
+        };
+
+        cursorRequest.onerror = () => {
+          reject(cursorRequest.error);
+        };
       };
 
       request.onerror = () => {

@@ -8,6 +8,7 @@ import TagAssignedRadar from "./components/tagAssignedRadar";
 import VideoDurationOverTimeAreaChart from "./components/videoDurationOverTimeAreaChart";
 import { useTagContext } from "@/context/tagContext";
 import { useVideoContext } from "@/context/videoContext";
+import PaginatedVideoList from "./components/paginatedVideoList";
 
 const Statistics = () => {
   const { columns } = useScreenSize();
@@ -43,6 +44,7 @@ const Statistics = () => {
           {totalVideoCount > 0 && totalTagCount > 0 && <TagAssignedRadar />}
         </Grid>
       </Suspense>
+      <PaginatedVideoList />
     </Box>
   );
 };
