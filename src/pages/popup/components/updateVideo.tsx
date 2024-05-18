@@ -117,14 +117,13 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
     const relationshipToRemove = selectedTagIdsForVideo.filter((tagId) => !video.tags?.includes(tagId)) ?? [];
 
     if (relationshipToAdd.length > 0) {
-      const items: IVideoTag[] =
-        video.tags?.map((tagId) => {
-          return {
-            id: self.crypto.randomUUID(),
-            video_id: video.id,
-            tag_id: tagId,
-          };
-        }) ?? [];
+      const items: IVideoTag[] = relationshipToAdd.map((tagId) => {
+        return {
+          id: self.crypto.randomUUID(),
+          video_id: video.id,
+          tag_id: tagId,
+        };
+      });
       eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship", value: items });
     }
 
