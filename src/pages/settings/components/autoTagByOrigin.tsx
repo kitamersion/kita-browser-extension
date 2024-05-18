@@ -119,7 +119,7 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
             {memoizedTagItems}
             {newAutoTag.tags.length === 0 && (
               <Text fontSize={14} color={"tomato"}>
-                No tags assigned
+                No auto tags assigned
               </Text>
             )}
           </Flex>
