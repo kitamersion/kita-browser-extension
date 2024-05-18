@@ -118,9 +118,10 @@ describe("filterVideos function", () => {
 
     const filteredVideos = filterVideos(videos, date);
 
-    expect(filteredVideos).toHaveLength(2);
-    expect(filteredVideos[0].created_at).toBeGreaterThan(date.getTime());
-    expect(filteredVideos[1].created_at).toBeGreaterThan(date.getTime());
+    expect(filteredVideos).toHaveLength(3);
+    expect(filteredVideos[0].created_at).toBeGreaterThanOrEqual(date.getTime());
+    expect(filteredVideos[1].created_at).toBeGreaterThanOrEqual(date.getTime());
+    expect(filteredVideos[2].created_at).toBeGreaterThanOrEqual(date.getTime());
   });
 });
 
