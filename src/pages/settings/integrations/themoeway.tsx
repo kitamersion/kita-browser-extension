@@ -54,7 +54,7 @@ const VideoInputGroup = ({ logMessage }: { logMessage?: string }) => {
     <Flex flexDirection={"row"} gap={1}>
       <Input name="video_title" type="text" value={logMessage} readOnly />
       <Button variant="solid" onClick={onCopy}>
-        {hasCopied ? "Copied!" : "Copy"}
+        {hasCopied ? "Copied" : "Copy"}
       </Button>
     </Flex>
   );
