@@ -108,20 +108,33 @@ describe("generateUniqueCode function", () => {
 });
 
 describe("filterVideos function", () => {
-  test("filters videos based on created_at date", () => {
+  it("returns an empty array when no videos are provided", () => {
+    const videos = [] as IVideo[];
+    const date = new Date();
+    expect(filterVideos(videos, date)).toEqual([]);
+  });
+
+  it("returns an empty array when all videos are before the date", () => {
+    const videos = [{ created_at: new Date("2022-01-01").getTime() }, { created_at: new Date("2022-01-02").getTime() }] as IVideo[];
+    const date = new Date("2022-02-01");
+    expect(filterVideos(videos, date)).toEqual([]);
+  });
+
+  it("returns only videos after the date when some videos are before and some are after the date", () => {
     const videos = [
       { created_at: new Date("2022-01-01").getTime() },
       { created_at: new Date("2022-02-01").getTime() },
       { created_at: new Date("2022-03-01").getTime() },
     ] as IVideo[];
     const date = new Date("2022-02-01");
+    const expected = [{ created_at: new Date("2022-03-01").getTime() }];
+    expect(filterVideos(videos, date)).toEqual(expected);
+  });
 
-    const filteredVideos = filterVideos(videos, date);
-
-    expect(filteredVideos).toHaveLength(3);
-    expect(filteredVideos[0].created_at).toBeGreaterThanOrEqual(date.getTime());
-    expect(filteredVideos[1].created_at).toBeGreaterThanOrEqual(date.getTime());
-    expect(filteredVideos[2].created_at).toBeGreaterThanOrEqual(date.getTime());
+  it("returns all videos when all videos are after the date", () => {
+    const videos = [{ created_at: new Date("2022-03-01").getTime() }, { created_at: new Date("2022-04-01").getTime() }] as IVideo[];
+    const date = new Date("2022-02-01");
+    expect(filterVideos(videos, date)).toEqual(videos);
   });
 });
 
