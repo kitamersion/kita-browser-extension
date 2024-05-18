@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.5.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.5...v2.5.0) (2024-05-18)
+
+
+### Features
+
+* themoeway immersion bot inputs (without optional comment) ([#112](https://github.com/kitamersion/kita-browser-extension/issues/112)) ([36845b3](https://github.com/kitamersion/kita-browser-extension/commit/36845b3ff70d3804e4c31c1740a4d59b66d204b7))
+
 ### [2.4.5](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.4...v2.4.5) (2024-05-14)
 
 
