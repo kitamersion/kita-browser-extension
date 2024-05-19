@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.5.0...v2.6.0) (2024-05-19)
+
+
+### Features
+
+* view all items with pagination ([#113](https://github.com/kitamersion/kita-browser-extension/issues/113)) ([fe850e1](https://github.com/kitamersion/kita-browser-extension/commit/fe850e1b5868c74cceb67e6cfc0b2e5b3a0166e9))
+
 ## [2.5.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.5...v2.5.0) (2024-05-18)
 
 
