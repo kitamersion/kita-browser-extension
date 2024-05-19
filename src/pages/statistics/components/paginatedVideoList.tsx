@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Button, Flex, Table, Tbody, Td, Th, Thead, Tr, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Table, Tbody, Td, Th, Thead, Tr, Text, Link } from "@chakra-ui/react";
 import { useVideoPagination } from "@/hooks/useVideoPagination";
 import { MdArrowBackIosNew, MdArrowForwardIos } from "react-icons/md";
 import { formatDuration, formatTimestamp } from "@/utils";
@@ -37,7 +37,13 @@ function PaginatedVideoList() {
           {paginatedResult.results.map((video) => (
             <Tr key={video.id}>
               <Td isTruncated maxWidth={"xs"} title={video.video_title}>
-                {video.video_title}
+                {video.video_url ? (
+                  <Link p={2} href={video.video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
+                    {video.video_title}
+                  </Link>
+                ) : (
+                  video.video_title
+                )}
               </Td>
               <Td>{formatDuration(video.video_duration)}</Td>
               <Td>{formatTimestamp(video.created_at)}</Td>
