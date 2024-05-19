@@ -15,7 +15,7 @@ type DBSchema = {
 };
 
 export const DB_NAME = "kitamersiondb";
-export const DB_VERSION = 3;
+export const DB_VERSION = 5;
 export const OBJECT_STORE_VIDEOS = "videos";
 export const OBJECT_STORE_TAGS = "tags";
 export const OBJECT_STORE_VIDEO_TAGS = "video_tags";
@@ -77,6 +77,20 @@ export const DB_SCHEMAS: DBSchema[] = [
           },
           {
             name: "tag_id",
+            options: { unique: false },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: 3,
+    stores: [
+      {
+        name: OBJECT_STORE_VIDEOS,
+        indexes: [
+          {
+            name: "created_at",
             options: { unique: false },
           },
         ],

@@ -4,18 +4,15 @@ import { Box, Flex, Grid, Heading, Text } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import Summary from "./components/summary";
 import VideoItemsBarChart from "./components/videoItemsBarChart";
-import TagAssignedRadar from "./components/tagAssignedRadar";
 import VideoDurationOverTimeAreaChart from "./components/videoDurationOverTimeAreaChart";
-import { useTagContext } from "@/context/tagContext";
 import { useVideoContext } from "@/context/videoContext";
 import PaginatedVideoList from "./components/paginatedVideoList";
 
 const Statistics = () => {
   const { columns } = useScreenSize();
   const { isInitialized: isVideoInitialized, totalVideoCount } = useVideoContext();
-  const { isInitialized: isTagInitialized, totalTagCount } = useTagContext();
 
-  if (!isVideoInitialized && !isTagInitialized) {
+  if (!isVideoInitialized) {
     return <LoadingState />;
   }
 
@@ -41,10 +38,11 @@ const Statistics = () => {
             </>
           )}
 
-          {totalVideoCount > 0 && totalTagCount > 0 && <TagAssignedRadar />}
+          {/* @todo: provides no value, will consider future state  */}
+          {/* {totalVideoCount > 0 && totalTagCount > 0 && <TagAssignedRadar />} */}
         </Grid>
+        {totalVideoCount > 0 && <PaginatedVideoList />}
       </Suspense>
-      <PaginatedVideoList />
     </Box>
   );
 };

@@ -57,6 +57,7 @@ class IndexedDB {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event) => {
+        setApplicationEnabled(false, () => {});
         logger.warn("database upgrade needed...");
         this.db = (event.target as IDBOpenDBRequest).result;
         const db = this.db;
@@ -84,7 +85,6 @@ class IndexedDB {
             }
           }
         }
-        setApplicationEnabled(false, () => {});
       };
 
       request.onsuccess = (event) => {
@@ -282,12 +282,13 @@ class IndexedDB {
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const createdAtIndex = videoStore.index("created_at");
       const request = videoStore.count();
 
       request.onsuccess = () => {
         const totalRecords = request.result;
         const totalPages = Math.ceil(totalRecords / pageSize);
-        const cursorRequest = videoStore.openCursor();
+        const cursorRequest = createdAtIndex.openCursor(null, "prev"); // open cursor to iterate in desc order
         const results: IVideo[] = [];
         let index = 0;
 
