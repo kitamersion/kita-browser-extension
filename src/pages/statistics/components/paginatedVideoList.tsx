@@ -38,7 +38,7 @@ function PaginatedVideoList() {
             <Tr key={video.id}>
               <Td isTruncated maxWidth={"xs"} title={video.video_title}>
                 {video.video_url ? (
-                  <Link p={2} href={video.video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
+                  <Link href={video.video_url} isExternal>
                     {video.video_title}
                   </Link>
                 ) : (
