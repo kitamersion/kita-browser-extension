@@ -97,6 +97,7 @@ class VideoTracker {
       origin: origin,
       created_at: timestamp,
       tags: [],
+      media_type: "ANIME",
     };
 
     const payload = JSON.stringify(newRecord);

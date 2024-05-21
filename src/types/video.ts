@@ -9,7 +9,15 @@ export type IVideo = {
   updated_at?: number;
   tags?: string[];
   episode_number?: number;
+  media_type?: MediaTypes;
+  series_title?: string;
+  series_episode_number?: number;
+  anilist_series_id?: number;
+  mal_series_id?: number;
+  background_cover_image?: string;
 };
+
+export type MediaTypes = "ANIME" | "MANGA";
 
 export type IPaginatedVideos = {
   page: number;

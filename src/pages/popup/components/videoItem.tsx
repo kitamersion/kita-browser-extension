@@ -13,6 +13,7 @@ import { ITag } from "@/types/tag";
 import { IoTimerOutline } from "react-icons/io5";
 import { IoIosCalendar } from "react-icons/io";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
+import AnilistAnimeTrySearchAndLink from "@/pages/settings/components/anilistAnimeTrySearchAndLink";
 
 const VideoItem = (video: IVideo) => {
   const { id, created_at, origin, video_duration, video_title, video_url } = video;
@@ -39,7 +40,22 @@ const VideoItem = (video: IVideo) => {
   }, [selectedTagIdsForVideo, tagObject]);
 
   return (
-    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
+    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4} position="relative" zIndex={0}>
+      <Box
+        rounded={"2xl"}
+        backgroundImage="url('https://images.unsplash.com/photo-1716117274929-875f37a83fe5?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" // placeholder image
+        backgroundPosition="center"
+        backgroundRepeat="no-repeat"
+        backgroundSize="cover"
+        opacity={0.2}
+        position="absolute"
+        top={0}
+        bottom={0}
+        right={0}
+        left={0}
+        zIndex={-1}
+      />
+
       <Flex width={"full"} flexDirection={"row"}>
         <Flex width={"full"} flexDirection={"column"} gap={1}>
           <Flex gap={1} justifyContent={"space-between"}>
@@ -49,7 +65,6 @@ const VideoItem = (video: IVideo) => {
                 {formatTimestamp(created_at)}
               </Text>
             </Flex>
-
             <Flex gap={1}>
               <IoTimerOutline color="tomato" />
               <Text fontSize={12} color={"tomato"}>
@@ -75,6 +90,7 @@ const VideoItem = (video: IVideo) => {
                 title="Delete item"
                 onClick={() => handleDeleteById(id)}
               />
+              <AnilistAnimeTrySearchAndLink video_title={video.video_title} />
             </Flex>
           </Flex>
           <Flex gap={1} flexWrap={"wrap"}>
