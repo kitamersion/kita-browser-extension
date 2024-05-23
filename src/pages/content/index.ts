@@ -97,13 +97,47 @@ class VideoTracker {
       origin: origin,
       created_at: timestamp,
       tags: [],
-      media_type: "ANIME",
     };
+
+    if (origin === SiteKey.CRUNCHYROLL) {
+      const { seriesTitle, episodeNumber, seasonYear } = this._crunchyrollSeriesMetadata();
+      newRecord.series_title = seriesTitle;
+      newRecord.watching_episode_number = parseInt(episodeNumber) || undefined;
+      newRecord.watching_season_year = seasonYear;
+      newRecord.media_type = "ANIME";
+    }
 
     const payload = JSON.stringify(newRecord);
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
 
     logger.info("video added from content");
+  }
+
+  _crunchyrollSeriesMetadata() {
+    const scriptElements = document.querySelectorAll("script[type='application/ld+json']");
+
+    for (const scriptElement of scriptElements) {
+      const scriptContent = scriptElement.textContent;
+      if (scriptContent) {
+        const metadata = JSON.parse(scriptContent);
+        if (metadata["@type"] === "TVEpisode") {
+          const seriesTitle = metadata.partOfSeries?.name;
+          const episodeNumber = metadata.episodeNumber;
+          const seasonYear = new Date(metadata.datePublished).getFullYear();
+          return {
+            seriesTitle: seriesTitle ?? undefined,
+            episodeNumber: episodeNumber ?? undefined,
+            seasonYear: seasonYear ?? undefined,
+          };
+        }
+      }
+    }
+
+    return {
+      seriesTitle: undefined,
+      episodeNumber: undefined,
+      seasonYear: undefined,
+    };
   }
 
   getTotalDuration(duration: string): string {

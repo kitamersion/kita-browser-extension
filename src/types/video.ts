@@ -8,13 +8,16 @@ export type IVideo = {
   unique_code?: string;
   updated_at?: number;
   tags?: string[];
-  episode_number?: number;
+  watching_episode_number?: number;
+  watching_season_year?: number;
   media_type?: MediaTypes;
   series_title?: string;
   series_episode_number?: number;
+  series_season_year?: number;
   anilist_series_id?: number;
   mal_series_id?: number;
   background_cover_image?: string;
+  banner_image?: string;
 };
 
 export type MediaTypes = "ANIME" | "MANGA";

@@ -13,10 +13,12 @@ export const GET_MEDIA_BY_SEARCH = gql`
         medium
         color
       }
-      episodes
       idMal
       id
+      episodes
+      seasonYear
       siteUrl
+      bannerImage
     }
   }
 `;

@@ -39,11 +39,15 @@ const VideoItem = (video: IVideo) => {
     return matchingTag;
   }, [selectedTagIdsForVideo, tagObject]);
 
+  const backgroundImageUrl = useMemo(() => {
+    return video.banner_image || video.background_cover_image || "";
+  }, [video.background_cover_image, video.banner_image]);
+
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4} position="relative" zIndex={0}>
       <Box
         rounded={"2xl"}
-        backgroundImage="url('https://images.unsplash.com/photo-1716117274929-875f37a83fe5?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" // placeholder image
+        backgroundImage={`url('${backgroundImageUrl}')`}
         backgroundPosition="center"
         backgroundRepeat="no-repeat"
         backgroundSize="cover"
@@ -90,7 +94,8 @@ const VideoItem = (video: IVideo) => {
                 title="Delete item"
                 onClick={() => handleDeleteById(id)}
               />
-              <AnilistAnimeTrySearchAndLink video_title={video.video_title} />
+
+              {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />}
             </Flex>
           </Flex>
           <Flex gap={1} flexWrap={"wrap"}>
