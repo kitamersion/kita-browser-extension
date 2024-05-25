@@ -41,6 +41,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
             AnilistAuthKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey,
             AnilistConfigKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistConfigKey,
             AuthStatus: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus,
+            AnilistAutoSyncMediaKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey,
           },
         },
         StatisticsKeys: {
