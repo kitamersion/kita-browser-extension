@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.6.2](https://github.com/kitamersion/kita-browser-extension/compare/v2.6.1...v2.6.2) (2024-05-25)
+
 ### [2.6.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.6.0...v2.6.1) (2024-05-25)
 
 ## [2.6.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.5.0...v2.6.0) (2024-05-19)
