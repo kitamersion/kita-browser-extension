@@ -391,7 +391,7 @@ class IndexedDB {
   }
 
   // add tag
-  addTag({ id, name, code, created_at }: ITag): Promise<void> {
+  addTag({ id, name, code, created_at, owner }: ITag): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -400,7 +400,13 @@ class IndexedDB {
 
       const codeOrFromName = code ?? name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
 
-      const tagItem: ITag = { id: id ?? self.crypto.randomUUID(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
+      const tagItem: ITag = {
+        id: id ?? self.crypto.randomUUID(),
+        name,
+        code: codeOrFromName,
+        created_at: created_at ?? Date.now(),
+        owner: owner ?? "USER",
+      };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();
