@@ -39,7 +39,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const addCacheMedia = useCallback(
     (searchData?: GetMediaBySearchQuery): IMediaCache => {
       // expire cache item
-      const sevenDays = getDateFromNow(WEEK_IN_DAYS).getUTCMilliseconds();
+      const sevenDays = getDateFromNow(WEEK_IN_DAYS, "FUTURE").getTime();
 
       const cacheItem: IMediaCache = {
         id: self.crypto.randomUUID(),
