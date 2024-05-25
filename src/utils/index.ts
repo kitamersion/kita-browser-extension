@@ -63,8 +63,13 @@ export const filterVideos = (videos: IVideo[], date: Date): IVideo[] => {
   return videos.filter((video) => video.created_at > now);
 };
 
-export const getDateFromNow = (days: number) => {
+type DateFromNow = "FUTURE" | "PAST";
+export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
   const now = new Date();
+  if (from === "FUTURE") {
+    now.setDate(now.getDate() + days);
+    return now;
+  }
   now.setDate(now.getDate() - days);
   return now;
 };

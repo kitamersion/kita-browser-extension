@@ -12,6 +12,8 @@ import { IVideoTag } from "@/types/relationship";
 import { useCachedMediaContext } from "@/context/cachedMediaContext";
 import { IMediaCache } from "@/types/integrations/cache";
 import { SHA256 } from "crypto-js";
+import { getDateFromNow } from "@/utils";
+import logger from "@/config/logger";
 
 const WEEK_IN_DAYS = 7;
 
@@ -20,30 +22,24 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { isInitialized: isMediaCacheInitialized, mediaCaches } = useCachedMediaContext();
   const [getMediaBySearch, { data: searchData, loading: searchLoading, error: searchError }] = useGetMediaBySearchLazyQuery();
   const [setMedia, { data: mediaSetData, loading: mediaSetLoading, error: mediaSetError }] = useSetMediaListEntryByAnilistIdMutation();
-  // const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
-  const [synced, setSynced] = useState(false);
+  const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
   const [existingCacheItem, setExistingCacheItem] = useState<IMediaCache | undefined>(undefined);
 
   const searchInAnilist = () => {
     const cacheItem = mediaCaches.find((cache) => cache.unique_code === SHA256(video.series_title || "").toString());
     if (cacheItem) {
-      console.log("using cache item!");
+      logger.info("using existing cache item for sync");
       setExistingCacheItem(cacheItem);
       return;
     }
-
-    console.log("going to SEARCH! anilist");
+    logger.info("using anilist to search for series");
     getMediaBySearch({ variables: { search: video.series_title ?? video.video_title } });
   };
 
   const addCacheMedia = useCallback(
     (searchData?: GetMediaBySearchQuery): IMediaCache => {
-      // expires in 7 days from created_at
-      const now = new Date();
-      const sevenDays = new Date(now.setDate(now.getDate() + WEEK_IN_DAYS));
-
-      // expires in 30 seconds from now
-      const thirtySecondsFromNow = new Date(now.getTime() + 5 * 1000);
+      // expire cache item
+      const sevenDays = getDateFromNow(WEEK_IN_DAYS).getUTCMilliseconds();
 
       const cacheItem: IMediaCache = {
         id: self.crypto.randomUUID(),
@@ -55,17 +51,13 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         background_cover_image: searchData?.Media?.coverImage?.extraLarge ?? undefined,
         banner_image: searchData?.Media?.bannerImage ?? undefined,
         created_at: Date.now(),
-        expires_at: thirtySecondsFromNow.getTime(), // @todo - used for testing, replace with 7 days below
-        // expires_at: sevenDays.getTime(),
+        expires_at: sevenDays,
         media_type: "ANIME",
         unique_code: SHA256(searchData?.Media?.title?.english || "").toString(),
       };
 
       eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "add cache item", value: cacheItem });
-
-      console.log("Going to add new cache item");
-      console.log(cacheItem);
-
+      logger.info("added new cache item");
       return cacheItem;
     },
     [video.series_title]

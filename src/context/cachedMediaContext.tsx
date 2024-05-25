@@ -4,6 +4,7 @@ import { IMediaCache } from "@/types/integrations/cache";
 import IndexedDB from "@/db/index";
 import { CACHED_MEDIA_METADATA_ADD_OR_UPDATE, CACHED_MEDIA_METADATA_DELETE } from "@/data/events";
 import { useApplicationContext } from "./applicationContext";
+import logger from "@/config/logger";
 
 interface CachedMediaContextType {
   isInitialized: boolean;
@@ -26,7 +27,7 @@ export const CachedMediaProvider = ({ children }: PropsWithChildren<unknown>) =>
   const [mediaCaches, setMediaCaches] = useState<IMediaCache[]>([]);
 
   const handleGetAllCachedMedia = useCallback(async () => {
-    // delete expired cache
+    // cleanup expired cache
     await IndexedDB.deleteExpiredMediaCache();
 
     const mediaCaches = await IndexedDB.getAllMediaCache();
@@ -35,16 +36,14 @@ export const CachedMediaProvider = ({ children }: PropsWithChildren<unknown>) =>
 
   const handleCacheMediaAddOrUpdate = useCallback(async (eventData: any) => {
     const payload = eventData.value as IMediaCache;
-
-    console.log("handle new cache item add from context");
-    console.log(payload);
+    logger.info(eventData.message);
 
     await IndexedDB.addOrUpdateMediaCache(payload);
-    console.log("done");
   }, []);
 
   const handleCacheMediaDeleteById = useCallback(async (eventData: any) => {
     const payload = eventData.value;
+    logger.info(eventData.message);
 
     await IndexedDB.deleteMediaCacheById(payload);
   }, []);
