@@ -1,6 +1,6 @@
 import { IVideo } from "@/types/video";
 import { formatDuration, formatTimestamp } from "@/utils";
-import { Box, Text, Flex, IconButton, Link } from "@chakra-ui/react";
+import { Box, Text, Flex, IconButton, Link, Badge } from "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
 import React, { useMemo } from "react";
 import eventbus from "@/api/eventbus";
@@ -94,14 +94,21 @@ const VideoItem = (video: IVideo) => {
                 title="Delete item"
                 onClick={() => handleDeleteById(id)}
               />
-
-              {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />}
             </Flex>
           </Flex>
           <Flex gap={1} flexWrap={"wrap"}>
             {renderTags.map((tag) => (
               <TagItem key={tag.id} tag={tag} size="sm" />
             ))}
+          </Flex>
+
+          <Flex my={1} alignItems={"center"}>
+            {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />}
+            {video.watching_episode_number && (
+              <Badge rounded={"2xl"} px={2}>
+                EP {video.watching_episode_number}
+              </Badge>
+            )}
           </Flex>
         </Flex>
       </Flex>
