@@ -3,6 +3,7 @@ import { useAnilistContext } from "@/context/anilistContext";
 import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 
+const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ANILIST_GRAPHQL_URI = "https://graphql.anilist.co";
 
 const GraphqlContext = createContext<undefined>(undefined);
@@ -34,6 +35,7 @@ export const GraphqlProvider = ({ children }: PropsWithChildren<unknown>) => {
   const client = new ApolloClient({
     link: authLink.concat(httpLink),
     cache: new InMemoryCache(),
+    connectToDevTools: ENV === "dev" ?? false,
   });
 
   return (

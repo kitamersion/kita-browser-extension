@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.6.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.5.0...v2.6.0) (2024-05-19)
+
+
+### Features
+
+* view all items with pagination ([#113](https://github.com/kitamersion/kita-browser-extension/issues/113)) ([fe850e1](https://github.com/kitamersion/kita-browser-extension/commit/fe850e1b5868c74cceb67e6cfc0b2e5b3a0166e9))
+
+## [2.5.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.5...v2.5.0) (2024-05-18)
+
+
+### Features
+
+* themoeway immersion bot inputs (without optional comment) ([#112](https://github.com/kitamersion/kita-browser-extension/issues/112)) ([36845b3](https://github.com/kitamersion/kita-browser-extension/commit/36845b3ff70d3804e4c31c1740a4d59b66d204b7))
+
+### [2.4.5](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.4...v2.4.5) (2024-05-14)
+
+
+### Bug Fixes
+
+* database initialization ([ebcda4b](https://github.com/kitamersion/kita-browser-extension/commit/ebcda4b7e8ee2fddba8851bcd7cbe39ae9ec325e))
+
+### [2.4.4](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.3...v2.4.4) (2024-05-13)
+
+### [2.4.3](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.2...v2.4.3) (2024-05-13)
+
 ### [2.4.2](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.1...v2.4.2) (2024-05-13)
 
 ### [2.4.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.4.0...v2.4.1) (2024-05-12)

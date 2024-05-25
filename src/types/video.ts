@@ -11,6 +11,13 @@ export type IVideo = {
   episode_number?: number;
 };
 
+export type IPaginatedVideos = {
+  page: number;
+  pageSize: number;
+  results: IVideo[];
+  totalPages: number;
+};
+
 export enum SiteKey {
   YOUTUBE = "YOUTUBE",
   YOUTUBE_MUSIC = "YOUTUBE_MUSIC",

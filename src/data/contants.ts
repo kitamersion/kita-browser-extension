@@ -11,6 +11,7 @@ export const DEFAULT_TAGS = [
   { name: "Anime", code: "ANIME" },
   { name: "Book", code: "BOOK" },
   { name: "Listening", code: "LISTENING" },
+  { name: "Reading", code: "READING" },
   { name: "Manga", code: "MANGA" },
   { name: "VN", code: "VN" },
 ];

@@ -1,10 +1,9 @@
 /* eslint-disable no-case-declarations */
-import { v4 as uuidv4 } from "uuid";
 import { SiteKey, IVideo } from "../../types/video";
 import { VIDEO_ADD } from "@/data/events";
-import { getApplicationEnabled } from "@/api/applicationStorage";
 import logger from "@/config/logger";
 import { CONTENT_SITE_CONFIG } from "@/data/contants";
+import { getContentScriptEnabled } from "@/api/applicationStorage";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
@@ -91,7 +90,7 @@ class VideoTracker {
 
     // Create the video data object
     const newRecord: IVideo = {
-      id: uuidv4(),
+      id: self.crypto.randomUUID(),
       video_title: videoTitle,
       video_duration: videoDuration,
       video_url: url,
@@ -218,14 +217,14 @@ class VideoTracker {
 
 const videoTracker = VideoTracker.getInstance();
 
-getApplicationEnabled((IsApplicationEnabled) => {
-  videoTracker.initialize();
+getContentScriptEnabled((isContentEnabled) => {
+  isContentEnabled ? videoTracker.initialize() : videoTracker.destroy();
 });
 
-// listen for messages to disable/enable the application
+// listen for messages to disable/enable content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   logger.info(`content script received message: ${JSON.stringify(request)}`);
-  if (!request.IsApplicationEnabled) {
+  if (!request.IsContentScriptEnabled) {
     videoTracker?.destroy();
   } else {
     videoTracker?.initialize();

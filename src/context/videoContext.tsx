@@ -22,7 +22,7 @@ import {
 } from "@/api/summaryStorage/video";
 import IndexedDB from "@/db/index";
 import { useApplicationContext } from "./applicationContext";
-import { generateUniqueCode } from "@/utils";
+import { filterVideos, generateUniqueCode, getDateFromNow } from "@/utils";
 import logger from "@/config/logger";
 
 const DAY_IN_DAYS = 1;
@@ -62,17 +62,6 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [totalDurationMonth, setTotalDurationMonth] = useState<number>(0);
   const [totalDurationYear, setTotalDurationYear] = useState<number>(0);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
-
-  const filterVideos = (videos: IVideo[], date: Date): IVideo[] => {
-    const now = date.getTime();
-    return videos.filter((video) => video.created_at > now);
-  };
-
-  const getDateFromNow = (days: number) => {
-    const now = new Date();
-    now.setDate(now.getDate() - days);
-    return now;
-  };
 
   const calculateTotalDuration = (videos: IVideo[]): number => {
     return videos.reduce((total, video) => total + video.video_duration, 0);
