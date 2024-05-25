@@ -23,6 +23,7 @@ export const kitaSchema: KitaSchema = {
           AnilistAuthKey: "kitamersion_anilist_auth",
           AnilistConfigKey: "kitamersion_anilist_config",
           AuthStatus: "kitamersion_anilist_auth_status",
+          AnilistAutoSyncMediaKey: "kitamersion_anilist_auto_sync_media",
         },
       },
       StatisticsKeys: {

@@ -36,6 +36,7 @@ export type AnilistKeys = {
   AnilistConfigKey: string;
   AnilistAuthKey: string;
   AuthStatus: string;
+  AnilistAutoSyncMediaKey: string;
 };
 
 export type StatisticsKeys = {
