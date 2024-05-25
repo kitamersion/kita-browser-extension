@@ -73,3 +73,5 @@ export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
   now.setDate(now.getDate() - days);
   return now;
 };
+
+export const randomOffset = (max = 1000) => Math.floor(Math.random() * max);
