@@ -10,7 +10,8 @@ export const kitaSchema: KitaSchema = {
   ApplicationSettings: {
     IsReady: false, // @todo: implement
     IsApplicationEnabled: false, // default disabled application will decide when its ready
-    IsContentScriptEnabled: true, // default enabled
+    IsContentScriptEnabled: true, // default enabled @todo: make this configurable
+    AnilistSyncMedia: true, // default enabled (will allow user to disable)
     StorageKeys: {
       ApplicationEnabledKey: "kitamersion_application_enabled",
       ContentScriptEnabledKey: "kitamersion_content_script_enabled",

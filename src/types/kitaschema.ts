@@ -19,6 +19,7 @@ export type ApplicationSettings = {
   IsApplicationEnabled: boolean;
   IsContentScriptEnabled: boolean;
   StorageKeys: StorageKeys;
+  AnilistSyncMedia: boolean;
 };
 
 export type UserItems = {
