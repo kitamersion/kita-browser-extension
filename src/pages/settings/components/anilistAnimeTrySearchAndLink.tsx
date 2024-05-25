@@ -1,37 +1,93 @@
 import LoadingState from "@/components/states/LoadingState";
 import { GetMediaBySearchQuery, MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
 import { IconButton } from "@chakra-ui/react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
 import eventbus from "@/api/eventbus";
 import { IVideo } from "@/types/video";
-import { VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_UPDATED_BY_ID } from "@/data/events";
+import { CACHED_MEDIA_METADATA_ADD_OR_UPDATE, VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_UPDATED_BY_ID } from "@/data/events";
 import { useToastContext } from "@/context/toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { IVideoTag } from "@/types/relationship";
+import { useCachedMediaContext } from "@/context/cachedMediaContext";
+import { IMediaCache } from "@/types/integrations/cache";
+import { SHA256 } from "crypto-js";
+
+const WEEK_IN_DAYS = 7;
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
+  const { isInitialized: isMediaCacheInitialized, mediaCaches } = useCachedMediaContext();
   const [getMediaBySearch, { data: searchData, loading: searchLoading, error: searchError }] = useGetMediaBySearchLazyQuery();
   const [setMedia, { data: mediaSetData, loading: mediaSetLoading, error: mediaSetError }] = useSetMediaListEntryByAnilistIdMutation();
-  const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
+  // const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
+  const [synced, setSynced] = useState(false);
+  const [existingCacheItem, setExistingCacheItem] = useState<IMediaCache | undefined>(undefined);
 
   const searchInAnilist = () => {
+    const cacheItem = mediaCaches.find((cache) => cache.unique_code === SHA256(video.series_title || "").toString());
+    if (cacheItem) {
+      console.log("using cache item!");
+      setExistingCacheItem(cacheItem);
+      return;
+    }
+
+    console.log("going to SEARCH! anilist");
     getMediaBySearch({ variables: { search: video.series_title ?? video.video_title } });
   };
 
+  const addCacheMedia = useCallback(
+    (searchData?: GetMediaBySearchQuery): IMediaCache => {
+      // expires in 7 days from created_at
+      const now = new Date();
+      const sevenDays = new Date(now.setDate(now.getDate() + WEEK_IN_DAYS));
+
+      // expires in 30 seconds from now
+      const thirtySecondsFromNow = new Date(now.getTime() + 5 * 1000);
+
+      const cacheItem: IMediaCache = {
+        id: self.crypto.randomUUID(),
+        series_title: searchData?.Media?.title?.english ?? video.series_title,
+        anilist_series_id: searchData?.Media?.id,
+        mal_series_id: searchData?.Media?.idMal ?? undefined,
+        series_episode_number: searchData?.Media?.episodes ?? undefined,
+        series_season_year: searchData?.Media?.seasonYear ?? undefined,
+        background_cover_image: searchData?.Media?.coverImage?.extraLarge ?? undefined,
+        banner_image: searchData?.Media?.bannerImage ?? undefined,
+        created_at: Date.now(),
+        expires_at: thirtySecondsFromNow.getTime(), // @todo - used for testing, replace with 7 days below
+        // expires_at: sevenDays.getTime(),
+        media_type: "ANIME",
+        unique_code: SHA256(searchData?.Media?.title?.english || "").toString(),
+      };
+
+      eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "add cache item", value: cacheItem });
+
+      console.log("Going to add new cache item");
+      console.log(cacheItem);
+
+      return cacheItem;
+    },
+    [video.series_title]
+  );
+
   useEffect(() => {
-    const fetchAndSyncAnilist = async (searchData: GetMediaBySearchQuery) => {
+    const fetchAndSyncAnilist = async (searchData?: GetMediaBySearchQuery) => {
       const tag = await IndexedDB.getTagByCode("ANILIST");
+
+      let cacheItem = existingCacheItem;
+      if (!cacheItem) {
+        cacheItem = addCacheMedia(searchData);
+      }
 
       const updatedVideo: IVideo = {
         ...video,
-        anilist_series_id: searchData.Media?.id,
-        mal_series_id: searchData.Media?.idMal ?? undefined,
-        series_episode_number: searchData.Media?.episodes ?? undefined,
-        series_season_year: searchData.Media?.seasonYear ?? undefined,
-        background_cover_image: searchData.Media?.coverImage?.extraLarge ?? undefined,
-        banner_image: searchData.Media?.bannerImage ?? undefined,
+        anilist_series_id: cacheItem.anilist_series_id ?? undefined,
+        mal_series_id: cacheItem.mal_series_id ?? undefined,
+        series_episode_number: cacheItem.series_episode_number ?? undefined,
+        series_season_year: cacheItem.series_season_year ?? undefined,
+        background_cover_image: cacheItem.background_cover_image ?? undefined,
+        banner_image: cacheItem.banner_image ?? undefined,
         updated_at: Date.now(),
         tags: tag?.id ? [tag.id] : [],
       };
@@ -46,11 +102,17 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: updatedVideo });
       eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship from anilist", value: [videoTagRelationship] });
 
-      if (searchData.Media?.id) {
-        const medaiCompletedStatus =
-          video.watching_episode_number === video.series_episode_number ? MediaListStatus.Completed : MediaListStatus.Current;
+      if (cacheItem.anilist_series_id || searchData?.Media?.id) {
+        const mediaCompletedStatus =
+          video.watching_episode_number === cacheItem.series_episode_number ? MediaListStatus.Completed : MediaListStatus.Current;
 
-        setMedia({ variables: { mediaId: searchData.Media.id, progress: video.watching_episode_number, status: medaiCompletedStatus } });
+        setMedia({
+          variables: {
+            mediaId: cacheItem.anilist_series_id ?? searchData?.Media?.id,
+            progress: video.watching_episode_number,
+            status: mediaCompletedStatus,
+          },
+        });
 
         showToast({
           title: "Anilist media synced!",
@@ -61,8 +123,8 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       setSynced(true);
     };
 
-    if (searchData && !synced) {
-      fetchAndSyncAnilist(searchData);
+    if ((existingCacheItem || searchData) && !synced) {
+      fetchAndSyncAnilist(searchData || undefined);
     }
 
     if (searchError) {
@@ -79,7 +141,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         status: "error",
       });
     }
-  }, [mediaSetError, searchData, searchError, setMedia, showToast, synced, video]);
+  }, [addCacheMedia, existingCacheItem, mediaSetError, searchData, searchError, setMedia, showToast, synced, video]);
 
   if (searchLoading || mediaSetLoading) {
     return <LoadingState />;

@@ -103,7 +103,8 @@ const VideoItem = (video: IVideo) => {
           </Flex>
 
           <Flex my={1} alignItems={"center"}>
-            {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />}
+            {/* {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />} */}
+            <AnilistAnimeTrySearchAndLink {...video} />
             {video.watching_episode_number && (
               <Badge rounded={"2xl"} px={2}>
                 EP {video.watching_episode_number}
