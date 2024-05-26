@@ -1,5 +1,5 @@
 import { IVideo } from "@/types/video";
-import { convertToSeconds, filterVideos, formatDuration, formatTimestamp, generateUniqueCode, getDateFromNow } from ".";
+import { convertToSeconds, filterVideos, formatDuration, formatTimestamp, generateUniqueCode, getDateFromNow, randomOffset } from ".";
 
 describe("formatDuration function", () => {
   test.each([
@@ -149,5 +149,28 @@ describe("getDateFromNow function", () => {
     expect(result.getFullYear()).toBe(expectedDate.getFullYear());
     expect(result.getMonth()).toBe(expectedDate.getMonth());
     expect(result.getDate()).toBe(expectedDate.getDate());
+  });
+});
+
+describe.skip("randomOffset function", () => {
+  it("should return a number", () => {
+    const result = randomOffset();
+    expect(typeof result).toBe("number");
+  });
+
+  it("should return a number less than max", () => {
+    const max = 500;
+    const result = randomOffset(max);
+    expect(result).toBeLessThan(max);
+  });
+
+  it("should return a whole number", () => {
+    const result = randomOffset();
+    expect(Number.isInteger(result)).toBe(true);
+  });
+
+  it("should return a number less than 1000 when no argument is passed", () => {
+    const result = randomOffset();
+    expect(result).toBeLessThan(1000);
   });
 });

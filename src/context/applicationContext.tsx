@@ -3,7 +3,7 @@ import { getApplicationEnabled, setContentScriptEnabled } from "@/api/applicatio
 import { CONTENT_SCRIPT_ENABLE } from "@/data/events";
 import eventBus from "@/api/eventbus";
 
-const IS_APPLICATION_READY_MS = 250; // quarter second
+const IS_APPLICATION_READY_MS = 250; // 1/4 second
 interface ApplicationContextType {
   isApplicationEnabled: boolean;
   isContentScriptEnabled: boolean;

@@ -8,6 +8,7 @@ const ENV = process.env.APPLICATION_ENVIRONMENT;
 const ANILIST_CONFIG_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistConfigKey;
 const ANILIST_AUTH_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey;
 const ANILIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus;
+const ANILIST_AUTO_SYNC_MEDIA_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey;
 
 // get anlist config
 const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
@@ -158,6 +159,41 @@ const deleteAnilistAuthStatus = (callback: Callback<void>) => {
   });
 };
 
+// get ANILIST_AUTO_SYNC_MEDIA_KEY
+const getAnilistAutoSyncMedia = (callback: Callback<boolean>) => {
+  if (ENV === "dev") {
+    logger.info("fetching anilist auto sync media");
+    const syncState = localStorage.getItem(ANILIST_AUTO_SYNC_MEDIA_KEY);
+    if (syncState === null) {
+      callback(false);
+      return;
+    }
+    callback(syncState as unknown as boolean);
+    return;
+  }
+
+  chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
+    logger.info("fetching anilist auto sync media");
+    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] || false;
+    callback(state);
+  });
+};
+
+// set ANILIST_AUTO_SYNC_MEDIA_KEY
+const setAnilistAutoSyncMedia = (value: boolean, callback: Callback<boolean>) => {
+  if (ENV === "dev") {
+    logger.info(`setting anilist auto sync media to: ${value}`);
+    localStorage.setItem(ANILIST_AUTO_SYNC_MEDIA_KEY, value.toString());
+    callback(value);
+    return;
+  }
+
+  chrome.storage.local.set({ [ANILIST_AUTO_SYNC_MEDIA_KEY]: value }, () => {
+    logger.info(`setting anilist auto sync media to: ${value}`);
+    callback(value);
+  });
+};
+
 const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
   getAnilistAuth((data) => {
     if (!data) {
@@ -206,4 +242,6 @@ export {
   setAnilistAuthStatus,
   deleteAnilistAuthStatus,
   getIsAuthorizedWithAnilist,
+  getAnilistAutoSyncMedia,
+  setAnilistAutoSyncMedia,
 };

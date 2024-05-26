@@ -10,6 +10,9 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
   const autoTags = await IndexedDB.getAllAutoTags();
   const isApplicationEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey);
   const isContentEnabled = await getItemsFromKey<boolean>(kitaSchema.ApplicationSettings.StorageKeys.ContentScriptEnabledKey);
+  const anilistSyncMedia = await getItemsFromKey<boolean>(
+    kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey
+  );
   const totalVideos = await getItemsFromKey<number>(
     kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey
   );
@@ -29,6 +32,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
       IsReady: false, // @todo: implement
       IsApplicationEnabled: isApplicationEnabled ?? true,
       IsContentScriptEnabled: isContentEnabled ?? true,
+      AnilistSyncMedia: anilistSyncMedia ?? true, // default enabled (will allow user to disable)
       StorageKeys: {
         ApplicationEnabledKey: kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey,
         ContentScriptEnabledKey: kitaSchema.ApplicationSettings.StorageKeys.ContentScriptEnabledKey,
@@ -41,6 +45,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
             AnilistAuthKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey,
             AnilistConfigKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistConfigKey,
             AuthStatus: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus,
+            AnilistAutoSyncMediaKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey,
           },
         },
         StatisticsKeys: {

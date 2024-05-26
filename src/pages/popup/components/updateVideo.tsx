@@ -30,7 +30,8 @@ import React, { useState, useMemo } from "react";
 import { MdEdit } from "react-icons/md";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
 
-const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, video_url }: IVideo) => {
+const UpdateVideo = (videoBase: IVideo) => {
+  const { id, origin, video_duration, video_title, created_at, video_url } = videoBase;
   const { tags: contextTags } = useTagContext();
   const { videoTagRelationship } = useVideoTagRelationshipContext();
 
@@ -40,6 +41,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
 
   const initialState: IVideo = useMemo(() => {
     return {
+      ...videoBase,
       id: id,
       origin: origin,
       video_duration: video_duration,
@@ -48,7 +50,7 @@ const UpdateVideo = ({ id, origin, video_duration, video_title, created_at, vide
       video_url: video_url,
       tags: selectedTagIdsForVideo,
     };
-  }, [created_at, id, origin, video_duration, video_title, video_url, selectedTagIdsForVideo]);
+  }, [videoBase, id, origin, video_duration, video_title, created_at, video_url, selectedTagIdsForVideo]);
   const { colorMode } = useColorMode();
   const [video, setVideo] = useState(initialState);
   const { isOpen, onOpen, onClose } = useDisclosure();

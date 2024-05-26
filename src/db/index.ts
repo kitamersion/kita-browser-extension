@@ -11,10 +11,12 @@ import {
   OBJECT_STORE_TAGS,
   OBJECT_STORE_VIDEO_TAGS,
   OBJECT_STORE_AUTO_TAG,
+  OBJECT_STORE_CACHED_MEDIA_METADATA,
 } from "./schema";
 import { setApplicationEnabled } from "@/api/applicationStorage";
 import logger from "@/config/logger";
 import { IAutoTag } from "@/types/autotag";
+import { IMediaCache } from "@/types/integrations/cache";
 
 class IndexedDB {
   private static instance: IndexedDB;
@@ -391,7 +393,7 @@ class IndexedDB {
   }
 
   // add tag
-  addTag({ id, name, code, created_at }: ITag): Promise<void> {
+  addTag({ id, name, code, created_at, owner }: ITag): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -400,7 +402,13 @@ class IndexedDB {
 
       const codeOrFromName = code ?? name.toUpperCase().replace(/ /g, "_"); // example: "Hello World" -> "HELLO_WORLD"
 
-      const tagItem: ITag = { id: id ?? self.crypto.randomUUID(), name, code: codeOrFromName, created_at: created_at ?? Date.now() };
+      const tagItem: ITag = {
+        id: id ?? self.crypto.randomUUID(),
+        name,
+        code: codeOrFromName,
+        created_at: created_at ?? Date.now(),
+        owner: owner ?? "USER",
+      };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {
         resolve();
@@ -611,6 +619,143 @@ class IndexedDB {
       };
       transaction.onerror = () => {
         reject(transaction.error);
+      };
+    });
+  }
+
+  // ================================================================================
+  // =======================    CACHED MEDIA SERIES         =========================
+  // ================================================================================
+
+  // NOTE: this cache is lightweight, it only stores generic metadata about a series to reduce unnecessary API calls
+
+  // get all media cache
+  getAllMediaCache(): Promise<IMediaCache[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+      const request = mediaCacheStore.getAll();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get media cache by id
+  getMediaCacheById(id: string): Promise<IMediaCache | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+      const request = mediaCacheStore.get(id);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // get media cache by unique_code
+  getMediaCacheByUniqueCode(unique_code: string): Promise<IMediaCache | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+      const index = mediaCacheStore.index("unique_code");
+      const request = index.get(unique_code);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // add or update media cache
+  addOrUpdateMediaCache(mediaCache: IMediaCache): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+
+      // check if a record with the same unique_code already exists
+      const checkRequest = mediaCacheStore.index("unique_code").get(mediaCache?.unique_code || "");
+      checkRequest.onsuccess = () => {
+        if (checkRequest.result) {
+          if (mediaCache.watching_episode_number ?? 0 < checkRequest.result.watching_episode_number) {
+            // if watching_episode_number from the param is less than what is already cached, ignore it
+            mediaCache.watching_episode_number = checkRequest.result.watching_episode_number;
+          }
+          // update every other property if there is change
+          const request = mediaCacheStore.put(mediaCache);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        } else {
+          // record doesnt exist, proceed with the operation
+          const request = mediaCacheStore.put(mediaCache);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        }
+      };
+      checkRequest.onerror = () => {
+        reject(checkRequest.error);
+      };
+    });
+  }
+
+  // delete media cache by id
+  deleteMediaCacheById(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+      mediaCacheStore.delete(id);
+      transaction.oncomplete = () => {
+        resolve();
+      };
+      transaction.onerror = () => {
+        reject(transaction.error);
+      };
+    });
+  }
+
+  // delete all expired cached items
+  deleteExpiredMediaCache(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      let deleteCount = 0;
+      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
+      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
+      const index = mediaCacheStore.index("expires_at");
+      const request = index.openCursor(IDBKeyRange.upperBound(Date.now()));
+      request.onsuccess = () => {
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          cursor.delete();
+          deleteCount++;
+          cursor.continue();
+        } else {
+          logger.info(`Deleted ${deleteCount} expired items.`);
+          resolve();
+        }
+      };
+      request.onerror = () => {
+        reject(request.error);
       };
     });
   }

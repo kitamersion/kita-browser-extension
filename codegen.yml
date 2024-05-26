@@ -1,6 +1,6 @@
 overwrite: true
 schema: "https://graphql.anilist.co"
-documents: "src/graphql/queries/*.ts"
+documents: "src/graphql/**/*.ts"
 generates:
   src/graphql/index.tsx:
     plugins:

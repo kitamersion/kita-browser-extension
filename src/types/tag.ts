@@ -3,4 +3,8 @@ export type ITag = {
   name: string;
   code?: string;
   created_at?: number;
+  color?: string; // hex color
+  owner?: TagOwner;
 };
+
+type TagOwner = "USER" | "INTEGRATION_ANILIST";

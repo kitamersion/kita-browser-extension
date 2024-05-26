@@ -8,6 +8,7 @@ import {
   getIsAuthorizedWithAnilist,
   deleteAnilistAuth,
   setAnilistConfig,
+  getAnilistAutoSyncMedia,
 } from "@/api/integration/anilist";
 import eventBus from "@/api/eventbus";
 import {
@@ -26,6 +27,7 @@ interface AnilistContextType {
   anilistAuth: AnilistAuth;
   anilistAuthStatus: AuthStatus;
   anilistIsAuthorized: boolean;
+  anilistAutoSyncMedia: boolean;
 }
 
 const initialAnilistAuthState: AnilistAuth = {
@@ -61,6 +63,13 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isPolling, setIsPolling] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("initial");
   const [alreadyAuthorized, setAlreadyAuthorized] = useState<boolean>(false);
+  const [anilistAutoSyncMedia, setAnilistAutoSyncMedia] = useState<boolean>(false);
+
+  const handleGetAnilistAutoSync = useCallback(() => {
+    getAnilistAutoSyncMedia((state) => {
+      setAnilistAutoSyncMedia(state);
+    });
+  }, []);
 
   const startPolling = useCallback(() => {
     setIsPolling(true);
@@ -177,6 +186,7 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
       handleGetAnilistConfig();
       handleGetAnilistAuth();
       handleGetAnilistAuthStatus();
+      handleGetAnilistAutoSync();
       setIsInitialized(true);
       return () => {};
     }
@@ -212,7 +222,14 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
 
   return (
     <AnilistContext.Provider
-      value={{ isInitialized, anilistConfig, anilistAuth, anilistAuthStatus: authStatus, anilistIsAuthorized: alreadyAuthorized }}
+      value={{
+        isInitialized,
+        anilistConfig,
+        anilistAuth,
+        anilistAuthStatus: authStatus,
+        anilistIsAuthorized: alreadyAuthorized,
+        anilistAutoSyncMedia: anilistAutoSyncMedia,
+      }}
     >
       {children}
     </AnilistContext.Provider>

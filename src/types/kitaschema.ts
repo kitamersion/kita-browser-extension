@@ -19,6 +19,7 @@ export type ApplicationSettings = {
   IsApplicationEnabled: boolean;
   IsContentScriptEnabled: boolean;
   StorageKeys: StorageKeys;
+  AnilistSyncMedia: boolean;
 };
 
 export type UserItems = {
@@ -36,6 +37,7 @@ export type AnilistKeys = {
   AnilistConfigKey: string;
   AnilistAuthKey: string;
   AuthStatus: string;
+  AnilistAutoSyncMediaKey: string;
 };
 
 export type StatisticsKeys = {

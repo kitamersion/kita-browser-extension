@@ -15,11 +15,12 @@ type DBSchema = {
 };
 
 export const DB_NAME = "kitamersiondb";
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 export const OBJECT_STORE_VIDEOS = "videos";
 export const OBJECT_STORE_TAGS = "tags";
 export const OBJECT_STORE_VIDEO_TAGS = "video_tags";
 export const OBJECT_STORE_AUTO_TAG = "auto_tags";
+export const OBJECT_STORE_CACHED_MEDIA_METADATA = "cache_media_metadata";
 
 export const DB_SCHEMAS: DBSchema[] = [
   {
@@ -91,6 +92,29 @@ export const DB_SCHEMAS: DBSchema[] = [
         indexes: [
           {
             name: "created_at",
+            options: { unique: false },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: 4,
+    stores: [
+      {
+        name: OBJECT_STORE_CACHED_MEDIA_METADATA,
+        options: { keyPath: "id" },
+        indexes: [
+          {
+            name: "id",
+            options: { unique: true },
+          },
+          {
+            name: "unique_code",
+            options: { unique: true },
+          },
+          {
+            name: "expires_at",
             options: { unique: false },
           },
         ],

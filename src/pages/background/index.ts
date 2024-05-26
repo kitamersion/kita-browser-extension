@@ -78,7 +78,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       const success = await authorizeAnilist(parsedPayload);
       if (success) {
-        setAnilistAuthStatus("authorized", () => {});
+        setAnilistAuthStatus("authorized", async () => {
+          const tag = await IndexedDB.getTagByCode("ANILIST");
+
+          if (!tag) {
+            await IndexedDB.addTag({ name: "AniList", owner: "INTEGRATION_ANILIST" });
+          }
+        });
       } else {
         setAnilistAuthStatus("error", () => {});
       }
@@ -118,7 +124,6 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
     const anilistAuth: AnilistAuth = {
       access_token: accessToken ?? "",
       token_type: tokenType ?? "",
-      // expires_in: 10, // @todo for testing remove when fisnished
       expires_in: expires ? parseInt(expires) : 0,
       issued_at: Date.now(),
     };
