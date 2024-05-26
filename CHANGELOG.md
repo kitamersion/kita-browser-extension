@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.7.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.7.0...v2.7.1) (2024-05-26)
+
+
+### Bug Fixes
+
+* Anilist sync search by season first ([#119](https://github.com/kitamersion/kita-browser-extension/issues/119)) ([2ebb937](https://github.com/kitamersion/kita-browser-extension/commit/2ebb9371a758eb2b744b7943de29e9f0a7555a33))
+
 ## [2.7.0](https://github.com/kitamersion/kita-browser-extension/compare/v2.6.2...v2.7.0) (2024-05-26)
 
 
