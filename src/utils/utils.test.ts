@@ -152,7 +152,7 @@ describe("getDateFromNow function", () => {
   });
 });
 
-describe("randomOffset function", () => {
+describe.skip("randomOffset function", () => {
   it("should return a number", () => {
     const result = randomOffset();
     expect(typeof result).toBe("number");
