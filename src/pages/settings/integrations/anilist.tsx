@@ -7,6 +7,7 @@ import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
 import { useGetMeQuery } from "@/graphql";
 import AnilistProfile from "../components/anilistProfile";
+import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
 const Anilist = () => {
   const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
@@ -105,6 +106,7 @@ const Anilist = () => {
         </form>
 
         {anilistAuthStatus === "authorized" && <AnilistProfile Viewer={data?.Viewer} />}
+        <AutoSyncMediaToggle />
       </Flex>
     </Box>
   );

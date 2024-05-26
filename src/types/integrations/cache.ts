@@ -3,6 +3,8 @@ import { MediaTypes } from "../video";
 export type IMediaCache = {
   id: string;
   unique_code?: string;
+  watching_episode_number?: number;
+  watching_season_year?: number;
   media_type?: MediaTypes;
   series_title?: string;
   series_episode_number?: number;

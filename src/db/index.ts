@@ -678,18 +678,42 @@ class IndexedDB {
     });
   }
 
-  // add media cache
+  // add or update media cache
   addOrUpdateMediaCache(mediaCache: IMediaCache): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
       const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const request = mediaCacheStore.put(mediaCache);
-      request.onsuccess = () => {
-        resolve();
+
+      // check if a record with the same unique_code already exists
+      const checkRequest = mediaCacheStore.index("unique_code").get(mediaCache?.unique_code || "");
+      checkRequest.onsuccess = () => {
+        if (checkRequest.result) {
+          if (mediaCache.watching_episode_number ?? 0 < checkRequest.result.watching_episode_number) {
+            // if watching_episode_number from the param is less than what is already cached, ignore it
+            mediaCache.watching_episode_number = checkRequest.result.watching_episode_number;
+          }
+          // update every other property if there is change
+          const request = mediaCacheStore.put(mediaCache);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        } else {
+          // record doesnt exist, proceed with the operation
+          const request = mediaCacheStore.put(mediaCache);
+          request.onsuccess = () => {
+            resolve();
+          };
+          request.onerror = () => {
+            reject(request.error);
+          };
+        }
       };
-      request.onerror = () => {
-        reject(request.error);
+      checkRequest.onerror = () => {
+        reject(checkRequest.error);
       };
     });
   }

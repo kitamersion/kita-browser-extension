@@ -74,4 +74,4 @@ export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
   return now;
 };
 
-export const randomOffset = (max = 1000) => Math.floor(Math.random() * max);
+export const randomOffset = (min = 1000, max = 5000) => Math.floor(Math.random() * (max - min + 1)) + min;
