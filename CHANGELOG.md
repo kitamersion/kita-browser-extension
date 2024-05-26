@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.7.2](https://github.com/kitamersion/kita-browser-extension/compare/v2.7.1...v2.7.2) (2024-05-26)
+
+
+### Bug Fixes
+
+* remove unique constraint for cached media ([#120](https://github.com/kitamersion/kita-browser-extension/issues/120)) ([94e5892](https://github.com/kitamersion/kita-browser-extension/commit/94e58927b8cf07b3fddfcf52511010939be4e699))
+
 ### [2.7.1](https://github.com/kitamersion/kita-browser-extension/compare/v2.7.0...v2.7.1) (2024-05-26)
 
 
