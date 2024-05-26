@@ -111,7 +111,7 @@ export const DB_SCHEMAS: DBSchema[] = [
           },
           {
             name: "unique_code",
-            options: { unique: true },
+            options: { unique: false },
           },
           {
             name: "expires_at",
