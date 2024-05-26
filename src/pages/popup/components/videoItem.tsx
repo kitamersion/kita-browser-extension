@@ -1,4 +1,4 @@
-import { IVideo } from "@/types/video";
+import { IVideo, SiteKey } from "@/types/video";
 import { formatDuration, formatTimestamp } from "@/utils";
 import { Box, Text, Flex, IconButton, Link, Badge } from "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
@@ -103,7 +103,7 @@ const VideoItem = (video: IVideo) => {
           </Flex>
 
           <Flex my={1} alignItems={"center"}>
-            {!video.anilist_series_id && <AnilistAnimeTrySearchAndLink {...video} />}
+            {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
             {video.watching_episode_number && (
               <Badge rounded={"2xl"} px={2}>
                 EP {video.watching_episode_number}
