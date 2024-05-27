@@ -168,13 +168,13 @@ const getAnilistAutoSyncMedia = (callback: Callback<boolean>) => {
       callback(false);
       return;
     }
-    callback(syncState as unknown as boolean);
+    callback(Boolean(syncState));
     return;
   }
 
   chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
     logger.info("fetching anilist auto sync media");
-    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] || false;
+    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
     callback(state);
   });
 };

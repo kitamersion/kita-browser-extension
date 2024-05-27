@@ -1,11 +1,5 @@
 import LoadingState from "@/components/states/LoadingState";
-import {
-  GetMediaByIdQuery,
-  GetMediaBySearchQuery,
-  MediaListStatus,
-  useGetMediaBySearchLazyQuery,
-  useSetMediaListEntryByAnilistIdMutation,
-} from "@/graphql";
+import { GetMediaBySearchQuery, MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
 import { IconButton } from "@chakra-ui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
@@ -22,7 +16,7 @@ import { getDateFromNow, randomOffset } from "@/utils";
 import logger from "@/config/logger";
 import { useAnilistContext } from "@/context/anilistContext";
 
-const WEEK_IN_DAYS = 7;
+const EXPIRES_IN_DAYS = 1;
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
@@ -47,14 +41,15 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
   const addCacheMedia = useCallback(
     (searchData?: GetMediaBySearchQuery): IMediaCache | undefined => {
-      // expire cache item
-      const sevenDays = getDateFromNow(WEEK_IN_DAYS, "FUTURE").getTime();
-
       const getMediaBySeasonYear = searchData?.anime?.results?.find((result) => result?.seasonYear === video.watching_season_year);
 
       if (!getMediaBySeasonYear) {
         return undefined;
       }
+
+      // expire cache item
+      const expiresAt = getDateFromNow(EXPIRES_IN_DAYS, "FUTURE").getTime();
+
       const cacheItem: IMediaCache = {
         id: self.crypto.randomUUID(),
         series_title: getMediaBySeasonYear?.title?.english ?? video.series_title,
@@ -65,7 +60,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         background_cover_image: getMediaBySeasonYear?.coverImage?.extraLarge ?? undefined,
         banner_image: getMediaBySeasonYear?.bannerImage ?? undefined,
         created_at: Date.now(),
-        expires_at: sevenDays,
+        expires_at: expiresAt,
         media_type: "ANIME",
         unique_code: SHA256(getMediaBySeasonYear?.title?.english || "").toString(),
       };
@@ -78,12 +73,12 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   );
 
   const fetchAndSyncAnilist = useCallback(
-    async (mediaByIdData?: GetMediaByIdQuery) => {
+    async (searchData?: GetMediaBySearchQuery) => {
       const tag = await IndexedDB.getTagByCode("ANILIST");
 
       let cacheItem = existingCacheItem;
       if (!cacheItem) {
-        cacheItem = addCacheMedia(mediaByIdData);
+        cacheItem = addCacheMedia(searchData);
       }
 
       const updatedVideo: IVideo = {
@@ -108,14 +103,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: updatedVideo });
       eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship from anilist", value: [videoTagRelationship] });
 
-      if (cacheItem?.anilist_series_id || mediaByIdData?.Media?.id) {
+      if (video.watching_episode_number && cacheItem?.watching_episode_number) {
         // if the video is already watched, skip
         // if sync is enabled, syncing items is random, we want to make sure we don't sync if the episode number is less than the current episode number
-        if (
-          video.watching_episode_number &&
-          cacheItem?.watching_episode_number &&
-          video.watching_episode_number <= cacheItem?.watching_episode_number
-        ) {
+        if (video.watching_episode_number <= cacheItem?.watching_episode_number) {
           logger.info("skipping sync, current episode is less than or equal to the cache media episode");
           showToast({
             title: "Anilist media synced!",
@@ -130,7 +121,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
         setMedia({
           variables: {
-            mediaId: cacheItem?.anilist_series_id ?? mediaByIdData?.Media?.id,
+            mediaId: cacheItem?.anilist_series_id,
             progress: video.watching_episode_number,
             status: mediaCompletedStatus,
           },
