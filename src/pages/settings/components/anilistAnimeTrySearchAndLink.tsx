@@ -17,6 +17,7 @@ import logger from "@/config/logger";
 import { useAnilistContext } from "@/context/anilistContext";
 
 const EXPIRES_IN_DAYS = 1;
+const DEFAULT_TIMEOUT_OFFSET = 2000;
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
@@ -149,11 +150,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   );
 
   useEffect(() => {
-    const offset = randomOffset() + 2000;
-    console.log("OFFSET", offset);
     if (isAnilistContextInitialized && isMediaCacheInitialized && anilistAutoSyncMedia && !synced) {
       setIsAutoSyncing(true);
 
+      const offset = randomOffset() + DEFAULT_TIMEOUT_OFFSET;
       const timer = setTimeout(() => {
         searchInAnilist();
         if ((existingCacheItem || searchData) && !synced) {
