@@ -25,6 +25,8 @@ import {
   CheckboxGroup,
   Tag,
   TagLabel,
+  Box,
+  Textarea,
 } from "@chakra-ui/react";
 import React, { useState, useMemo } from "react";
 import { MdEdit } from "react-icons/md";
@@ -54,6 +56,10 @@ const UpdateVideo = (videoBase: IVideo) => {
   const { colorMode } = useColorMode();
   const [video, setVideo] = useState(initialState);
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const videoJsonBlob = useMemo(() => {
+    return JSON.stringify(video, null, 2);
+  }, [video]);
 
   // @todo move to utils + unit tests
   const durationSplit: number[] = formatDuration(video.video_duration)
@@ -206,6 +212,10 @@ const UpdateVideo = (videoBase: IVideo) => {
                 </Button>
               </Flex>
             </form>
+            <Box width={"full"} my={5}>
+              <Text>JSON blob for debugging</Text>
+              <Textarea value={videoJsonBlob} mb="4" minHeight={"200px"} onChange={() => {}} />
+            </Box>
           </DrawerBody>
         </DrawerContent>
       </Drawer>
