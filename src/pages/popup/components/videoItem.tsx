@@ -1,10 +1,7 @@
 import { IVideo, SiteKey } from "@/types/video";
 import { formatDuration, formatTimestamp } from "@/utils";
-import { Box, Text, Flex, IconButton, Link, Badge } from "@chakra-ui/react";
-import { MdDelete } from "react-icons/md";
+import { Box, Text, Flex, Link, Badge } from "@chakra-ui/react";
 import React, { useMemo } from "react";
-import eventbus from "@/api/eventbus";
-import { VIDEO_DELETED_BY_ID } from "@/data/events";
 import OriginToIcon from "./originToIcon";
 import UpdateVideo from "./updateVideo";
 import { useTagContext } from "@/context/tagContext";
@@ -14,6 +11,7 @@ import { IoTimerOutline } from "react-icons/io5";
 import { IoIosCalendar } from "react-icons/io";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
 import AnilistAnimeTrySearchAndLink from "@/pages/settings/components/anilistAnimeTrySearchAndLink";
+import DeleteVideo from "./deleteVideo";
 
 const VideoItem = (video: IVideo) => {
   const { id, created_at, origin, video_duration, video_title, video_url } = video;
@@ -23,10 +21,6 @@ const VideoItem = (video: IVideo) => {
   const selectedTagIdsForVideo = videoTagRelationship
     .filter((relationship) => relationship.video_id === video.id)
     .map((relationship) => relationship.tag_id);
-
-  const handleDeleteById = (id: string) => {
-    eventbus.publish(VIDEO_DELETED_BY_ID, { message: `Delete video ${id}`, value: { id: id } });
-  };
 
   const renderTags = useMemo(() => {
     const matchingTag: ITag[] = [];
@@ -85,15 +79,7 @@ const VideoItem = (video: IVideo) => {
             </Flex>
             <Flex gap={1}>
               <UpdateVideo {...video} />
-              <IconButton
-                icon={<MdDelete />}
-                aria-label="Delete item"
-                colorScheme="red"
-                variant="ghost"
-                rounded="full"
-                title="Delete item"
-                onClick={() => handleDeleteById(id)}
-              />
+              <DeleteVideo id={id} />
             </Flex>
           </Flex>
           <Flex gap={1} flexWrap={"wrap"}>

@@ -3,6 +3,8 @@ import { Box, Button, Flex, Table, Tbody, Td, Th, Thead, Tr, Text, Link } from "
 import { useVideoPagination } from "@/hooks/useVideoPagination";
 import { MdArrowBackIosNew, MdArrowForwardIos } from "react-icons/md";
 import { formatDuration, formatTimestamp } from "@/utils";
+import UpdateVideo from "@/pages/popup/components/updateVideo";
+import DeleteVideo from "@/pages/popup/components/deleteVideo";
 
 function PaginatedVideoList() {
   const { page, paginatedResult, handleNext, handlePrevious } = useVideoPagination();
@@ -31,6 +33,7 @@ function PaginatedVideoList() {
             <Th>Duration</Th>
             <Th>CreatedAt</Th>
             <Th>Origin</Th>
+            <Th>Actions</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -48,6 +51,12 @@ function PaginatedVideoList() {
               <Td>{formatDuration(video.video_duration)}</Td>
               <Td>{formatTimestamp(video.created_at)}</Td>
               <Td>{video.origin}</Td>
+              <Td key={video.id}>
+                <Flex flexDirection={"row"} gap={1}>
+                  <UpdateVideo {...video} />
+                  <DeleteVideo id={video.id} />
+                </Flex>
+              </Td>
             </Tr>
           ))}
         </Tbody>
