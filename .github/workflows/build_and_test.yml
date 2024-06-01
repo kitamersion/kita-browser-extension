@@ -34,24 +34,5 @@ jobs:
       - name: Test coverage
         id: test-coverage
         run: |
-          npm test -- --coverage --coverageDirectory=./coverage
-
-      - name: Extract coverage report
-        id: extract-coverage
-        run: |
-          COVERAGE=$(cat ./coverage/lcov.info)
-          echo "::set-output name=coverage::$COVERAGE"
-
-
-      - name: Add comment to PR
-        uses: actions/github-script@v5
-        with:
-          script: |
-            const issue_number = context.issue.number;
-            const body = `Code coverage is ${{ steps.extract-coverage.outputs.coverage }}`;
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue_number,
-              body: body
-            });
+          # npm test -- --coverage --coverageDirectory=./coverage
+          npm test -- --coverage
