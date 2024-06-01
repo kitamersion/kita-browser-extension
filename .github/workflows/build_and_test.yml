@@ -1,6 +1,7 @@
 name: Build and Test
 on:
-  pull_request:
+  push:
+  pull_request_target:
     branches:
       - main
 jobs:
@@ -33,24 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Test coverage
-        run: npm test -- --coverage
-
-      - name: Extract coverage percentage
-        id: extract-coverage
-        run: |
-          COVERAGE=$(grep 'All files' ./coverage/lcov.info | awk '{print $NF}')
-          echo "::set-output name=coverage::$COVERAGE"
-
-      - name: Add comment to PR
-        uses: actions/github-script@v5
+      - name: Jest Coverage Report
+        uses: artiomtr/jest-coverage-report-action@v2
+        if: success() || failure()
         with:
-          script: |
-            const issue_number = context.issue.number;
-            const body = `Code coverage is ${{ steps.extract-coverage.outputs.coverage }}`;
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue_number,
-              body: body
-            });
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-script: npm test -- --coverage --coverageDirectory=./coverage
+          threshold: 80
