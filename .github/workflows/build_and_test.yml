@@ -1,25 +1,38 @@
-on: ["pull_request"]
-
-name: Test Coveralls
-
+name: Build and Test
+on:
+  pull_request_target:
+    branches:
+      - main
 jobs:
-
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
 
-    - uses: actions/checkout@v1
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
+      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: npm list
 
-    - name: npm install, make test-coverage
-      run: |
-        npm install
-        make test-coverage
+      - name: Install dependencies
+        run: npm install
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2
+      - name: Jest Coverage Report
+        uses: artiomtr/jest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-script: npm test -- --coverage
+          threshold: 80
