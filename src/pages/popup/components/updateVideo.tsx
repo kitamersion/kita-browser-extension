@@ -213,7 +213,7 @@ const UpdateVideo = (videoBase: IVideo) => {
               </Flex>
             </form>
             <Box width={"full"} my={5}>
-              <Text>JSON blob for debugging</Text>
+              <Text>JSON blob for debugging and transparency</Text>
               <Textarea value={videoJsonBlob} mb="4" minHeight={"200px"} onChange={() => {}} />
             </Box>
           </DrawerBody>

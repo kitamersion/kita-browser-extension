@@ -34,7 +34,7 @@ const PopUp = () => {
       {recentVideos.length > 0 ? (
         <>
           <Summary />
-          <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
+          <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={2} mt={4} mx={2}>
             {recentVideos.map((video) => (
               <VideoItem key={video.id} {...video} />
             ))}

@@ -63,6 +63,7 @@ const VideoItem = (video: IVideo) => {
                 {formatTimestamp(created_at)}
               </Text>
             </Flex>
+
             <Flex gap={1}>
               <IoTimerOutline color="tomato" />
               <Text fontSize={12} color={"tomato"}>
@@ -71,30 +72,32 @@ const VideoItem = (video: IVideo) => {
             </Flex>
           </Flex>
           <Flex justifyContent={"space-between"}>
-            <Flex alignItems={"center"}>
-              <OriginToIcon siteKey={origin} />
-              <Link p={2} href={video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
-                <Text as="b">{video_title}</Text>
-              </Link>
-            </Flex>
-            <Flex gap={1}>
-              <UpdateVideo {...video} />
-              <DeleteVideo id={id} />
-            </Flex>
+            <Link p={2} href={video_url} isExternal display={"flex"} gap={1} alignItems={"center"}>
+              <Text as="b">{video_title}</Text>
+            </Link>
           </Flex>
+
           <Flex gap={1} flexWrap={"wrap"}>
             {renderTags.map((tag) => (
               <TagItem key={tag.id} tag={tag} size="sm" />
             ))}
           </Flex>
 
-          <Flex my={1} alignItems={"center"}>
-            {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
-            {video.watching_episode_number && (
-              <Badge rounded={"2xl"} px={2}>
-                EP {video.watching_episode_number}
-              </Badge>
-            )}
+          <Flex justifyContent={"space-between"}>
+            <Flex my={1} alignItems={"center"} gap={1}>
+              <OriginToIcon siteKey={origin} iconSize={14} />
+              {video.watching_episode_number && (
+                <Badge rounded={"2xl"} px={2}>
+                  EP {video.watching_episode_number}
+                </Badge>
+              )}
+            </Flex>
+
+            <Flex gap={1} justifyContent={"flex-end"}>
+              {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
+              <UpdateVideo {...video} />
+              <DeleteVideo id={id} />
+            </Flex>
           </Flex>
         </Flex>
       </Flex>
