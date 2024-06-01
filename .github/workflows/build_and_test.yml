@@ -30,7 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Test
-        run: npm test
-
-      
+      - name: Test coverage
+        id: test-coverage
+        run: |
+          # npm test -- --coverage --coverageDirectory=./coverage
+          npm test

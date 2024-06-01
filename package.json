@@ -16,7 +16,6 @@
         "test:watch": "jest --watch",
         "ext:manifest": "node builder/build-manifest.ts",
         "ext:copy": "cp -r ./ext/*.json ./ext/icons dist",
-        "release": "standard-version",
         "graphql:codegen": "npx graphql-codegen"
     },
     "repository": {
