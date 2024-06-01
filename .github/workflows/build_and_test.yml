@@ -31,8 +31,8 @@ jobs:
         run: npm install
 
       - name: Jest Coverage Report
-        uses: artiomtr/jest-coverage-report-action@v1.3
+        uses: artiomtr/jest-coverage-report-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          test_script: npm test -- --coverage
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-script: npm test -- --coverage
           threshold: 80
