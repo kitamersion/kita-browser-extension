@@ -5,19 +5,20 @@ import { FaGlobe } from "react-icons/fa";
 
 type OriginToIcon = {
   siteKey: SiteKey;
+  iconSize?: number;
 };
 
 const ICON_SIZE = 26;
 
-const OriginToIcon = ({ siteKey }: OriginToIcon) => {
+const OriginToIcon = ({ siteKey, iconSize }: OriginToIcon) => {
   // Site key to icon mapping
   const siteKeyToIconMap: { [key in SiteKey]: React.ReactNode } = {
-    [SiteKey.YOUTUBE]: <SiYoutube size={ICON_SIZE} />,
-    [SiteKey.YOUTUBE_MUSIC]: <SiYoutubemusic size={ICON_SIZE} />,
-    [SiteKey.CRUNCHYROLL]: <SiCrunchyroll size={ICON_SIZE} />,
+    [SiteKey.YOUTUBE]: <SiYoutube size={iconSize ?? ICON_SIZE} />,
+    [SiteKey.YOUTUBE_MUSIC]: <SiYoutubemusic size={iconSize ?? ICON_SIZE} />,
+    [SiteKey.CRUNCHYROLL]: <SiCrunchyroll size={iconSize ?? ICON_SIZE} />,
   };
 
-  const icon = siteKeyToIconMap[siteKey] || <FaGlobe size={ICON_SIZE} />;
+  const icon = siteKeyToIconMap[siteKey] || <FaGlobe size={iconSize ?? ICON_SIZE} />;
 
   return <>{icon}</>;
 };

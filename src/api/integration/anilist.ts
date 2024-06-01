@@ -164,17 +164,17 @@ const getAnilistAutoSyncMedia = (callback: Callback<boolean>) => {
   if (ENV === "dev") {
     logger.info("fetching anilist auto sync media");
     const syncState = localStorage.getItem(ANILIST_AUTO_SYNC_MEDIA_KEY);
-    if (syncState === null) {
+    if (!syncState || syncState !== "true") {
       callback(false);
       return;
     }
-    callback(syncState as unknown as boolean);
+    callback(true);
     return;
   }
 
   chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
     logger.info("fetching anilist auto sync media");
-    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] || false;
+    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
     callback(state);
   });
 };
