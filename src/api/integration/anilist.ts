@@ -164,11 +164,11 @@ const getAnilistAutoSyncMedia = (callback: Callback<boolean>) => {
   if (ENV === "dev") {
     logger.info("fetching anilist auto sync media");
     const syncState = localStorage.getItem(ANILIST_AUTO_SYNC_MEDIA_KEY);
-    if (syncState === null) {
+    if (!syncState || syncState !== "true") {
       callback(false);
       return;
     }
-    callback(Boolean(syncState));
+    callback(true);
     return;
   }
 

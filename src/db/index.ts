@@ -693,22 +693,29 @@ class IndexedDB {
             // if watching_episode_number from the param is less than what is already cached, ignore it
             mediaCache.watching_episode_number = checkRequest.result.watching_episode_number;
           }
-          // update every other property if there is change
-          const request = mediaCacheStore.put(mediaCache);
-          request.onsuccess = () => {
-            resolve();
+          // delete the existing record before adding a new one
+          const deleteRequest = mediaCacheStore.delete(mediaCache?.unique_code || "");
+          deleteRequest.onsuccess = () => {
+            // add the new record
+            const addRequest = mediaCacheStore.add(mediaCache);
+            addRequest.onsuccess = () => {
+              resolve();
+            };
+            addRequest.onerror = () => {
+              reject(addRequest.error);
+            };
           };
-          request.onerror = () => {
-            reject(request.error);
+          deleteRequest.onerror = () => {
+            reject(deleteRequest.error);
           };
         } else {
           // record doesnt exist, proceed with the operation
-          const request = mediaCacheStore.put(mediaCache);
-          request.onsuccess = () => {
+          const addRequest = mediaCacheStore.add(mediaCache);
+          addRequest.onsuccess = () => {
             resolve();
           };
-          request.onerror = () => {
-            reject(request.error);
+          addRequest.onerror = () => {
+            reject(addRequest.error);
           };
         }
       };
