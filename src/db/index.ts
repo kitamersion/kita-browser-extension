@@ -689,7 +689,7 @@ class IndexedDB {
       const checkRequest = mediaCacheStore.index("unique_code").get(mediaCache?.unique_code || "");
       checkRequest.onsuccess = () => {
         if (checkRequest.result) {
-          if (mediaCache.watching_episode_number ?? 0 < checkRequest.result.watching_episode_number) {
+          if (mediaCache.watching_episode_number ?? 0 < checkRequest.result.watching_episode_number ?? 0) {
             // if watching_episode_number from the param is less than what is already cached, ignore it
             mediaCache.watching_episode_number = checkRequest.result.watching_episode_number;
           }

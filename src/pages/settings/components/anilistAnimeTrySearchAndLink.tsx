@@ -60,6 +60,8 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         series_season_year: getMediaBySeasonYear?.seasonYear ?? undefined,
         background_cover_image: getMediaBySeasonYear?.coverImage?.extraLarge ?? undefined,
         banner_image: getMediaBySeasonYear?.bannerImage ?? undefined,
+        watching_episode_number: video.watching_episode_number,
+        watching_season_year: video.watching_season_year,
         created_at: Date.now(),
         expires_at: expiresAt,
         media_type: "ANIME",
@@ -70,7 +72,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       logger.info("added new cache item");
       return cacheItem;
     },
-    [video.series_title, video.watching_season_year]
+    [video.series_title, video.watching_episode_number, video.watching_season_year]
   );
 
   const fetchAndSyncAnilist = useCallback(
