@@ -34,4 +34,4 @@ jobs:
         id: test-coverage
         run: |
           # npm test -- --coverage --coverageDirectory=./coverage
-          npm test -- --coverage
+          npm test
