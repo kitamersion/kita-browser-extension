@@ -36,6 +36,7 @@ jobs:
 
       - name: Jest Coverage Report
         uses: artiomtr/jest-coverage-report-action@v2
+        if: success() || failure()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           test-script: npm test
