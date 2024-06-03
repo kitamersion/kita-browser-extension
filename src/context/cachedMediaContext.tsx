@@ -38,6 +38,7 @@ export const CachedMediaProvider = ({ children }: PropsWithChildren<unknown>) =>
     const payload = eventData.value as IMediaCache;
     logger.info(eventData.message);
 
+    await IndexedDB.deleteMediaCacheById(payload.id);
     await IndexedDB.addOrUpdateMediaCache(payload);
   }, []);
 

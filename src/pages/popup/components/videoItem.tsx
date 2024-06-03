@@ -94,7 +94,8 @@ const VideoItem = (video: IVideo) => {
             </Flex>
 
             <Flex gap={1} justifyContent={"flex-end"}>
-              {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
+              {/* {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />} */}
+              <AnilistAnimeTrySearchAndLink {...video} />
               <UpdateVideo {...video} />
               <DeleteVideo id={id} />
             </Flex>

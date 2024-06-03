@@ -30,7 +30,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const [isAutoSyncing, setIsAutoSyncing] = useState<boolean>(false);
 
   const searchInAnilist = useCallback(() => {
-    const cacheItem = mediaCaches.find((cache) => cache.unique_code === SHA256(video.series_title || "").toString());
+    const cacheItem = mediaCaches.find((cache) => cache.unique_code === SHA256(video?.series_title || "").toString());
     if (cacheItem) {
       logger.info("using existing cache item for sync");
       setExistingCacheItem(cacheItem);
@@ -106,10 +106,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: updatedVideo });
       eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship from anilist", value: [videoTagRelationship] });
 
+      // if the video is already watched, skip
+      // if sync is enabled, syncing items is random, we want to make sure we don't sync if the episode number is less than the current episode number
       if (video.watching_episode_number && cacheItem?.watching_episode_number) {
-        // if the video is already watched, skip
-        // if sync is enabled, syncing items is random, we want to make sure we don't sync if the episode number is less than the current episode number
-        if (video.watching_episode_number <= cacheItem?.watching_episode_number) {
+        if (video?.watching_episode_number < cacheItem?.watching_episode_number) {
           logger.info("skipping sync, current episode is less than or equal to the cache media episode");
           showToast({
             title: "Anilist media synced!",
@@ -118,33 +118,31 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
           setSynced(true);
           return;
         }
-
-        const mediaCompletedStatus =
-          video.watching_episode_number === cacheItem?.series_episode_number ? MediaListStatus.Completed : MediaListStatus.Current;
-
-        setMedia({
-          variables: {
-            mediaId: cacheItem?.anilist_series_id,
-            progress: video.watching_episode_number,
-            status: mediaCompletedStatus,
-          },
-        });
-
-        // update media cache with watching episode number
-        const updatedCacheItem: IMediaCache = {
-          ...cacheItem,
-          id: cacheItem?.id ?? self.crypto.randomUUID(),
-          watching_episode_number: video.watching_episode_number,
-          watching_season_year: video.watching_season_year,
-        };
-
-        eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "update cache item", value: updatedCacheItem });
-
-        showToast({
-          title: "Anilist media synced!",
-          status: "success",
-        });
       }
+      const mediaCompletedStatus =
+        video.watching_episode_number === cacheItem?.series_episode_number ? MediaListStatus.Completed : MediaListStatus.Current;
+
+      setMedia({
+        variables: {
+          mediaId: cacheItem?.anilist_series_id,
+          progress: video.watching_episode_number,
+          status: mediaCompletedStatus,
+        },
+      });
+
+      // update media cache with watching episode number
+      const updatedCacheItem = cacheItem;
+      if (updatedCacheItem) {
+        updatedCacheItem.watching_episode_number = video.watching_episode_number ?? 0;
+        updatedCacheItem.watching_season_year = video.watching_season_year ?? 0;
+      }
+
+      eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "update cache item", value: updatedCacheItem });
+
+      showToast({
+        title: "Anilist media synced!",
+        status: "success",
+      });
 
       setSynced(true);
     },
