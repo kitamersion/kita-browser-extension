@@ -103,15 +103,15 @@ export const DB_SCHEMAS: DBSchema[] = [
     stores: [
       {
         name: OBJECT_STORE_CACHED_MEDIA_METADATA,
-        options: { keyPath: "id" },
+        options: { keyPath: "unique_code" },
         indexes: [
           {
             name: "id",
-            options: { unique: true },
+            options: { unique: false },
           },
           {
             name: "unique_code",
-            options: { unique: false },
+            options: { unique: true },
           },
           {
             name: "expires_at",

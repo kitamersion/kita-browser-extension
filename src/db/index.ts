@@ -684,43 +684,12 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
       const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-
-      // check if a record with the same unique_code already exists
-      const checkRequest = mediaCacheStore.index("unique_code").get(mediaCache?.unique_code || "");
-      checkRequest.onsuccess = () => {
-        if (checkRequest.result) {
-          if (mediaCache.watching_episode_number ?? 0 < checkRequest.result.watching_episode_number ?? 0) {
-            // if watching_episode_number from the param is less than what is already cached, ignore it
-            mediaCache.watching_episode_number = checkRequest.result.watching_episode_number;
-          }
-          // delete the existing record before adding a new one
-          const deleteRequest = mediaCacheStore.delete(mediaCache?.unique_code || "");
-          deleteRequest.onsuccess = () => {
-            // add the new record
-            const addRequest = mediaCacheStore.add(mediaCache);
-            addRequest.onsuccess = () => {
-              resolve();
-            };
-            addRequest.onerror = () => {
-              reject(addRequest.error);
-            };
-          };
-          deleteRequest.onerror = () => {
-            reject(deleteRequest.error);
-          };
-        } else {
-          // record doesnt exist, proceed with the operation
-          const addRequest = mediaCacheStore.add(mediaCache);
-          addRequest.onsuccess = () => {
-            resolve();
-          };
-          addRequest.onerror = () => {
-            reject(addRequest.error);
-          };
-        }
+      const request = mediaCacheStore.put(mediaCache);
+      request.onsuccess = () => {
+        resolve();
       };
-      checkRequest.onerror = () => {
-        reject(checkRequest.error);
+      request.onerror = () => {
+        reject(request.error);
       };
     });
   }
