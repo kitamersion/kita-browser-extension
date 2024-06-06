@@ -75,3 +75,13 @@ export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
 };
 
 export const randomOffset = (min = 1000, max = 5000) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+// @todo write tests
+export const generateRandomString = (length: number): string => {
+  let text = "";
+  const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
