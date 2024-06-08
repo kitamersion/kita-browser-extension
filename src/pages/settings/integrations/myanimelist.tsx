@@ -21,7 +21,7 @@ import { useGetMeQuery } from "@/graphql";
 import AnilistProfile from "../components/anilistProfile";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
-const Anilist = () => {
+const MyAnimeList = () => {
   const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
   const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig>({
     anilistId: "",
@@ -67,7 +67,7 @@ const Anilist = () => {
       <Flex flexDirection={"column"} gap={4}>
         <Flex justifyContent={"space-between"}>
           <Heading as="h2" fontWeight={"bold"} fontSize={"large"}>
-            Anilist
+            MyAnimeList
           </Heading>
           {anilistAuthStatus === "initial" && <Text>Not Connected</Text>}
           {anilistAuthStatus === "pending" && <Text>Connecting...</Text>}
@@ -78,7 +78,7 @@ const Anilist = () => {
         <form onSubmit={handleSubmit}>
           <Flex flexDirection={"column"} gap={4}>
             <FormControl id="anilistId">
-              <FormLabel>Anilist Id</FormLabel>
+              <FormLabel>Client Id</FormLabel>
               <Input name="anilistId" value={anilistConfigState?.anilistId} onChange={handleChange} />
             </FormControl>
             <FormControl id="secret">
@@ -97,13 +97,14 @@ const Anilist = () => {
                 </InputRightElement>
               </InputGroup>
             </FormControl>
-            <FormControl id="anilistRedirectUrl" mt={10}>
+            <FormControl id="malRedirectUrl" mt={10}>
               <FormLabel>
                 <Text>Redirect URL (readonly)</Text>
                 <Text fontSize={"small"}>Configure redirect to the URL below (This is your extension URL)</Text>
               </FormLabel>
+
               <InputGroup size="md">
-                <Input readOnly name="anilistRedirectUrl" type={"text"} value={anilistConfigState?.redirectUrl} onChange={handleChange} />
+                <Input readOnly name="malRedirectUrl" type={"text"} value={anilistConfigState?.redirectUrl} onChange={handleChange} />
                 <InputRightElement width="4.5rem">
                   <Button h="1.75rem" size="sm" onClick={onCopy}>
                     {hasCopied ? "Copied" : "Copy"}
@@ -132,4 +133,4 @@ const Anilist = () => {
   );
 };
 
-export default Anilist;
+export default MyAnimeList;

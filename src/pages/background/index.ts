@@ -142,6 +142,7 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
 (() => {
   const redirectUrl = chrome.identity.getRedirectURL("callback");
 
+  // initialize anilist config
   getAnilistConfig((config) => {
     if (!config) {
       setAnilistConfig({ anilistId: "", secret: "", redirectUrl: redirectUrl }, () => {});
@@ -149,6 +150,8 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
       setAnilistConfig({ ...config, redirectUrl }, () => {});
     }
   });
+
+  // initialize myanimelist config
 })();
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -177,6 +180,7 @@ async function generateUrl() {
   const redirectUrl = await launchWebAuthFlow(url);
   const code = new URL(redirectUrl ?? "").searchParams.get("code");
   localStorage.setItem("code", code || "");
+  localStorage.setItem("challenge", challenge);
 }
 
 async function getRefreshToken() {
