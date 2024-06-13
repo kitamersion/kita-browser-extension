@@ -43,9 +43,9 @@ export type AnilistKeys = {
 
 export type MyAnimeListKeys = {
   MyAnimeListConfigKey: string;
-  MyAnimeListAccessToken: string;
-  MyAnimeListRefreshToken: string;
+  MyAnimeListAuthKey: string;
   AuthStatus: string;
+  MyAnimeListAutoSyncMediaKey: string;
 };
 
 export type StatisticsKeys = {

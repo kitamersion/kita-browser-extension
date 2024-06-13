@@ -28,9 +28,9 @@ export const kitaSchema: KitaSchema = {
         },
         MyAnimeListKeys: {
           AuthStatus: "kitamersion_myanimelist_auth_status",
-          MyAnimeListAccessToken: "kitamersion_myanimelist_access_token",
-          MyAnimeListRefreshToken: "kitamersion_myanimelist_refresh_token",
+          MyAnimeListAuthKey: "kitamersion_myanimelist_auth",
           MyAnimeListConfigKey: "kitamersion_myanimelist_config",
+          MyAnimeListAutoSyncMediaKey: "kitamersion_myanimelist_auto_sync_media",
         },
       },
       StatisticsKeys: {

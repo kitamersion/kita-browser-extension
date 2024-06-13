@@ -16,7 +16,7 @@ import { getDateFromNow, randomOffset } from "@/utils";
 import logger from "@/config/logger";
 import { useAnilistContext } from "@/context/anilistContext";
 
-const EXPIRES_IN_DAYS = 1;
+const EXPIRES_IN_DAYS = 14; // @todo - provide in settings
 const DEFAULT_TIMEOUT_OFFSET = 2000;
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
