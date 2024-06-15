@@ -113,6 +113,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       } else {
         setMyAnimeListAuthStatus("error", () => {});
       }
+
+      // @todo - implement refresh token flow
     })();
   }
 });
@@ -193,8 +195,8 @@ chrome.runtime.onInstalled.addListener(() => {
 const authorizeMyAnimeList = async (myAnimeListConfig: MyAnimeListConfig): Promise<boolean> => {
   try {
     const { myAnimeListId, secret } = myAnimeListConfig;
-    await generateUrl(myAnimeListId);
-    const hasTokens = await getRefreshToken(myAnimeListId, secret);
+    await malLaunchAuthFlow(myAnimeListId);
+    const hasTokens = await malTokenExchange(myAnimeListId, secret);
     return hasTokens;
   } catch (e) {
     logger.error(`${e}`);
@@ -202,7 +204,7 @@ const authorizeMyAnimeList = async (myAnimeListConfig: MyAnimeListConfig): Promi
   }
 };
 
-async function generateUrl(clientId: string) {
+async function malLaunchAuthFlow(clientId: string) {
   const verifier = generateRandomString(128);
   const challenge = SHA256(verifier).toString();
 
@@ -219,7 +221,7 @@ async function generateUrl(clientId: string) {
   }
 }
 
-const getRefreshToken = async (clientId: string, clientSecret: string): Promise<boolean> => {
+const malTokenExchange = async (clientId: string, clientSecret: string): Promise<boolean> => {
   let code: string | null = "";
   let challenge: string | null = "";
 
