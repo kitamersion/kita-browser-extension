@@ -11,7 +11,7 @@ const MYANIMELIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.In
 const MYANIMELIST_AUTO_SYNC_MEDIA_KEY =
   kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.MyAnimeListKeys.MyAnimeListAutoSyncMediaKey;
 
-// get anlist config
+// get MyAnimeList config
 const getMyAnimeListConfig = (callback: Callback<MyAnimeListConfig | null>) => {
   if (ENV === "dev") {
     logger.info("fetching MyAnimeList config");

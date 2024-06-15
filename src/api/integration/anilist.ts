@@ -10,7 +10,7 @@ const ANILIST_AUTH_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationK
 const ANILIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus;
 const ANILIST_AUTO_SYNC_MEDIA_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey;
 
-// get anlist config
+// get anilist config
 const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {
   if (ENV === "dev") {
     logger.info("fetching anilist config");
