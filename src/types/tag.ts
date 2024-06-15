@@ -7,4 +7,4 @@ export type ITag = {
   owner?: TagOwner;
 };
 
-type TagOwner = "USER" | "INTEGRATION_ANILIST";
+type TagOwner = "USER" | "INTEGRATION_ANILIST" | "INTEGRATION_MYANIMELIST";

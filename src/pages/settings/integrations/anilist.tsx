@@ -1,12 +1,24 @@
 import { useAnilistContext } from "@/context/anilistContext";
 import { INTEGRATION_ANILIST_AUTH_DISCONNECT, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
 import { AnilistConfig } from "@/types/integrations/anilist";
-import { Box, Button, Flex, FormControl, FormLabel, Heading, Input, InputGroup, InputRightElement, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Heading,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Text,
+  useClipboard,
+} from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
 import { useGetMeQuery } from "@/graphql";
-import AnilistProfile from "../components/anilistProfile";
+import AnilistProfile from "../components/anilist/anilistProfile";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
 const Anilist = () => {
@@ -19,6 +31,7 @@ const Anilist = () => {
 
   const [showPasswordInput, setShowPasswordInput] = React.useState(false);
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
+  const { hasCopied, onCopy } = useClipboard(anilistConfigState.redirectUrl ?? "");
 
   const { data, loading, error } = useGetMeQuery({
     skip: anilistAuthStatus !== "authorized",
@@ -44,6 +57,7 @@ const Anilist = () => {
   };
 
   const handleDisconnect = () => {
+    setAnilistConfigState({ ...anilistConfig, anilistId: "", secret: "" });
     eventBus.publish(INTEGRATION_ANILIST_AUTH_DISCONNECT, { message: "delete anilist auth", value: "" });
   };
 
@@ -84,12 +98,19 @@ const Anilist = () => {
                 </InputRightElement>
               </InputGroup>
             </FormControl>
-            <FormControl id="redirectUrl" mt={10}>
+            <FormControl id="anilistRedirectUrl" mt={10}>
               <FormLabel>
                 <Text>Redirect URL (readonly)</Text>
-                <Text fontSize={"small"}>In anilist, configure your redirect url to the text below</Text>
+                <Text fontSize={"small"}>Configure redirect to the URL below (This is your extension URL)</Text>
               </FormLabel>
-              <Input readOnly name="redirectUrl" value={anilistConfigState?.redirectUrl} onChange={handleChange} />
+              <InputGroup size="md">
+                <Input readOnly name="anilistRedirectUrl" type={"text"} value={anilistConfigState?.redirectUrl} onChange={handleChange} />
+                <InputRightElement width="4.5rem">
+                  <Button h="1.75rem" size="sm" onClick={onCopy}>
+                    {hasCopied ? "Copied" : "Copy"}
+                  </Button>
+                </InputRightElement>
+              </InputGroup>
             </FormControl>
 
             {anilistAuthStatus !== "authorized" && (

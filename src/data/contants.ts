@@ -36,3 +36,5 @@ export const CONTENT_SITE_CONFIG: SiteConfigDictionary = {
     durationKey: "meta[property='video:duration']",
   },
 };
+
+export const KITA_AUTH_PROXY_URL = "https://kita-auth-proxy.onrender.com";

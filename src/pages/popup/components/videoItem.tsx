@@ -10,7 +10,7 @@ import { ITag } from "@/types/tag";
 import { IoTimerOutline } from "react-icons/io5";
 import { IoIosCalendar } from "react-icons/io";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
-import AnilistAnimeTrySearchAndLink from "@/pages/settings/components/anilistAnimeTrySearchAndLink";
+import AnilistAnimeTrySearchAndLink from "@/pages/settings/components/anilist/anilistAnimeTrySearchAndLink";
 import DeleteVideo from "./deleteVideo";
 
 const VideoItem = (video: IVideo) => {
