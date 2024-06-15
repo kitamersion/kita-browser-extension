@@ -1,5 +1,5 @@
 export type MyAnimeListConfig = {
-  MyAnimeListId: string;
+  myAnimeListId: string;
   secret: string;
   redirectUrl: string;
 };

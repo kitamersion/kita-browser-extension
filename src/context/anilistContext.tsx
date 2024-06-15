@@ -179,7 +179,16 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
         });
       });
     });
-  }, [showToast]);
+
+    setAnilistConfig(
+      {
+        anilistId: "",
+        secret: "",
+        redirectUrl: anilistConfig.redirectUrl,
+      },
+      () => {}
+    );
+  }, [anilistConfig, showToast]);
 
   useEffect(() => {
     if (!isInitialized && isAppInitialized && isApplicationEnabled) {
@@ -190,7 +199,15 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
       setIsInitialized(true);
       return () => {};
     }
-  }, [handleGetAnilistAuth, handleGetAnilistAuthStatus, handleGetAnilistConfig, isAppInitialized, isApplicationEnabled, isInitialized]);
+  }, [
+    handleGetAnilistAuth,
+    handleGetAnilistAuthStatus,
+    handleGetAnilistAutoSync,
+    handleGetAnilistConfig,
+    isAppInitialized,
+    isApplicationEnabled,
+    isInitialized,
+  ]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================

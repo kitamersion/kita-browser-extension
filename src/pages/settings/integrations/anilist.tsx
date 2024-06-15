@@ -18,7 +18,7 @@ import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
 import { useGetMeQuery } from "@/graphql";
-import AnilistProfile from "../components/anilistProfile";
+import AnilistProfile from "../components/anilist/anilistProfile";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
 const Anilist = () => {
@@ -57,6 +57,7 @@ const Anilist = () => {
   };
 
   const handleDisconnect = () => {
+    setAnilistConfigState({ ...anilistConfig, anilistId: "", secret: "" });
     eventBus.publish(INTEGRATION_ANILIST_AUTH_DISCONNECT, { message: "delete anilist auth", value: "" });
   };
 

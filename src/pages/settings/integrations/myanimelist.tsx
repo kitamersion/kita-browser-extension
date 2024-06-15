@@ -1,7 +1,15 @@
-import { useAnilistContext } from "@/context/anilistContext";
-import { INTEGRATION_ANILIST_AUTH_DISCONNECT, INTEGRATION_ANILIST_AUTH_POLL, INTEGRATION_ANILIST_AUTH_START } from "@/data/events";
-import { AnilistConfig } from "@/types/integrations/anilist";
+import { useMyAnimeListContext } from "@/context/myanimelistContext";
 import {
+  INTEGRATION_MYANIMELIST_AUTH_DISCONNECT,
+  INTEGRATION_MYANIMELIST_AUTH_POLL,
+  INTEGRATION_MYANIMELIST_AUTH_START,
+} from "@/data/events";
+import { MyAnimeListConfig } from "@/types/integrations/myanimelist";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Box,
   Button,
   Flex,
@@ -17,50 +25,46 @@ import {
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
-import { useGetMeQuery } from "@/graphql";
-import AnilistProfile from "../components/anilistProfile";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
+import MyAnimeListProfile from "../components/myanimelist/myanimelistProfile";
 
 const MyAnimeList = () => {
-  const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
-  const [anilistConfigState, setAnilistConfigState] = useState<AnilistConfig>({
-    anilistId: "",
+  const { isInitialized, MyAnimeListConfig, MyAnimeListAuthStatus } = useMyAnimeListContext();
+  const [MyAnimeListConfigState, setMyAnimeListConfigState] = useState<MyAnimeListConfig>({
+    myAnimeListId: "",
     secret: "",
     redirectUrl: "",
   });
 
   const [showPasswordInput, setShowPasswordInput] = React.useState(false);
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
-  const { hasCopied, onCopy } = useClipboard(anilistConfigState.redirectUrl ?? "");
-
-  const { data, loading, error } = useGetMeQuery({
-    skip: anilistAuthStatus !== "authorized",
-  });
+  const { hasCopied, onCopy } = useClipboard(MyAnimeListConfigState.redirectUrl ?? "");
 
   useEffect(() => {
     if (isInitialized) {
-      setAnilistConfigState(anilistConfig);
+      setMyAnimeListConfigState(MyAnimeListConfig);
     }
-  }, [anilistConfig, isInitialized]);
+  }, [MyAnimeListConfig, isInitialized]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
     const { name, value } = e.target;
-    const updatedState = { ...(anilistConfigState as AnilistConfig), [name]: value ?? "" };
-    setAnilistConfigState(updatedState);
+    const updatedState = { ...(MyAnimeListConfigState as MyAnimeListConfig), [name]: value ?? "" };
+    setMyAnimeListConfigState(updatedState);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    eventBus.publish(INTEGRATION_ANILIST_AUTH_START, { message: "start anilist auth", value: anilistConfigState });
-    eventBus.publish(INTEGRATION_ANILIST_AUTH_POLL, { message: "start polling anilist auth status", value: "" });
+    eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_START, { message: "start MyAnimeList auth", value: MyAnimeListConfigState });
+    eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_POLL, { message: "start polling MyAnimeList auth status", value: "" });
   };
 
   const handleDisconnect = () => {
-    eventBus.publish(INTEGRATION_ANILIST_AUTH_DISCONNECT, { message: "delete anilist auth", value: "" });
+    setMyAnimeListConfigState({ myAnimeListId: "", secret: "", redirectUrl: MyAnimeListConfig.redirectUrl });
+    eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_DISCONNECT, { message: "delete MyAnimeList auth", value: "" });
   };
 
-  if (!isInitialized || loading) return <LoadingState />;
+  if (!isInitialized) return <LoadingState />;
 
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
@@ -69,17 +73,28 @@ const MyAnimeList = () => {
           <Heading as="h2" fontWeight={"bold"} fontSize={"large"}>
             MyAnimeList
           </Heading>
-          {anilistAuthStatus === "initial" && <Text>Not Connected</Text>}
-          {anilistAuthStatus === "pending" && <Text>Connecting...</Text>}
-          {anilistAuthStatus === "authorized" && <Text>Authorized</Text>}
-          {anilistAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
-          {anilistAuthStatus === "error" && <Text>Error Connecting</Text>}
+          {MyAnimeListAuthStatus === "initial" && <Text>Not Connected</Text>}
+          {MyAnimeListAuthStatus === "pending" && <Text>Connecting...</Text>}
+          {MyAnimeListAuthStatus === "authorized" && <Text>Authorized</Text>}
+          {MyAnimeListAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
+          {MyAnimeListAuthStatus === "error" && <Text>Error Connecting</Text>}
         </Flex>
+        <Alert status="error" rounded={"xl"}>
+          <Flex flexDirection={"row"} alignItems={"center"}>
+            <AlertIcon />
+            <Flex flexDirection={"column"}>
+              <AlertTitle>Authentication may take a while</AlertTitle>
+              <AlertDescription>
+                To save costs, we use a free service that scales down on inactivity. It may take a minute to start...
+              </AlertDescription>
+            </Flex>
+          </Flex>
+        </Alert>
         <form onSubmit={handleSubmit}>
           <Flex flexDirection={"column"} gap={4}>
-            <FormControl id="anilistId">
+            <FormControl id="myAnimeListId">
               <FormLabel>Client Id</FormLabel>
-              <Input name="anilistId" value={anilistConfigState?.anilistId} onChange={handleChange} />
+              <Input name="myAnimeListId" value={MyAnimeListConfigState?.myAnimeListId} onChange={handleChange} />
             </FormControl>
             <FormControl id="secret">
               <FormLabel>Secret</FormLabel>
@@ -87,7 +102,7 @@ const MyAnimeList = () => {
                 <Input
                   name="secret"
                   type={showPasswordInput ? "text" : "password"}
-                  value={anilistConfigState?.secret}
+                  value={MyAnimeListConfigState?.secret}
                   onChange={handleChange}
                 />
                 <InputRightElement width="4.5rem">
@@ -104,7 +119,7 @@ const MyAnimeList = () => {
               </FormLabel>
 
               <InputGroup size="md">
-                <Input readOnly name="malRedirectUrl" type={"text"} value={anilistConfigState?.redirectUrl} onChange={handleChange} />
+                <Input readOnly name="malRedirectUrl" type={"text"} value={MyAnimeListConfigState?.redirectUrl} onChange={handleChange} />
                 <InputRightElement width="4.5rem">
                   <Button h="1.75rem" size="sm" onClick={onCopy}>
                     {hasCopied ? "Copied" : "Copy"}
@@ -113,12 +128,12 @@ const MyAnimeList = () => {
               </InputGroup>
             </FormControl>
 
-            {anilistAuthStatus !== "authorized" && (
+            {MyAnimeListAuthStatus !== "authorized" && (
               <Button colorScheme="green" type="submit">
                 Connect
               </Button>
             )}
-            {anilistAuthStatus === "authorized" && (
+            {MyAnimeListAuthStatus === "authorized" && (
               <Button colorScheme="red" onClick={handleDisconnect}>
                 Disconnect
               </Button>
@@ -126,7 +141,7 @@ const MyAnimeList = () => {
           </Flex>
         </form>
 
-        {anilistAuthStatus === "authorized" && <AnilistProfile Viewer={data?.Viewer} />}
+        {MyAnimeListAuthStatus === "authorized" && <MyAnimeListProfile authorized={MyAnimeListAuthStatus === "authorized"} />}
         <AutoSyncMediaToggle />
       </Flex>
     </Box>

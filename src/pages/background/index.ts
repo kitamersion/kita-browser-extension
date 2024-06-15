@@ -1,14 +1,18 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
+import { getMyAnimeListConfig, setMyAnimeListAuth, setMyAnimeListAuthStatus, setMyAnimeListConfig } from "@/api/integration/myanimelist";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import logger from "@/config/logger";
 import { KITA_AUTH_PROXY_URL } from "@/data/contants";
-import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
+import { INTEGRATION_ANILIST_AUTH_CONNECT, INTEGRATION_MYANIMELIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { MyAnimeListAuth, MyAnimeListConfig } from "@/types/integrations/myanimelist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateRandomString, generateUniqueCode } from "@/utils";
 import { SHA256 } from "crypto-js";
+
+const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -76,9 +80,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
+  // handle anilist auth connect
   if (request.type === INTEGRATION_ANILIST_AUTH_CONNECT) {
     (async () => {
-      const success = await authorizeAnilist(parsedPayload);
+      const success = await authorizeAnilist(parsedPayload as AnilistConfig);
       if (success) {
         setAnilistAuthStatus("authorized", async () => {
           const tag = await IndexedDB.getTagByCode("ANILIST");
@@ -89,6 +94,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       } else {
         setAnilistAuthStatus("error", () => {});
+      }
+    })();
+  }
+
+  // handle myanimelist auth connect
+  if (request.type === INTEGRATION_MYANIMELIST_AUTH_CONNECT) {
+    (async () => {
+      const success = await authorizeMyAnimeList(parsedPayload as MyAnimeListConfig);
+      if (success) {
+        setMyAnimeListAuthStatus("authorized", async () => {
+          const tag = await IndexedDB.getTagByCode("MYANIMELIST");
+
+          if (!tag) {
+            await IndexedDB.addTag({ name: "MyAnimeList", owner: "INTEGRATION_MYANIMELIST" });
+          }
+        });
+      } else {
+        setMyAnimeListAuthStatus("error", () => {});
       }
     })();
   }
@@ -152,6 +175,13 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
   });
 
   // initialize myanimelist config
+  getMyAnimeListConfig((config) => {
+    if (!config) {
+      setMyAnimeListConfig({ myAnimeListId: "", secret: "", redirectUrl: redirectUrl }, () => {});
+    } else if (config.redirectUrl !== redirectUrl) {
+      setMyAnimeListConfig({ ...config, redirectUrl }, () => {});
+    }
+  });
 })();
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -160,62 +190,85 @@ chrome.runtime.onInstalled.addListener(() => {
   })();
 });
 
-const clientId = process.env.CLIENT_ID || "";
-const clientSecret = process.env.CLIENT_SECRET || "";
-
-export async function oauth() {
+const authorizeMyAnimeList = async (myAnimeListConfig: MyAnimeListConfig): Promise<boolean> => {
   try {
-    await generateUrl();
-    await getRefreshToken();
+    const { myAnimeListId, secret } = myAnimeListConfig;
+    await generateUrl(myAnimeListId);
+    const hasTokens = await getRefreshToken(myAnimeListId, secret);
+    return hasTokens;
   } catch (e) {
-    console.error(e);
+    logger.error(`${e}`);
+    return false;
   }
-}
+};
 
-async function generateUrl() {
+async function generateUrl(clientId: string) {
   const verifier = generateRandomString(128);
   const challenge = SHA256(verifier).toString();
 
   const url = `${KITA_AUTH_PROXY_URL}/mal/oauth/authorize?mal_client_id=${clientId}&mal_challenge=${challenge}`;
   const redirectUrl = await launchWebAuthFlow(url);
   const code = new URL(redirectUrl ?? "").searchParams.get("code");
-  localStorage.setItem("code", code || "");
-  localStorage.setItem("challenge", challenge);
+
+  // save code and challenge
+  if (ENV === "dev") {
+    localStorage.setItem("code", code || "");
+    localStorage.setItem("challenge", challenge);
+  } else {
+    chrome.storage.local.set({ code, challenge }, () => {});
+  }
 }
 
-async function getRefreshToken() {
-  const code = localStorage.getItem("code");
-  const challenge = localStorage.getItem("challenge");
-  if (!challenge) throw new Error("Challenge not found");
+const getRefreshToken = async (clientId: string, clientSecret: string): Promise<boolean> => {
+  let code: string | null = "";
+  let challenge: string | null = "";
+
+  if (ENV === "dev") {
+    code = localStorage.getItem("code");
+    challenge = localStorage.getItem("challenge");
+  } else {
+    const storage = await chrome.storage.local.get(["code", "challenge"]);
+    code = storage.code;
+    challenge = storage.challenge;
+  }
+
+  if (!challenge) {
+    logger.error("No challenge found");
+    return false;
+  }
   const response = await fetch(`${KITA_AUTH_PROXY_URL}/mal/oauth/token`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       mal_client_id: clientId,
       mal_client_secret: clientSecret,
-      mal_code_verifier: challenge,
+      mal_code_verifier: challenge ?? "",
       mal_code: code ?? "",
     },
   });
   const result = await response.json();
-  if (result && result.refresh_token && result.access_token) {
-    chrome.storage.local.set(
-      {
-        malAccessToken: result.access_token,
-        malRefreshToken: result.refresh_token,
-        malTokenType: result.token_type,
-        malExpiresIn: result.expires_in,
-      },
-      () => {
-        console.log("Tokens saved");
-      }
-    );
-    return;
-  }
-  if (result && result.error) throw new Error(result.error);
-  throw new Error("Something went wrong");
-}
 
-(async () => {
-  await oauth();
-})();
+  if (result && result.error) {
+    logger.error(result.error);
+    return false;
+  }
+
+  if (result && result.refresh_token && result.access_token) {
+    const myAnimeListAuth: MyAnimeListAuth = {
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+      token_type: result.token_type,
+      expires_in: result.expires_in,
+      issued_at: Date.now(),
+    };
+
+    setMyAnimeListAuth(myAnimeListAuth, () => {
+      logger.info("tokens saved");
+    });
+
+    return true;
+  }
+
+  logger.error("Something went wrong");
+  return false;
+};

@@ -17,7 +17,7 @@ const getMyAnimeListConfig = (callback: Callback<MyAnimeListConfig | null>) => {
     logger.info("fetching MyAnimeList config");
     const MyAnimeList = localStorage.getItem(MYANIMELIST_CONFIG_KEY);
     if (!MyAnimeList) {
-      callback({ MyAnimeListId: "", secret: "", redirectUrl: window.location.origin });
+      callback({ myAnimeListId: "", secret: "", redirectUrl: window.location.origin });
       return;
     }
     callback(JSON.parse(MyAnimeList));
