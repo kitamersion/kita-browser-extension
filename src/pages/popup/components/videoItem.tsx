@@ -12,6 +12,7 @@ import { IoIosCalendar } from "react-icons/io";
 import { useVideoTagRelationshipContext } from "@/context/videoTagRelationshipContext";
 import AnilistAnimeTrySearchAndLink from "@/pages/settings/components/anilist/anilistAnimeTrySearchAndLink";
 import DeleteVideo from "./deleteVideo";
+import MyAnimeListAnimeSync from "@/pages/settings/components/myanimelist/myanimelistAnimeSync";
 
 const VideoItem = (video: IVideo) => {
   const { id, created_at, origin, video_duration, video_title, video_url } = video;
@@ -95,6 +96,7 @@ const VideoItem = (video: IVideo) => {
 
             <Flex gap={1} justifyContent={"flex-end"}>
               {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
+              {video.origin === SiteKey.CRUNCHYROLL && <MyAnimeListAnimeSync {...video} />}
               <UpdateVideo {...video} />
               <DeleteVideo id={id} />
             </Flex>

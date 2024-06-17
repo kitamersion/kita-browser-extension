@@ -16,6 +16,7 @@ import { getDateFromNow, randomOffset } from "@/utils";
 import logger from "@/config/logger";
 import { useAnilistContext } from "@/context/anilistContext";
 
+const TAG_CODE = "ANILIST";
 const EXPIRES_IN_DAYS = 14; // @todo - provide in settings
 const DEFAULT_TIMEOUT_OFFSET = 2000;
 
@@ -66,6 +67,8 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         expires_at: expiresAt,
         media_type: "ANIME",
         unique_code: SHA256(getMediaBySeasonYear?.title?.english || "").toString(),
+        used_by: TAG_CODE,
+        is_anilist_synced: true,
       };
 
       eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "add cache item", value: cacheItem });
@@ -77,7 +80,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
   const fetchAndSyncAnilist = useCallback(
     async (searchData?: GetMediaBySearchQuery) => {
-      const tag = await IndexedDB.getTagByCode("ANILIST");
+      const tag = await IndexedDB.getTagByCode(TAG_CODE);
 
       let cacheItem = existingCacheItem;
       if (!cacheItem) {
@@ -214,7 +217,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       aria-label="Sync to Anilist"
       variant="ghost"
       rounded="full"
-      title="Search in Anilist"
+      title="Sync in Anilist"
       onClick={searchInAnilist}
     />
   );

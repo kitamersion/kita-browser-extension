@@ -23,11 +23,11 @@ import { useApplicationContext } from "./applicationContext";
 
 interface MyAnimeListContextType {
   isInitialized: boolean;
-  MyAnimeListConfig: MyAnimeListConfig;
-  MyAnimeListAuth: MyAnimeListAuth;
-  MyAnimeListAuthStatus: AuthStatus;
-  MyAnimeListIsAuthorized: boolean;
-  MyAnimeListAutoSyncMedia: boolean;
+  myAnimeListConfig: MyAnimeListConfig;
+  myAnimeListAuth: MyAnimeListAuth;
+  myAnimeListAuthStatus: AuthStatus;
+  myAnimeListIsAuthorized: boolean;
+  myAnimeListAutoSyncMedia: boolean;
 }
 
 const initialMyAnimeListAuthState: MyAnimeListAuth = {
@@ -243,11 +243,11 @@ export const MyAnimeListProvider = ({ children }: PropsWithChildren<unknown>) =>
     <MyAnimeListContext.Provider
       value={{
         isInitialized,
-        MyAnimeListConfig: myAnimeListConfig,
-        MyAnimeListAuth: myAnimeListAuth,
-        MyAnimeListAuthStatus: authStatus,
-        MyAnimeListIsAuthorized: alreadyAuthorized,
-        MyAnimeListAutoSyncMedia: MyAnimeListAutoSyncMedia,
+        myAnimeListConfig: myAnimeListConfig,
+        myAnimeListAuth: myAnimeListAuth,
+        myAnimeListAuthStatus: authStatus,
+        myAnimeListIsAuthorized: alreadyAuthorized,
+        myAnimeListAutoSyncMedia: MyAnimeListAutoSyncMedia,
       }}
     >
       {children}

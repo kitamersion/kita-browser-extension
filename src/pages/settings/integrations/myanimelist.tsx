@@ -29,8 +29,8 @@ import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 import MyAnimeListProfile from "../components/myanimelist/myanimelistProfile";
 
 const MyAnimeList = () => {
-  const { isInitialized, MyAnimeListConfig, MyAnimeListAuthStatus } = useMyAnimeListContext();
-  const [MyAnimeListConfigState, setMyAnimeListConfigState] = useState<MyAnimeListConfig>({
+  const { isInitialized, myAnimeListConfig, myAnimeListAuthStatus } = useMyAnimeListContext();
+  const [myAnimeListConfigState, setMyAnimeListConfigState] = useState<MyAnimeListConfig>({
     myAnimeListId: "",
     secret: "",
     redirectUrl: "",
@@ -38,29 +38,29 @@ const MyAnimeList = () => {
 
   const [showPasswordInput, setShowPasswordInput] = React.useState(false);
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
-  const { hasCopied, onCopy } = useClipboard(MyAnimeListConfigState.redirectUrl ?? "");
+  const { hasCopied, onCopy } = useClipboard(myAnimeListConfigState.redirectUrl ?? "");
 
   useEffect(() => {
     if (isInitialized) {
-      setMyAnimeListConfigState(MyAnimeListConfig);
+      setMyAnimeListConfigState(myAnimeListConfig);
     }
-  }, [MyAnimeListConfig, isInitialized]);
+  }, [myAnimeListConfig, isInitialized]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     e.preventDefault();
     const { name, value } = e.target;
-    const updatedState = { ...(MyAnimeListConfigState as MyAnimeListConfig), [name]: value ?? "" };
+    const updatedState = { ...(myAnimeListConfigState as MyAnimeListConfig), [name]: value ?? "" };
     setMyAnimeListConfigState(updatedState);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_START, { message: "start MyAnimeList auth", value: MyAnimeListConfigState });
+    eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_START, { message: "start MyAnimeList auth", value: myAnimeListConfigState });
     eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_POLL, { message: "start polling MyAnimeList auth status", value: "" });
   };
 
   const handleDisconnect = () => {
-    setMyAnimeListConfigState({ myAnimeListId: "", secret: "", redirectUrl: MyAnimeListConfig.redirectUrl });
+    setMyAnimeListConfigState({ myAnimeListId: "", secret: "", redirectUrl: myAnimeListConfig.redirectUrl });
     eventBus.publish(INTEGRATION_MYANIMELIST_AUTH_DISCONNECT, { message: "delete MyAnimeList auth", value: "" });
   };
 
@@ -73,11 +73,11 @@ const MyAnimeList = () => {
           <Heading as="h2" fontWeight={"bold"} fontSize={"large"}>
             MyAnimeList
           </Heading>
-          {MyAnimeListAuthStatus === "initial" && <Text>Not Connected</Text>}
-          {MyAnimeListAuthStatus === "pending" && <Text>Connecting...</Text>}
-          {MyAnimeListAuthStatus === "authorized" && <Text>Authorized</Text>}
-          {MyAnimeListAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
-          {MyAnimeListAuthStatus === "error" && <Text>Error Connecting</Text>}
+          {myAnimeListAuthStatus === "initial" && <Text>Not Connected</Text>}
+          {myAnimeListAuthStatus === "pending" && <Text>Connecting...</Text>}
+          {myAnimeListAuthStatus === "authorized" && <Text>Authorized</Text>}
+          {myAnimeListAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
+          {myAnimeListAuthStatus === "error" && <Text>Error Connecting</Text>}
         </Flex>
         <Alert status="error" rounded={"xl"}>
           <Flex flexDirection={"row"} alignItems={"center"}>
@@ -94,7 +94,7 @@ const MyAnimeList = () => {
           <Flex flexDirection={"column"} gap={4}>
             <FormControl id="myAnimeListId">
               <FormLabel>Client Id</FormLabel>
-              <Input name="myAnimeListId" value={MyAnimeListConfigState?.myAnimeListId} onChange={handleChange} />
+              <Input name="myAnimeListId" value={myAnimeListConfigState?.myAnimeListId} onChange={handleChange} />
             </FormControl>
             <FormControl id="secret">
               <FormLabel>Secret</FormLabel>
@@ -102,7 +102,7 @@ const MyAnimeList = () => {
                 <Input
                   name="secret"
                   type={showPasswordInput ? "text" : "password"}
-                  value={MyAnimeListConfigState?.secret}
+                  value={myAnimeListConfigState?.secret}
                   onChange={handleChange}
                 />
                 <InputRightElement width="4.5rem">
@@ -119,7 +119,7 @@ const MyAnimeList = () => {
               </FormLabel>
 
               <InputGroup size="md">
-                <Input readOnly name="malRedirectUrl" type={"text"} value={MyAnimeListConfigState?.redirectUrl} onChange={handleChange} />
+                <Input readOnly name="malRedirectUrl" type={"text"} value={myAnimeListConfigState?.redirectUrl} onChange={handleChange} />
                 <InputRightElement width="4.5rem">
                   <Button h="1.75rem" size="sm" onClick={onCopy}>
                     {hasCopied ? "Copied" : "Copy"}
@@ -128,12 +128,12 @@ const MyAnimeList = () => {
               </InputGroup>
             </FormControl>
 
-            {MyAnimeListAuthStatus !== "authorized" && (
+            {myAnimeListAuthStatus !== "authorized" && (
               <Button colorScheme="green" type="submit">
                 Connect
               </Button>
             )}
-            {MyAnimeListAuthStatus === "authorized" && (
+            {myAnimeListAuthStatus === "authorized" && (
               <Button colorScheme="red" onClick={handleDisconnect}>
                 Disconnect
               </Button>
@@ -141,7 +141,7 @@ const MyAnimeList = () => {
           </Flex>
         </form>
 
-        {MyAnimeListAuthStatus === "authorized" && <MyAnimeListProfile authorized={MyAnimeListAuthStatus === "authorized"} />}
+        {myAnimeListAuthStatus === "authorized" && <MyAnimeListProfile authorized={myAnimeListAuthStatus === "authorized"} />}
         <AutoSyncMediaToggle />
       </Flex>
     </Box>
