@@ -16,4 +16,7 @@ export type IMediaCache = {
   banner_image?: string;
   created_at?: number;
   expires_at?: number;
+  used_by?: string;
+  is_anilist_synced?: boolean;
+  is_mal_synced?: boolean;
 };
