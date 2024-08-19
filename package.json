@@ -88,7 +88,7 @@
     "@babel/runtime": "^7.25.0",
     "@chakra-ui/icons": "^2.0.12",
     "@chakra-ui/react": "^2.4.1",
-    "@emotion/react": "^11.11.4",
+    "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.11.5",
     "@types/jsonfile": "^6.1.4",
     "crypto-js": "^4.2.0",
