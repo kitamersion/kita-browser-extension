@@ -8,12 +8,15 @@ import MyAnimeList from "../integrations/myanimelist";
 const IntegrationTab = () => {
   const { columns } = useScreenSize();
 
+  const enableMal = false;
+  const enableMoeWay = false;
+
   return (
     <TabPanel>
       <Grid templateColumns={`repeat(${columns - 1}, 1fr)`} gap={4} mt={4} mx={2}>
         <Anilist />
-        <MyAnimeList />
-        <TheMoeWay />
+        {enableMal && <MyAnimeList />}
+        {enableMoeWay && <TheMoeWay />}
       </Grid>
       <Center mt={6}>
         <Alert status="warning" rounded={"3xl"} fontSize={14} maxWidth={"70%"}>
