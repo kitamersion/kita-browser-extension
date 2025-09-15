@@ -13,7 +13,6 @@ import { AnilistProvider } from "@/context/anilistContext";
 import { GraphqlProvider } from "@/context/apolloContext";
 import { AutoTagProvider } from "@/context/autoTagContext";
 import { CachedMediaProvider } from "@/context/cachedMediaContext";
-import { MyAnimeListProvider } from "@/context/myanimelistContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -24,20 +23,18 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
           <CachedMediaProvider>
             <AnilistProvider>
               <GraphqlProvider>
-                <MyAnimeListProvider>
-                  <VideoTagRelationshipProvider>
-                    <VideoProvider>
-                      <TagProvider>
-                        <AutoTagProvider>
-                          <GlobalLayoutWrapper>
-                            <Navigation />
-                            <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                          </GlobalLayoutWrapper>
-                        </AutoTagProvider>
-                      </TagProvider>
-                    </VideoProvider>
-                  </VideoTagRelationshipProvider>
-                </MyAnimeListProvider>
+                <VideoTagRelationshipProvider>
+                  <VideoProvider>
+                    <TagProvider>
+                      <AutoTagProvider>
+                        <GlobalLayoutWrapper>
+                          <Navigation />
+                          <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                        </GlobalLayoutWrapper>
+                      </AutoTagProvider>
+                    </TagProvider>
+                  </VideoProvider>
+                </VideoTagRelationshipProvider>
               </GraphqlProvider>
             </AnilistProvider>
           </CachedMediaProvider>

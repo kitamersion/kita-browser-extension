@@ -3,7 +3,7 @@ import { getMyAnimeListConfig, setMyAnimeListAuth, setMyAnimeListAuthStatus, set
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import logger from "@/config/logger";
 import { KITA_AUTH_PROXY_URL } from "@/data/contants";
-import { INTEGRATION_ANILIST_AUTH_CONNECT, INTEGRATION_MYANIMELIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
+import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 import { MyAnimeListAuth, MyAnimeListConfig } from "@/types/integrations/myanimelist";

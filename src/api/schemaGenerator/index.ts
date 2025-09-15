@@ -47,12 +47,6 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
             AuthStatus: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus,
             AnilistAutoSyncMediaKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey,
           },
-          MyAnimeListKeys: {
-            AuthStatus: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.MyAnimeListKeys.AuthStatus,
-            MyAnimeListAccessToken: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.MyAnimeListKeys.MyAnimeListAccessToken,
-            MyAnimeListConfigKey: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.MyAnimeListKeys.MyAnimeListConfigKey,
-            MyAnimeListRefreshToken: kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.MyAnimeListKeys.MyAnimeListRefreshToken,
-          },
         },
         StatisticsKeys: {
           VideoStatisticsKeys: {

@@ -31,7 +31,6 @@ export type UserItems = {
 
 export type IntegrationKeys = {
   AnilistKeys: AnilistKeys;
-  MyAnimeListKeys: MyAnimeListKeys;
 };
 
 export type AnilistKeys = {
@@ -39,13 +38,6 @@ export type AnilistKeys = {
   AnilistAuthKey: string;
   AuthStatus: string;
   AnilistAutoSyncMediaKey: string;
-};
-
-export type MyAnimeListKeys = {
-  MyAnimeListConfigKey: string;
-  MyAnimeListAuthKey: string;
-  AuthStatus: string;
-  MyAnimeListAutoSyncMediaKey: string;
 };
 
 export type StatisticsKeys = {
