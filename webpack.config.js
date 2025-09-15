@@ -2,11 +2,17 @@ const Dotenv = require("dotenv-webpack");
 const path = require("path");
 const HWP = require('html-webpack-plugin'); 
 
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = !isProduction;
+
 module.exports = {
+  mode: isDevelopment ? 'development' : 'production',
+  
   output: {
     publicPath: "/",
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].js', // Use dynamic filename based on entry key
+    filename: '[name].js',
+    clean: false, // Don't clean the dist folder
   },
 
   entry: {
@@ -17,6 +23,9 @@ module.exports = {
     statistics: path.join(__dirname, "/src/pages/statistics/index.ts"),
   },
 
+  // Enable source maps for development
+  devtool: isDevelopment ? 'cheap-module-source-map' : 'source-map',
+
   resolve: {
     extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
     alias: {
@@ -24,9 +33,16 @@ module.exports = {
     },
   },
 
+  // Watch options for better development experience
+  watchOptions: {
+    ignored: /node_modules/,
+    poll: 1000, // Check for changes every second
+  },
+
   devServer: {
     port: 3001,
     historyApiFallback: true,
+    hot: true,
   },
 
   module: {
