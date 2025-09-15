@@ -8,11 +8,7 @@ import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag
 import { useApplicationContext } from "./applicationContext";
 import logger from "@/config/logger";
 
-interface TagContextType {
-  tags: ITag[];
-  totalTagCount: number;
-  isInitialized: boolean;
-}
+type TagContextType = { tags: ITag[]; totalTagCount: number; isInitialized: boolean };
 
 const TagContext = createContext<TagContextType | undefined>(undefined);
 
@@ -40,10 +36,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
   const handleDeleteAllTags = useCallback(async () => {
     // @todo cascade remove tags from videos
-    showToast({
-      title: "Tags deleted",
-      status: "success",
-    });
+    showToast({ title: "Tags deleted", status: "success" });
   }, [showToast]);
 
   const handleDeleteById = useCallback(
@@ -58,10 +51,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       await IndexedDB.deleteVideoTagByTagId(id);
       decrementTotalTags();
       await handleGetTags();
-      showToast({
-        title: "Tag deleted",
-        status: "success",
-      });
+      showToast({ title: "Tag deleted", status: "success" });
     },
     [handleGetTags, showToast]
   );
@@ -77,10 +67,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       await IndexedDB.addTag({ name: name });
       incrementTotalTags();
       await handleGetTags();
-      showToast({
-        title: "Tag added",
-        status: "success",
-      });
+      showToast({ title: "Tag added", status: "success" });
     },
     [handleGetTags, showToast]
   );

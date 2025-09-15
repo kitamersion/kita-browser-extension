@@ -28,6 +28,12 @@ import LoadingState from "@/components/states/LoadingState";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 import MyAnimeListProfile from "../components/myanimelist/myanimelistProfile";
 
+/**
+ * @deprecated MyAnimeList integration is deprecated due to no time
+ * This component will be kept for now if descision changes
+ * Project will continue with Anilist
+ *
+ */
 const MyAnimeList = () => {
   const { isInitialized, MyAnimeListConfig, MyAnimeListAuthStatus } = useMyAnimeListContext();
   const [MyAnimeListConfigState, setMyAnimeListConfigState] = useState<MyAnimeListConfig>({
