@@ -4,6 +4,7 @@ import AddTag from "./addTag";
 import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
 import SummaryItem from "@/components/summaryItem";
+import QuickAddTags from "./quickAddTags";
 
 const TagItem = React.lazy(() => import("@/pages/settings/components/tagItem"));
 
@@ -20,6 +21,7 @@ const TagGroup = () => {
           <SummaryItem.Value value={totalTagCount} />
           <SummaryItem.Title>Total Tags</SummaryItem.Title>
         </SummaryItem>
+        <QuickAddTags />
         <AddTag />
         <Flex gap={2} flexWrap={"wrap"}>
           {tags.map((tag) => (

@@ -26,12 +26,6 @@ export const kitaSchema: KitaSchema = {
           AnilistConfigKey: "kitamersion_anilist_config",
           AnilistAutoSyncMediaKey: "kitamersion_anilist_auto_sync_media",
         },
-        MyAnimeListKeys: {
-          AuthStatus: "kitamersion_myanimelist_auth_status",
-          MyAnimeListAuthKey: "kitamersion_myanimelist_auth",
-          MyAnimeListConfigKey: "kitamersion_myanimelist_config",
-          MyAnimeListAutoSyncMediaKey: "kitamersion_myanimelist_auto_sync_media",
-        },
       },
       StatisticsKeys: {
         VideoStatisticsKeys: {
