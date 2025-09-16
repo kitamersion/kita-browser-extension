@@ -24,7 +24,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { isInitialized: isAnilistContextInitialized, anilistAutoSyncMedia } = useAnilistContext();
   const { isInitialized: isMediaCacheInitialized, mediaCaches } = useCachedMediaContext();
   const [getMediaBySearch, { data: searchData, loading: searchLoading, error: searchError }] = useGetMediaBySearchLazyQuery();
-  const [setMedia, { data: mediaSetData, loading: mediaSetLoading, error: mediaSetError }] = useSetMediaListEntryByAnilistIdMutation();
+  const [setMedia, { loading: mediaSetLoading, error: mediaSetError }] = useSetMediaListEntryByAnilistIdMutation();
   const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
   const [existingCacheItem, setExistingCacheItem] = useState<IMediaCache | undefined>(undefined);
   const [isAutoSyncing, setIsAutoSyncing] = useState<boolean>(false);
