@@ -16,72 +16,81 @@ import { getDateFromNow, randomOffset } from "@/utils";
 import logger from "@/config/logger";
 import { useAnilistContext } from "@/context/anilistContext";
 
-const EXPIRES_IN_DAYS = 14; // @todo - provide in settings
+const EXPIRES_IN_DAYS = 14;
 const DEFAULT_TIMEOUT_OFFSET = 2000;
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
-  const { isInitialized: isAnilistContextInitialized, anilistAutoSyncMedia } = useAnilistContext();
-  const { isInitialized: isMediaCacheInitialized, mediaCaches } = useCachedMediaContext();
-  const [getMediaBySearch, { data: searchData, loading: searchLoading, error: searchError }] = useGetMediaBySearchLazyQuery();
-  const [setMedia, { loading: mediaSetLoading, error: mediaSetError }] = useSetMediaListEntryByAnilistIdMutation();
-  const [synced, setSynced] = useState(video.anilist_series_id ? true : false);
-  const [existingCacheItem, setExistingCacheItem] = useState<IMediaCache | undefined>(undefined);
-  const [isAutoSyncing, setIsAutoSyncing] = useState<boolean>(false);
+  const { isInitialized: isAnilistReady, anilistAutoSyncMedia } = useAnilistContext();
+  const { isInitialized: isCacheReady, mediaCaches } = useCachedMediaContext();
 
-  const searchInAnilist = useCallback(() => {
-    const cacheItem = mediaCaches.find((cache) => cache.unique_code === SHA256(video?.series_title || "").toString());
-    if (cacheItem) {
+  const [getMediaBySearch, { data: searchData, loading: isSearching, error: searchError }] = useGetMediaBySearchLazyQuery();
+  const [setMedia, { loading: isUpdatingList, error: updateError }] = useSetMediaListEntryByAnilistIdMutation();
+
+  const [isSynced, setIsSynced] = useState(!!video.anilist_series_id);
+  const [cachedMedia, setCachedMedia] = useState<IMediaCache | undefined>();
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+
+  // Helper functions
+  const findExistingCache = useCallback(() => {
+    const uniqueCode = SHA256(video?.series_title || "").toString();
+    return mediaCaches.find((cache) => cache.unique_code === uniqueCode);
+  }, [mediaCaches, video.series_title]);
+
+  const searchAnimeInAnilist = useCallback(() => {
+    const existingCache = findExistingCache();
+    if (existingCache) {
       logger.info("using existing cache item for sync");
-      setExistingCacheItem(cacheItem);
+      setCachedMedia(existingCache);
       return;
     }
-    logger.info("using anilist to search for series");
+    logger.info("searching for anime in AniList");
     getMediaBySearch({ variables: { search: video.series_title, isAdult: false } });
-  }, [getMediaBySearch, mediaCaches, video.series_title]);
+  }, [findExistingCache, getMediaBySearch, video.series_title]);
 
-  const addCacheMedia = useCallback(
-    (searchData?: GetMediaBySearchQuery): IMediaCache | undefined => {
-      const getMediaBySeasonYear = searchData?.anime?.results?.find((result) => result?.seasonYear === video.watching_season_year);
+  const createCacheFromSearchResults = useCallback(
+    (searchResults?: GetMediaBySearchQuery): IMediaCache | undefined => {
+      const matchingAnime = searchResults?.anime?.results?.find((result) => result?.seasonYear === video.watching_season_year);
 
-      if (!getMediaBySeasonYear) {
-        return undefined;
-      }
+      if (!matchingAnime) return undefined;
 
-      // expire cache item
       const expiresAt = getDateFromNow(EXPIRES_IN_DAYS, "FUTURE").getTime();
+      const uniqueCode = SHA256(matchingAnime?.title?.english || "").toString();
 
-      const cacheItem: IMediaCache = {
+      const newCacheItem: IMediaCache = {
         id: self.crypto.randomUUID(),
-        series_title: getMediaBySeasonYear?.title?.english ?? video.series_title,
-        anilist_series_id: getMediaBySeasonYear?.id,
-        mal_series_id: getMediaBySeasonYear?.idMal ?? undefined,
-        series_episode_number: getMediaBySeasonYear?.episodes ?? undefined,
-        series_season_year: getMediaBySeasonYear?.seasonYear ?? undefined,
-        background_cover_image: getMediaBySeasonYear?.coverImage?.extraLarge ?? undefined,
-        banner_image: getMediaBySeasonYear?.bannerImage ?? undefined,
+        series_title: matchingAnime?.title?.english ?? video.series_title,
+        anilist_series_id: matchingAnime?.id,
+        mal_series_id: matchingAnime?.idMal ?? undefined,
+        series_episode_number: matchingAnime?.episodes ?? undefined,
+        series_season_year: matchingAnime?.seasonYear ?? undefined,
+        background_cover_image: matchingAnime?.coverImage?.extraLarge ?? undefined,
+        banner_image: matchingAnime?.bannerImage ?? undefined,
         watching_episode_number: video.watching_episode_number,
         watching_season_year: video.watching_season_year,
         created_at: Date.now(),
         expires_at: expiresAt,
         media_type: "ANIME",
-        unique_code: SHA256(getMediaBySeasonYear?.title?.english || "").toString(),
+        unique_code: uniqueCode,
       };
 
-      eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, { message: "add cache item", value: cacheItem });
+      eventbus.publish(CACHED_MEDIA_METADATA_ADD_OR_UPDATE, {
+        message: "add cache item",
+        value: newCacheItem,
+      });
       logger.info("added new cache item");
-      return cacheItem;
+      return newCacheItem;
     },
-    [video.series_title, video.watching_episode_number, video.watching_season_year]
+    [video]
   );
 
   const fetchAndSyncAnilist = useCallback(
     async (searchData?: GetMediaBySearchQuery) => {
       const tag = await IndexedDB.getTagByCode("ANILIST");
 
-      let cacheItem = existingCacheItem;
+      let cacheItem = cachedMedia;
       if (!cacheItem) {
-        cacheItem = addCacheMedia(searchData);
+        cacheItem = createCacheFromSearchResults(searchData);
       }
 
       const updatedVideo: IVideo = {
@@ -115,7 +124,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
             title: "Anilist media synced!",
             status: "success",
           });
-          setSynced(true);
+          setIsSynced(true);
           return;
         }
       }
@@ -144,19 +153,19 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         status: "success",
       });
 
-      setSynced(true);
+      setIsSynced(true);
     },
-    [addCacheMedia, existingCacheItem, setMedia, showToast, video]
+    [createCacheFromSearchResults, cachedMedia, setMedia, showToast, video]
   );
 
   useEffect(() => {
-    if (isAnilistContextInitialized && isMediaCacheInitialized && anilistAutoSyncMedia && !synced) {
+    if (isAnilistReady && isCacheReady && anilistAutoSyncMedia && !isSynced) {
       setIsAutoSyncing(true);
 
       const offset = randomOffset() + DEFAULT_TIMEOUT_OFFSET;
       const timer = setTimeout(() => {
-        searchInAnilist();
-        if ((existingCacheItem || searchData) && !synced) {
+        searchAnimeInAnilist();
+        if ((cachedMedia || searchData) && !isSynced) {
           fetchAndSyncAnilist(searchData || undefined);
         }
         setIsAutoSyncing(false);
@@ -164,19 +173,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
       return () => clearTimeout(timer);
     }
-  }, [
-    anilistAutoSyncMedia,
-    existingCacheItem,
-    fetchAndSyncAnilist,
-    isAnilistContextInitialized,
-    isMediaCacheInitialized,
-    searchData,
-    searchInAnilist,
-    synced,
-  ]);
+  }, [anilistAutoSyncMedia, cachedMedia, fetchAndSyncAnilist, isAnilistReady, isCacheReady, searchData, searchAnimeInAnilist, isSynced]);
 
   useEffect(() => {
-    if ((existingCacheItem || searchData) && !synced) {
+    if ((cachedMedia || searchData) && !isSynced) {
       fetchAndSyncAnilist(searchData || undefined);
     }
 
@@ -188,15 +188,15 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       });
     }
 
-    if (mediaSetError) {
+    if (updateError) {
       showToast({
         title: "Failed to sync media to Anilist",
         status: "error",
       });
     }
-  }, [existingCacheItem, fetchAndSyncAnilist, mediaSetError, searchData, searchError, showToast, synced]);
+  }, [cachedMedia, fetchAndSyncAnilist, updateError, searchData, searchError, showToast, isSynced]);
 
-  if (!isAnilistContextInitialized || !isMediaCacheInitialized) {
+  if (!isAnilistReady || !isCacheReady) {
     return <LoadingState />;
   }
 
@@ -204,7 +204,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     return <LoadingState />;
   }
 
-  if (searchLoading || mediaSetLoading) {
+  if (isSearching || isUpdatingList) {
     return <LoadingState />;
   }
 
@@ -215,7 +215,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       variant="ghost"
       rounded="full"
       title="Search in Anilist"
-      onClick={searchInAnilist}
+      onClick={searchAnimeInAnilist}
     />
   );
 };
