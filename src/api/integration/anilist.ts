@@ -63,6 +63,21 @@ const deleteAnilistConfig = (callback: Callback<void>) => {
 const getAnilistAuth = (callback: Callback<AnilistAuth | null>) => {
   if (ENV === "dev") {
     logger.info("fetching anilist auth");
+
+    // Check for token in environment first
+    const envToken = process.env.ANILIST_ACCESS_TOKEN;
+    if (envToken) {
+      logger.info("using anilist token from environment");
+      callback({
+        access_token: envToken,
+        token_type: "Bearer",
+        expires_in: 31536000, // 1 year
+        issued_at: Date.now(),
+      });
+      return;
+    }
+
+    // Fallback to localStorage
     const anilist = localStorage.getItem(ANILIST_AUTH_KEY);
     if (!anilist) {
       callback(null);
@@ -113,6 +128,16 @@ const deleteAnilistAuth = (callback: Callback<void>) => {
 const getAnilistAuthStatus = (callback: Callback<AuthStatus | null>) => {
   if (ENV === "dev") {
     logger.info("fetching anilist auth state");
+
+    // If we have an env token, consider it authorized
+    const envToken = process.env.ANILIST_ACCESS_TOKEN;
+    if (envToken) {
+      logger.info("using authorized status from environment token");
+      callback("authorized");
+      return;
+    }
+
+    // Fallback to localStorage
     const state = localStorage.getItem(ANILIST_AUTH_STATE_KEY);
     if (!state) {
       callback(null);
@@ -226,8 +251,9 @@ const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
 };
 
 // get auth url
-const getAnilistAuthUrl = (anilistId: string): string => {
-  return `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistId}&response_type=token`;
+const getAnilistAuthUrl = (anilistId: string, redirectUrl?: string): string => {
+  const finalRedirectUrl = redirectUrl || (chrome?.runtime?.id ? `https://${chrome.runtime.id}.chromiumapp.org/` : "");
+  return `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistId}&redirect_uri=${encodeURIComponent(finalRedirectUrl)}&response_type=code`;
 };
 
 export {

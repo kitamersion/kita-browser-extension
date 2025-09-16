@@ -53,6 +53,16 @@ npm install
 - `dev` - Uses browser local storage (for development)
 - `prod` - Uses production storage (for building extension)
 
+  **For AniList integration in development:**
+  1.  Open `scripts/get-anilist-token.html` in your browser
+  2.  Enter your AniList Client ID (get this from [AniList Developer Settings](https://anilist.co/settings/developer))
+  3.  Click the authorization link and approve the app
+  4.  Copy the redirect URL and paste it in the token extractor
+  5.  Add the extracted token to your `.env` file:
+      ```
+      ANILIST_ACCESS_TOKEN=your_token_here
+      ```
+
 3. **Development workflow**
 
 ```bash
