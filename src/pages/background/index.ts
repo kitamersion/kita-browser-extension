@@ -4,13 +4,9 @@ import logger from "@/config/logger";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
-import { MyAnimeListAuth, MyAnimeListConfig } from "@/types/integrations/myanimelist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
-import { generateRandomString, generateUniqueCode } from "@/utils";
-import { SHA256 } from "crypto-js";
-
-const ENV = process.env.APPLICATION_ENVIRONMENT;
+import { generateUniqueCode } from "@/utils";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
