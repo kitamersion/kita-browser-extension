@@ -1,30 +1,13 @@
 import logger from "@/config/logger";
 import { KitaSchema } from "@/types/kitaschema";
 
-const ENV = process.env.APPLICATION_ENVIRONMENT;
-
 const getItemsFromKey = <T>(key: string): Promise<T | null> => {
   return new Promise((resolve, reject) => {
     try {
-      if (ENV === "dev") {
-        const items = localStorage.getItem(key);
-        if (!items) {
-          resolve(null);
-        } else {
-          try {
-            const parsedItems = JSON.parse(items);
-            resolve(parsedItems as T);
-          } catch (error) {
-            logger.error(`Error parsing JSON from local storage for key ${key}: ${error}`);
-            resolve(null);
-          }
-        }
-      } else {
-        chrome.storage.local.get(key, (data) => {
-          const items: T = data?.[key] || null;
-          resolve(items);
-        });
-      }
+      chrome.storage.local.get(key, (data) => {
+        const items: T = data?.[key] || null;
+        resolve(items);
+      });
     } catch (error) {
       reject(error);
     }

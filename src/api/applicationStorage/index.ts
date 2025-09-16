@@ -6,12 +6,8 @@ import logger from "@/config/logger";
 
 const APPLICATION_ENABLED_KEY = kitaSchema.ApplicationSettings.StorageKeys.ApplicationEnabledKey;
 const CONTENT_SCRIPT_ENABLED_KEY = kitaSchema.ApplicationSettings.StorageKeys.ContentScriptEnabledKey;
-const ENV = process.env.APPLICATION_ENVIRONMENT;
 
 const getExtensionBaseUrl = () => {
-  if (ENV === "dev") {
-    return window.location.origin;
-  }
   return chrome.identity.getRedirectURL("settings.html");
 };
 
@@ -22,12 +18,7 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
     IsApplicationEnabled: value,
   };
 
-  if (ENV === "dev") {
-    logger.info(`setting application enabled state to: ${value}`);
-    localStorage.setItem(APPLICATION_ENABLED_KEY, JSON.stringify(storageValue));
-    callback(value);
-    return;
-  }
+  logger.info(`setting application enabled state to: ${value}`);
 
   chrome.storage.local.set({ [APPLICATION_ENABLED_KEY]: storageValue }, () => {
     logger.info(`setting application enabled state to: ${value}`);
@@ -39,17 +30,7 @@ const setApplicationEnabled = (value: boolean, callback: Callback<boolean>) => {
 // GET
 // @todo: make this generic for future use
 const getApplicationEnabled = (callback: Callback<boolean>) => {
-  if (ENV === "dev") {
-    logger.info("fetching application enabled state");
-    const items = localStorage.getItem(APPLICATION_ENABLED_KEY);
-    if (!items) {
-      callback(false);
-      return;
-    }
-    const value: IApplication = JSON.parse(items);
-    callback(value.IsApplicationEnabled);
-    return;
-  }
+  logger.info("fetching application enabled state");
 
   chrome.storage.local.get(APPLICATION_ENABLED_KEY, (data) => {
     const value: IApplication = data?.[APPLICATION_ENABLED_KEY] || { IsApplicationEnabled: false };
@@ -69,12 +50,7 @@ const setContentScriptEnabled = (value: boolean, callback: Callback<boolean>) =>
     IsContentScriptEnabled: value,
   };
 
-  if (ENV === "dev") {
-    logger.info(`setting content script enabled state to: ${value}`);
-    localStorage.setItem(CONTENT_SCRIPT_ENABLED_KEY, JSON.stringify(storageValue));
-    callback(value);
-    return;
-  }
+  logger.info(`setting content script enabled state to: ${value}`);
 
   chrome.storage.local.set({ [CONTENT_SCRIPT_ENABLED_KEY]: storageValue }, () => {
     logger.info(`setting content script enabled state to: ${value}`);
@@ -92,17 +68,7 @@ const setContentScriptEnabled = (value: boolean, callback: Callback<boolean>) =>
 
 // get CONTENT_SCRIPT_ENABLED_KEY
 const getContentScriptEnabled = (callback: Callback<boolean>) => {
-  if (ENV === "dev") {
-    logger.info("fetching content script enabled state");
-    const items = localStorage.getItem(CONTENT_SCRIPT_ENABLED_KEY);
-    if (!items) {
-      callback(true);
-      return;
-    }
-    const value = JSON.parse(items);
-    callback(value.IsContentScriptEnabled);
-    return;
-  }
+  logger.info("fetching content script enabled state");
 
   chrome.storage.local.get(CONTENT_SCRIPT_ENABLED_KEY, (data) => {
     const value = data?.[CONTENT_SCRIPT_ENABLED_KEY] || { IsContentScriptEnabled: true };
