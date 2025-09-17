@@ -39,7 +39,15 @@ class SeriesMappingStorage {
     sourcePlatform: SourcePlatform,
     seasonYear?: number,
     anilistSeriesId?: number,
-    forceCreate = true
+    forceCreate = true,
+    additionalData?: {
+      malSeriesId?: number;
+      totalEpisodes?: number;
+      coverImage?: string;
+      backgroundCoverImage?: string;
+      bannerImage?: string;
+      description?: string;
+    }
   ): Promise<ISeriesMapping | undefined> {
     const normalizedTitle = this.normalizeTitle(seriesTitle);
 
@@ -63,6 +71,12 @@ class SeriesMappingStorage {
           source_platform: sourcePlatform,
           season_year: seasonYear,
           anilist_series_id: anilistSeriesId,
+          mal_series_id: additionalData?.malSeriesId,
+          total_episodes: additionalData?.totalEpisodes,
+          cover_image: additionalData?.coverImage,
+          background_cover_image: additionalData?.backgroundCoverImage,
+          banner_image: additionalData?.bannerImage,
+          series_description: additionalData?.description,
           user_confirmed: true, // Auto-confirmed for exact matches
         });
 
@@ -186,31 +200,6 @@ class SeriesMappingStorage {
   async extendMappingTTL(id: string): Promise<void> {
     const newExpiresAt = getDateFromNow(MAPPING_TTL_DAYS, "FUTURE").getTime();
     await this.updateMapping(id, { expires_at: newExpiresAt });
-  }
-
-  /**
-   * Force create mapping for any anime, even with single results
-   * This ensures users can always edit mappings later
-   */
-  async forceCreateMapping(
-    seriesTitle: string,
-    sourcePlatform: SourcePlatform,
-    anilistSeriesId: number,
-    seasonYear?: number,
-    additionalData?: Partial<ISeriesMapping>
-  ): Promise<ISeriesMapping> {
-    logger.info(`Force creating mapping for editability: ${seriesTitle} -> ${anilistSeriesId}`);
-
-    return await this.createMapping({
-      series_title: seriesTitle,
-      source_platform: sourcePlatform,
-      season_year: seasonYear,
-      anilist_series_id: anilistSeriesId,
-      user_confirmed: additionalData?.user_confirmed || true,
-      total_episodes: additionalData?.total_episodes,
-      series_description: additionalData?.series_description,
-      cover_image: additionalData?.cover_image,
-    });
   }
 
   /**

@@ -143,6 +143,8 @@ export class SeriesMappingUtils {
           mal_series_id: mapping.mal_series_id,
           total_episodes: mapping.total_episodes,
           cover_image: mapping.cover_image,
+          background_cover_image: mapping.background_cover_image,
+          banner_image: mapping.banner_image,
           series_description: mapping.series_description,
           user_confirmed: mapping.user_confirmed,
         });

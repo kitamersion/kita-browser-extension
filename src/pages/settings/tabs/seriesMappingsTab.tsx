@@ -285,9 +285,9 @@ const SeriesMappingsTab = () => {
               <Box key={mapping.id} p={4} border="1px" borderColor={borderColor} borderRadius="md" bg={bgColor} _hover={{ bg: hoverBg }}>
                 <HStack spacing={4} align="start">
                   {/* Cover Image (if available) */}
-                  {mapping.cover_image && (
+                  {(mapping.cover_image || mapping.background_cover_image) && (
                     <Image
-                      src={mapping.cover_image}
+                      src={mapping.cover_image || mapping.background_cover_image}
                       alt={mapping.series_title}
                       width="60px"
                       height="80px"

@@ -261,6 +261,26 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
                   />
                 </FormControl>
 
+                <FormControl id="background_cover_image">
+                  <FormLabel>Background Cover Image URL</FormLabel>
+                  <Input
+                    name="background_cover_image"
+                    value={editedMapping.background_cover_image || ""}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/background-cover.jpg"
+                  />
+                </FormControl>
+
+                <FormControl id="banner_image">
+                  <FormLabel>Banner Image URL</FormLabel>
+                  <Input
+                    name="banner_image"
+                    value={editedMapping.banner_image || ""}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/banner.jpg"
+                  />
+                </FormControl>
+
                 <FormControl id="series_description">
                   <FormLabel>Series Description</FormLabel>
                   <Textarea
