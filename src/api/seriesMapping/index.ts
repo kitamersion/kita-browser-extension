@@ -9,8 +9,26 @@ export const SERIES_MAPPING_ADDED = "SERIES_MAPPING_ADDED";
 export const SERIES_MAPPING_UPDATED = "SERIES_MAPPING_UPDATED";
 export const SERIES_MAPPING_REMOVED = "SERIES_MAPPING_REMOVED";
 
-// 1 year TTL for mappings
+// 1 minute TTL for mappings (for testing - change to 365 for production)
 const MAPPING_TTL_DAYS = 365;
+
+// Additional data interface for findMapping method
+export interface IMappingAdditionalData {
+  malSeriesId?: number;
+  totalEpisodes?: number;
+  coverImage?: string;
+  backgroundCoverImage?: string;
+  bannerImage?: string;
+  description?: string;
+}
+
+// Mapping statistics interface
+export interface IMappingStats {
+  totalMappings: number;
+  platformCounts: Record<string, number>;
+  expiredCount: number;
+  recentCount: number;
+}
 
 /**
  * Series Mapping Storage API
@@ -40,14 +58,7 @@ class SeriesMappingStorage {
     seasonYear?: number,
     anilistSeriesId?: number,
     forceCreate = true,
-    additionalData?: {
-      malSeriesId?: number;
-      totalEpisodes?: number;
-      coverImage?: string;
-      backgroundCoverImage?: string;
-      bannerImage?: string;
-      description?: string;
-    }
+    additionalData?: IMappingAdditionalData
   ): Promise<ISeriesMapping | undefined> {
     const normalizedTitle = this.normalizeTitle(seriesTitle);
 
@@ -87,6 +98,11 @@ class SeriesMappingStorage {
     } catch (error) {
       logger.error("Error finding series mapping");
       return undefined;
+    } finally {
+      // Cleanup expired mappings after the operation
+      this.cleanupExpiredMappings().catch(() => {
+        // Ignore cleanup errors to not affect main operation
+      });
     }
   }
 
@@ -204,53 +220,29 @@ class SeriesMappingStorage {
 
   /**
    * Cleanup expired mappings
+   * Simple approach: get all mappings, check expiry, delete if needed
    */
-  async cleanupExpiredMappings(): Promise<void> {
+  async cleanupExpiredMappings(): Promise<number> {
     try {
-      await db.cleanupExpiredSeriesMappings();
-    } catch (error) {
-      logger.error("Error cleaning up expired mappings");
-    }
-  }
-
-  /**
-   * Get mapping statistics
-   */
-  async getStats(): Promise<{
-    totalMappings: number;
-    platformCounts: Record<string, number>;
-    expiredCount: number;
-    recentCount: number;
-  }> {
-    try {
-      const allMappings = await this.getAllMappings();
+      const allMappings = await db.getAllSeriesMappings();
       const now = Date.now();
-      const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+      let deletedCount = 0;
 
-      const stats = {
-        totalMappings: allMappings.length,
-        platformCounts: {} as Record<string, number>,
-        expiredCount: 0,
-        recentCount: 0,
-      };
-
-      // Count by platform and check expiry
       for (const mapping of allMappings) {
-        stats.platformCounts[mapping.source_platform] = (stats.platformCounts[mapping.source_platform] || 0) + 1;
-
         if (mapping.expires_at <= now) {
-          stats.expiredCount++;
-        }
-
-        if (mapping.created_at >= weekAgo) {
-          stats.recentCount++;
+          await db.deleteSeriesMapping(mapping.id);
+          eventbus.publish(SERIES_MAPPING_REMOVED, { message: "Expired series mapping removed", value: mapping });
+          deletedCount++;
         }
       }
 
-      return stats;
+      if (deletedCount > 0) {
+        logger.info(`Cleaned up ${deletedCount} expired series mappings`);
+      }
+      return deletedCount;
     } catch (error) {
-      logger.error("Error getting mapping stats");
-      return { totalMappings: 0, platformCounts: {}, expiredCount: 0, recentCount: 0 };
+      logger.error(`Error cleaning up expired mappings: ${error}`);
+      return 0;
     }
   }
 }
