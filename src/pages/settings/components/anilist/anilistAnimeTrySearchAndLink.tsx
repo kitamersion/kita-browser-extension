@@ -45,6 +45,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const checkExistingMapping = useCallback(async (): Promise<ISeriesMapping | null> => {
     const sourcePlatform = getSourcePlatform();
     try {
+      logger.info(
+        `Checking existing mapping for: "${video.series_title}" (platform: ${sourcePlatform}, year: ${video.watching_season_year})`
+      );
+
       const mapping = await seriesMappingStorage.findMapping(
         video.series_title || "",
         sourcePlatform,
@@ -52,6 +56,13 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         undefined,
         false // Don't auto-create
       );
+
+      if (mapping) {
+        logger.info(`Found existing mapping: "${mapping.series_title}" -> AniList ID: ${mapping.anilist_series_id}`);
+      } else {
+        logger.info("No existing mapping found");
+      }
+
       return mapping || null;
     } catch (error) {
       logger.error(`Error checking existing mapping: ${error}`);

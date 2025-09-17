@@ -61,6 +61,7 @@ class SeriesMappingStorage {
     additionalData?: IMappingAdditionalData
   ): Promise<ISeriesMapping | undefined> {
     const normalizedTitle = this.normalizeTitle(seriesTitle);
+    logger.info(`findMapping: "${seriesTitle}" normalized to "${normalizedTitle}" (platform: ${sourcePlatform}, year: ${seasonYear})`);
 
     try {
       // Try to find existing mapping
