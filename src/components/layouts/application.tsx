@@ -12,7 +12,6 @@ import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipCont
 import { AnilistProvider } from "@/context/anilistContext";
 import { GraphqlProvider } from "@/context/apolloContext";
 import { AutoTagProvider } from "@/context/autoTagContext";
-import { CachedMediaProvider } from "@/context/cachedMediaContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -20,24 +19,22 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <ToastProvider>
         <ApplicationProvider>
-          <CachedMediaProvider>
-            <AnilistProvider>
-              <GraphqlProvider>
-                <VideoTagRelationshipProvider>
-                  <VideoProvider>
-                    <TagProvider>
-                      <AutoTagProvider>
-                        <GlobalLayoutWrapper>
-                          <Navigation />
-                          <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                        </GlobalLayoutWrapper>
-                      </AutoTagProvider>
-                    </TagProvider>
-                  </VideoProvider>
-                </VideoTagRelationshipProvider>
-              </GraphqlProvider>
-            </AnilistProvider>
-          </CachedMediaProvider>
+          <AnilistProvider>
+            <GraphqlProvider>
+              <VideoTagRelationshipProvider>
+                <VideoProvider>
+                  <TagProvider>
+                    <AutoTagProvider>
+                      <GlobalLayoutWrapper>
+                        <Navigation />
+                        <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                      </GlobalLayoutWrapper>
+                    </AutoTagProvider>
+                  </TagProvider>
+                </VideoProvider>
+              </VideoTagRelationshipProvider>
+            </GraphqlProvider>
+          </AnilistProvider>
         </ApplicationProvider>
       </ToastProvider>
     </ChakraProvider>
