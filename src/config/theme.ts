@@ -151,9 +151,10 @@ const theme = extendTheme({
           border: "1px solid",
           borderColor: "border.primary",
           rounded: "lg",
+          transition: "all 0.2s",
           _hover: {
-            bg: "kita.primaryAlpha.100",
             borderColor: "kita.border.accent",
+            boxShadow: "lg",
           },
         },
         "video-card": {
@@ -164,6 +165,19 @@ const theme = extendTheme({
           position: "relative",
           minH: "200px",
           boxShadow: "dark-lg",
+        },
+        "settings-card": {
+          bg: "bg.secondary",
+          border: "1px solid",
+          borderColor: "border.primary",
+          rounded: "xl",
+          p: 6,
+          transition: "all 0.2s",
+          _hover: {
+            bg: "kita.primaryAlpha.100",
+            borderColor: "kita.border.accent",
+            boxShadow: "xl",
+          },
         },
       },
     },

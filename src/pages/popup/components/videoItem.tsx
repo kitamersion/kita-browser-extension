@@ -41,25 +41,43 @@ const VideoItem = (video: IVideo) => {
     !video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL ? <AnilistAnimeTrySearchAndLink {...video} /> : null;
 
   return (
-    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} position="relative" zIndex={0} overflow="hidden" minH="200px">
+    <Box
+      width={"full"}
+      boxShadow={"dark-lg"}
+      rounded={"2xl"}
+      position="relative"
+      zIndex={0}
+      overflow="hidden"
+      minH="200px"
+      bg={!backgroundImageUrl ? "bg.secondary" : "transparent"}
+      border={!backgroundImageUrl ? "1px solid" : "none"}
+      borderColor={!backgroundImageUrl ? "border.primary" : "transparent"}
+      _hover={{
+        boxShadow: "2xl",
+        borderColor: !backgroundImageUrl ? "kita.border.accent" : "transparent",
+      }}
+      transition="all 0.2s"
+    >
       {/* Background Image - More Prominent */}
-      <Box
-        rounded={"2xl"}
-        backgroundImage={`url('${backgroundImageUrl}')`}
-        backgroundPosition="center"
-        backgroundRepeat="no-repeat"
-        backgroundSize="cover"
-        opacity={0.4}
-        position="absolute"
-        top={0}
-        bottom={0}
-        right={0}
-        left={0}
-        zIndex={-1}
-      />
+      {backgroundImageUrl && (
+        <Box
+          rounded={"2xl"}
+          backgroundImage={`url('${backgroundImageUrl}')`}
+          backgroundPosition="center"
+          backgroundRepeat="no-repeat"
+          backgroundSize="cover"
+          opacity={0.4}
+          position="absolute"
+          top={0}
+          bottom={0}
+          right={0}
+          left={0}
+          zIndex={-1}
+        />
+      )}
 
-      {/* Dark Gradient Overlay for better text readability */}
-      <Box position="absolute" top={0} bottom={0} right={0} left={0} bg="kita.bg.overlay" zIndex={0} />
+      {/* Dark Gradient Overlay for better text readability - only for background images */}
+      {backgroundImageUrl && <Box position="absolute" top={0} bottom={0} right={0} left={0} bg="kita.bg.overlay" zIndex={0} />}
 
       {/* Top Row - AniList only */}
       {anilistSyncComponent && (
