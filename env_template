@@ -1,3 +1,9 @@
-# for local development set APPLICATION_ENVIRONMENT=dev. 
-# this will use localStorage instead of extension storage
+# for local development set APPLICATION_ENVIRONMENT=dev.
+
 APPLICATION_ENVIRONMENT=prod
+
+# For local development - paste your AniList access token here
+
+# You can get this from AniList GraphQL playground or by doing OAuth once
+
+ANILIST_ACCESS_TOKEN=

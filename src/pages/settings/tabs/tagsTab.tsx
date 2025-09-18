@@ -9,7 +9,7 @@ const TagTab = () => {
   const { columns } = useScreenSize();
 
   return (
-    <TabPanel>
+    <TabPanel bg="bg.primary" color="text.primary">
       <Suspense fallback={<LoadingState />}>
         <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={4} mt={4} mx={2}>
           <TagGroup />

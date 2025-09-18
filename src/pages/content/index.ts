@@ -13,6 +13,8 @@ class VideoTracker {
   private static instance: VideoTracker;
   private keyboardShortcutHandler: ((event: KeyboardEvent) => void) | undefined;
   private timeoutId: NodeJS.Timeout | undefined;
+  private lastCaptureTime = 0;
+  private readonly CAPTURE_DEBOUNCE_MS = 2000; // Prevent captures within 2 seconds
 
   constructor() {
     this.keyboardShortcutHandler = undefined;
@@ -27,10 +29,21 @@ class VideoTracker {
 
   _isVideo() {
     const url = new URL(window.location.href);
-    if (!url.search) {
-      return false;
+    const origin = this._getOrigin();
+
+    // More specific video page detection
+    switch (origin) {
+      case SiteKey.CRUNCHYROLL:
+        // Crunchyroll video pages typically have /watch/ in the URL
+        return url.pathname.includes("/watch/");
+      case SiteKey.YOUTUBE:
+      case SiteKey.YOUTUBE_MUSIC:
+        // YouTube video pages have watch parameter
+        return url.searchParams.has("v");
+      default:
+        // Fallback to generic check
+        return !!url.search;
     }
-    return true;
   }
 
   _getTitle() {
@@ -58,7 +71,23 @@ class VideoTracker {
   }
 
   _handleVideoCapture() {
-    this._isVideo();
+    logger.info(`_handleVideoCapture called on: ${window.location.href}`);
+
+    // Debounce: prevent rapid successive captures
+    const now = Date.now();
+    if (now - this.lastCaptureTime < this.CAPTURE_DEBOUNCE_MS) {
+      logger.info(`video capture debounced (${now - this.lastCaptureTime}ms since last capture)`);
+      return;
+    }
+    this.lastCaptureTime = now;
+
+    // Only capture if we're actually on a video page
+    if (!this._isVideo()) {
+      logger.info("not on a video page, skipping capture");
+      return;
+    }
+
+    logger.info("proceeding with video capture...");
     const url = window.location.href;
     const videoTitle = this._getTitle();
 
@@ -80,7 +109,7 @@ class VideoTracker {
         break;
 
       case SiteKey.CRUNCHYROLL:
-        videoDurationText = videoDurationElement?.getAttribute("content");
+        videoDurationText = videoDurationElement?.getAttribute("content") ?? undefined;
         videoDuration = parseInt(videoDurationText ?? "0");
         break;
       default:
@@ -108,7 +137,15 @@ class VideoTracker {
     }
 
     const payload = JSON.stringify(newRecord);
-    chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload });
+    logger.info(`attempting to send VIDEO_ADD message for: ${videoTitle} (${origin}) - ${url}`);
+
+    chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload }, (response) => {
+      if (chrome.runtime.lastError) {
+        logger.error(`failed to send VIDEO_ADD message: ${chrome.runtime.lastError.message}`);
+      } else {
+        logger.info(`VIDEO_ADD message sent successfully: ${JSON.stringify(response)}`);
+      }
+    });
 
     logger.info("video added from content");
   }
@@ -257,7 +294,7 @@ getContentScriptEnabled((isContentEnabled) => {
 });
 
 // listen for messages to disable/enable content script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request) => {
   logger.info(`content script received message: ${JSON.stringify(request)}`);
   if (!request.IsContentScriptEnabled) {
     videoTracker?.destroy();

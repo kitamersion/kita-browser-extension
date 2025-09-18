@@ -7,10 +7,10 @@ import ManuallyCopySettingsAndData from "../components/manuallyCopySettingsAndDa
 
 const GeneralTab = () => {
   return (
-    <TabPanel>
+    <TabPanel bg="bg.primary" color="text.primary">
       <Suspense fallback={<LoadingState />}>
         <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
-          <Heading as={"h2"} size={"md"}>
+          <Heading as={"h2"} size={"md"} color="text.primary">
             Import / Export
           </Heading>
           <Flex gap={2}>

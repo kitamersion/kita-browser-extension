@@ -24,7 +24,15 @@ const Importer = () => {
 
   return (
     <>
-      <Button onClick={handleFileInputChange}>Import settings and data</Button>
+      <Button
+        onClick={handleFileInputChange}
+        bg="accent.primary"
+        color="white"
+        _hover={{ bg: "accent.primary", opacity: 0.9 }}
+        _active={{ bg: "accent.primary", opacity: 0.8 }}
+      >
+        Import settings and data
+      </Button>
       <input type="file" accept=".json" style={{ display: "none" }} ref={fileInputRef} onChange={handleImportData} />
     </>
   );

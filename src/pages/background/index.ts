@@ -1,18 +1,12 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
-import { getMyAnimeListConfig, setMyAnimeListAuth, setMyAnimeListAuthStatus, setMyAnimeListConfig } from "@/api/integration/myanimelist";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import logger from "@/config/logger";
-import { KITA_AUTH_PROXY_URL } from "@/data/contants";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
-import { MyAnimeListAuth, MyAnimeListConfig } from "@/types/integrations/myanimelist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
-import { generateRandomString, generateUniqueCode } from "@/utils";
-import { SHA256 } from "crypto-js";
-
-const ENV = process.env.APPLICATION_ENVIRONMENT;
+import { generateUniqueCode } from "@/utils";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -97,26 +91,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     })();
   }
-
-  // handle myanimelist auth connect
-  if (request.type === INTEGRATION_MYANIMELIST_AUTH_CONNECT) {
-    (async () => {
-      const success = await authorizeMyAnimeList(parsedPayload as MyAnimeListConfig);
-      if (success) {
-        setMyAnimeListAuthStatus("authorized", async () => {
-          const tag = await IndexedDB.getTagByCode("MYANIMELIST");
-
-          if (!tag) {
-            await IndexedDB.addTag({ name: "MyAnimeList", owner: "INTEGRATION_MYANIMELIST" });
-          }
-        });
-      } else {
-        setMyAnimeListAuthStatus("error", () => {});
-      }
-
-      // @todo - implement refresh token flow
-    })();
-  }
 });
 
 const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
@@ -139,19 +113,43 @@ const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
 
 const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> => {
   try {
-    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId);
+    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId, anilistConfig.redirectUrl);
     const redirectUrl = await launchWebAuthFlow(authUrl);
 
     const url = new URL(redirectUrl ?? "");
-    const params = new URLSearchParams(url.hash.substring(1)); // Remove leading '#'
-    const accessToken = params.get("access_token");
-    const expires = params.get("expires_in");
-    const tokenType = params.get("token_type");
+    const code = url.searchParams.get("code"); // Authorization code is in query params, not hash
+
+    if (!code) {
+      logger.error("No authorization code found in redirect URL");
+      return false;
+    }
+
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch("https://anilist.co/api/v2/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        client_id: anilistConfig.anilistId,
+        client_secret: anilistConfig.secret,
+        redirect_uri: anilistConfig.redirectUrl,
+        code: code,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      logger.error(`Failed to exchange code for token: ${tokenResponse.statusText}`);
+      return false;
+    }
+
+    const tokenData = await tokenResponse.json();
 
     const anilistAuth: AnilistAuth = {
-      access_token: accessToken ?? "",
-      token_type: tokenType ?? "",
-      expires_in: expires ? parseInt(expires) : 0,
+      access_token: tokenData.access_token ?? "",
+      token_type: tokenData.token_type ?? "Bearer",
+      expires_in: tokenData.expires_in ? parseInt(tokenData.expires_in) : 0,
       issued_at: Date.now(),
     };
 
@@ -175,15 +173,6 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
       setAnilistConfig({ ...config, redirectUrl }, () => {});
     }
   });
-
-  // initialize myanimelist config
-  getMyAnimeListConfig((config) => {
-    if (!config) {
-      setMyAnimeListConfig({ myAnimeListId: "", secret: "", redirectUrl: redirectUrl }, () => {});
-    } else if (config.redirectUrl !== redirectUrl) {
-      setMyAnimeListConfig({ ...config, redirectUrl }, () => {});
-    }
-  });
 })();
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -191,86 +180,3 @@ chrome.runtime.onInstalled.addListener(() => {
     await IndexedDB.openDatabase();
   })();
 });
-
-const authorizeMyAnimeList = async (myAnimeListConfig: MyAnimeListConfig): Promise<boolean> => {
-  try {
-    const { myAnimeListId, secret } = myAnimeListConfig;
-    await malLaunchAuthFlow(myAnimeListId);
-    const hasTokens = await malTokenExchange(myAnimeListId, secret);
-    return hasTokens;
-  } catch (e) {
-    logger.error(`${e}`);
-    return false;
-  }
-};
-
-async function malLaunchAuthFlow(clientId: string) {
-  const verifier = generateRandomString(128);
-  const challenge = SHA256(verifier).toString();
-
-  const url = `${KITA_AUTH_PROXY_URL}/mal/oauth/authorize?mal_client_id=${clientId}&mal_challenge=${challenge}`;
-  const redirectUrl = await launchWebAuthFlow(url);
-  const code = new URL(redirectUrl ?? "").searchParams.get("code");
-
-  // save code and challenge
-  if (ENV === "dev") {
-    localStorage.setItem("code", code || "");
-    localStorage.setItem("challenge", challenge);
-  } else {
-    chrome.storage.local.set({ code, challenge }, () => {});
-  }
-}
-
-const malTokenExchange = async (clientId: string, clientSecret: string): Promise<boolean> => {
-  let code: string | null = "";
-  let challenge: string | null = "";
-
-  if (ENV === "dev") {
-    code = localStorage.getItem("code");
-    challenge = localStorage.getItem("challenge");
-  } else {
-    const storage = await chrome.storage.local.get(["code", "challenge"]);
-    code = storage.code;
-    challenge = storage.challenge;
-  }
-
-  if (!challenge) {
-    logger.error("No challenge found");
-    return false;
-  }
-  const response = await fetch(`${KITA_AUTH_PROXY_URL}/mal/oauth/token`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      mal_client_id: clientId,
-      mal_client_secret: clientSecret,
-      mal_code_verifier: challenge ?? "",
-      mal_code: code ?? "",
-    },
-  });
-  const result = await response.json();
-
-  if (result && result.error) {
-    logger.error(result.error);
-    return false;
-  }
-
-  if (result && result.refresh_token && result.access_token) {
-    const myAnimeListAuth: MyAnimeListAuth = {
-      access_token: result.access_token,
-      refresh_token: result.refresh_token,
-      token_type: result.token_type,
-      expires_in: result.expires_in,
-      issued_at: Date.now(),
-    };
-
-    setMyAnimeListAuth(myAnimeListAuth, () => {
-      logger.info("tokens saved");
-    });
-
-    return true;
-  }
-
-  logger.error("Something went wrong");
-  return false;
-};

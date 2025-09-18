@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { SHA256 } from "crypto-js";
 import { IVideo } from "@/types/video";
 
-const ENV = process.env.APPLICATION_ENVIRONMENT;
 const SETTINGS_PAGE_NAME = "settings.html";
 const STATISTICS_PAGE_NAME = "statistics.html";
 
@@ -40,11 +39,6 @@ const createTab = (url: string) => {
 };
 
 const pageNaginator = async (page: string) => {
-  if (ENV === "dev") {
-    window.open(page, "_blank");
-    return;
-  }
-
   const settingsUrl = chrome.runtime.getURL(`/${page}`);
   await createTab(settingsUrl);
 };

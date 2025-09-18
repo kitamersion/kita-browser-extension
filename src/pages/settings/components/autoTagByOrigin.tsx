@@ -61,7 +61,7 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
     return newAutoTag.tags?.map((tagId) => {
       const tag = tags.find((tag) => tag.id === tagId);
       return tag ? (
-        <Tag size={"lg"} key={tagId} borderRadius="full" variant="solid" colorScheme="red">
+        <Tag size={"lg"} key={tagId} borderRadius="full" variant="kita" colorScheme="red">
           <TagLabel>{tag.name}</TagLabel>
           <TagRightIcon
             as={MdDelete}
@@ -81,15 +81,30 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
     return <LoadingState />;
   }
   return (
-    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
+    <Box
+      width={"full"}
+      boxShadow={"dark-lg"}
+      rounded={"2xl"}
+      p={4}
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      _hover={{
+        borderColor: "border.accent",
+        boxShadow: "2xl",
+      }}
+      transition="all 0.2s"
+    >
       <Flex flexDirection={"column"} gap={4} px={2} my={2}>
         <Flex gap={1} flexDirection={"row"} justifyContent={"space-between"}>
           <Flex gap={1} alignItems={"center"}>
-            <IoIosPricetags />
-            <Text fontSize={14}>{origin}</Text>
+            <IoIosPricetags color="var(--chakra-colors-accent-primary)" />
+            <Text fontSize={14} color="text.primary" fontWeight="medium">
+              {origin}
+            </Text>
           </Flex>
           {isChanged && (
-            <Badge colorScheme="green" rounded={"2xl"} px={2} py={1}>
+            <Badge colorScheme="green" rounded={"2xl"} px={2} py={1} bg="green.500" color="white">
               Unsaved changes
             </Badge>
           )}
@@ -105,11 +120,24 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
               }
               value={""}
               onChange={handleTagChange}
+              bg="bg.primary"
+              borderColor="border.primary"
+              color="text.primary"
+              _hover={{ borderColor: "border.primary" }}
+              _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
             >
               {memoizedOptions}
             </Select>
           </FormControl>
-          <Button rounded={"2xl"} onClick={handleASaveAutoTag}>
+          <Button
+            rounded={"2xl"}
+            onClick={handleASaveAutoTag}
+            bg="accent.primary"
+            color="white"
+            _hover={{ bg: "accent.primary", opacity: 0.9 }}
+            _active={{ bg: "accent.primary", opacity: 0.8 }}
+            isDisabled={!isChanged}
+          >
             Save
           </Button>
         </Flex>
@@ -118,7 +146,7 @@ const AutoTagByOrigin = ({ origin, autoTag }: AutoTagGroupProps) => {
           <Flex mt={2} gap={2} flexWrap={"wrap"} flexDirection={"row"}>
             {memoizedTagItems}
             {newAutoTag.tags.length === 0 && (
-              <Text fontSize={14} color={"tomato"}>
+              <Text fontSize={14} color="text.secondary">
                 No auto tags assigned
               </Text>
             )}
