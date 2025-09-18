@@ -37,6 +37,9 @@ const VideoItem = (video: IVideo) => {
     return video.banner_image || video.background_cover_image || "";
   }, [video.background_cover_image, video.banner_image]);
 
+  const anilistSyncComponent =
+    !video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL ? <AnilistAnimeTrySearchAndLink {...video} /> : null;
+
   return (
     <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4} position="relative" zIndex={0}>
       <Box
@@ -53,6 +56,8 @@ const VideoItem = (video: IVideo) => {
         left={0}
         zIndex={-1}
       />
+
+      {anilistSyncComponent}
 
       <Flex width={"full"} flexDirection={"row"}>
         <Flex width={"full"} flexDirection={"column"} gap={1}>
@@ -94,7 +99,6 @@ const VideoItem = (video: IVideo) => {
             </Flex>
 
             <Flex gap={1} justifyContent={"flex-end"}>
-              {!video.anilist_series_id && video.origin === SiteKey.CRUNCHYROLL && <AnilistAnimeTrySearchAndLink {...video} />}
               <UpdateVideo {...video} />
               <DeleteVideo id={id} />
             </Flex>

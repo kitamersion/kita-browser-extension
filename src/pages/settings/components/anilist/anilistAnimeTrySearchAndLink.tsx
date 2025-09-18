@@ -1,5 +1,5 @@
 import LoadingState from "@/components/states/LoadingState";
-import { GetMediaBySearchQuery, MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
+import { MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
 import { IconButton } from "@chakra-ui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
@@ -25,6 +25,26 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const [isSynced, setIsSynced] = useState(!!video.anilist_series_id);
   const [showMappingSelection, setShowMappingSelection] = useState(false);
   const [syncStatus, setSyncStatus] = useState<"idle" | "searching" | "mapping" | "syncing" | "complete" | "error">("idle");
+  const [searchResults, setSearchResults] = useState<ISeriesSearchResult[]>([]);
+
+  // Auto-sync effect
+  useEffect(() => {
+    if (isAnilistReady && anilistAutoSyncMedia && !isSynced && syncStatus === "idle") {
+      const timeout = setTimeout(() => {
+        startSync();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isAnilistReady, anilistAutoSyncMedia, isSynced, syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Error handling
+  useEffect(() => {
+    if (updateError || searchError) {
+      const errorMessage = updateError?.message || searchError?.message || "Unknown error occurred";
+      showToast({ title: errorMessage, status: "error" });
+      setSyncStatus("error");
+    }
+  }, [updateError, searchError, showToast]);
 
   // Detect source platform from video origin or URL
   const getSourcePlatform = useCallback((): SourcePlatform => {
@@ -168,29 +188,6 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     [video, setMedia, showToast, syncStatus]
   );
 
-  // Convert search results for modal
-  const convertSearchResultsForModal = useCallback((searchResults?: GetMediaBySearchQuery): ISeriesSearchResult[] => {
-    if (!searchResults?.anime?.results) return [];
-
-    return searchResults.anime.results.map((result) => ({
-      id: result?.id || 0,
-      title: {
-        english: result?.title?.english || undefined,
-        romaji: undefined,
-        native: result?.title?.native || undefined,
-      },
-      seasonYear: result?.seasonYear || undefined,
-      episodes: result?.episodes || undefined,
-      coverImage: {
-        large: undefined,
-        extraLarge: result?.coverImage?.extraLarge || undefined,
-      },
-      bannerImage: result?.bannerImage || undefined,
-      description: undefined,
-      idMal: result?.idMal || undefined,
-    }));
-  }, []);
-
   // Main sync function - this is the entry point for all sync operations
   const startSync = useCallback(async () => {
     if (syncStatus !== "idle") return; // Prevent multiple syncs
@@ -242,7 +239,24 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   // Handle search results
   useEffect(() => {
     if (searchData?.anime?.results && searchData.anime.results.length > 0 && syncStatus === "searching") {
-      const results = convertSearchResultsForModal(searchData);
+      const results: ISeriesSearchResult[] = searchData.anime.results.map((result) => ({
+        id: result?.id || 0,
+        title: {
+          english: result?.title?.english || undefined,
+          romaji: undefined,
+          native: result?.title?.native || undefined,
+        },
+        seasonYear: result?.seasonYear || undefined,
+        episodes: result?.episodes || undefined,
+        coverImage: {
+          large: undefined,
+          extraLarge: result?.coverImage?.extraLarge || undefined,
+        },
+        bannerImage: result?.bannerImage || undefined,
+        description: undefined,
+        idMal: result?.idMal || undefined,
+      }));
+      setSearchResults(results);
 
       // Try automatic matching first
       const autoMatch = results.find((result) => result.seasonYear === video.watching_season_year);
@@ -259,14 +273,9 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
             setSyncStatus("error");
           }
         });
-      } else if (results.length > 1) {
-        // Multiple results, show modal for user selection
-        logger.info("Multiple results found, showing selection modal");
-        setShowMappingSelection(true);
-        setSyncStatus("idle"); // Wait for user selection
-      } else if (results.length === 1) {
-        // Single result but no season match, show modal to confirm
-        logger.info("Single result found, showing confirmation modal");
+      } else if (results.length > 0) {
+        // Show selection UI for any results (single or multiple)
+        logger.info(`Found ${results.length} result(s), showing selection UI`);
         setShowMappingSelection(true);
         setSyncStatus("idle"); // Wait for user selection
       } else {
@@ -280,35 +289,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         setSyncStatus("error");
       }
     }
-  }, [
-    searchData,
-    video.watching_season_year,
-    video.series_title,
-    showToast,
-    convertSearchResultsForModal,
-    createMappingFromResult,
-    syncToAnilist,
-    syncStatus,
-  ]);
-
-  // Auto-sync effect
-  useEffect(() => {
-    if (isAnilistReady && anilistAutoSyncMedia && !isSynced && syncStatus === "idle") {
-      const timeout = setTimeout(() => {
-        startSync();
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isAnilistReady, anilistAutoSyncMedia, isSynced, syncStatus, startSync]);
-
-  // Error handling
-  useEffect(() => {
-    if (updateError || searchError) {
-      const errorMessage = updateError?.message || searchError?.message || "Unknown error occurred";
-      showToast({ title: errorMessage, status: "error" });
-      setSyncStatus("error");
-    }
-  }, [updateError, searchError, showToast]);
+  }, [searchData, video.watching_season_year, video.series_title, showToast, createMappingFromResult, syncToAnilist, syncStatus]);
 
   if (!isAnilistReady) {
     return <LoadingState />;
@@ -322,32 +303,36 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     return <LoadingState />;
   }
 
-  return (
-    <>
+  // If showing selection, render the selection UI
+  if (showMappingSelection) {
+    return (
       <SeriesMappingSelection
         isVisible={showMappingSelection}
         onSkip={() => {
           setShowMappingSelection(false);
           setSyncStatus("idle");
         }}
-        onSelect={(selectedResult) => {
-          handleMappingSelection(selectedResult);
-        }}
-        searchResults={convertSearchResultsForModal(searchData)}
+        onSelect={handleMappingSelection}
+        searchResults={searchResults}
         seriesTitle={video.series_title || ""}
+        isLoading={isSearching}
       />
-      <IconButton
-        icon={<SiAnilist />}
-        aria-label="Sync to AniList"
-        title={isSynced ? "Synced to AniList" : "Sync to AniList"}
-        colorScheme={isSynced ? "green" : undefined}
-        onClick={startSync}
-        isLoading={isSearching || syncStatus !== "idle"}
-        size="sm"
-        variant="ghost"
-        rounded="full"
-      />
-    </>
+    );
+  }
+
+  // Default: just the AniList button
+  return (
+    <IconButton
+      icon={<SiAnilist />}
+      aria-label="Sync to AniList"
+      title={isSynced ? "Synced to AniList" : "Sync to AniList"}
+      colorScheme={isSynced ? "green" : undefined}
+      onClick={startSync}
+      isLoading={isSearching || syncStatus !== "idle"}
+      size="sm"
+      variant="ghost"
+      rounded="full"
+    />
   );
 };
 
