@@ -1,6 +1,6 @@
 import LoadingState from "@/components/states/LoadingState";
 import { MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
-import { IconButton } from "@chakra-ui/react";
+import { Box, Spinner } from "@chakra-ui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
 import eventbus from "@/api/eventbus";
@@ -300,7 +300,21 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   }
 
   if (isSearching || isUpdatingList) {
-    return <LoadingState />;
+    return (
+      <Box
+        bg="rgba(255, 99, 71, 0.8)"
+        border="2px solid rgba(255, 99, 71, 0.9)"
+        rounded="lg"
+        width={8}
+        height={8}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        backdropFilter="blur(8px)"
+      >
+        <Spinner thickness="2px" speed="0.65s" emptyColor="white" color="white" size="sm" />
+      </Box>
+    );
   }
 
   // If showing selection, render the selection UI
@@ -320,19 +334,38 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     );
   }
 
-  // Default: just the AniList button
+  // Default: styled AniList button to match the card design
   return (
-    <IconButton
-      icon={<SiAnilist />}
-      aria-label="Sync to AniList"
-      title={isSynced ? "Synced to AniList" : "Sync to AniList"}
-      colorScheme={isSynced ? "green" : undefined}
+    <Box
+      as="button"
+      bg={isSynced ? "rgba(72, 187, 120, 0.8)" : "rgba(255, 99, 71, 0.8)"}
+      border={`2px solid ${isSynced ? "rgba(72, 187, 120, 0.9)" : "rgba(255, 99, 71, 0.9)"}`}
+      rounded="lg"
+      width={8}
+      height={8}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      color="white"
+      cursor="pointer"
+      backdropFilter="blur(8px)"
+      _hover={{
+        bg: isSynced ? "rgba(72, 187, 120, 0.9)" : "rgba(255, 99, 71, 0.9)",
+        transform: "scale(1.05)",
+      }}
+      transition="all 0.2s"
       onClick={startSync}
-      isLoading={isSearching || syncStatus !== "idle"}
-      size="sm"
-      variant="ghost"
-      rounded="full"
-    />
+      disabled={isSearching || syncStatus !== "idle"}
+      aria-label={isSynced ? "Synced to AniList" : "Sync to AniList"}
+      title={isSynced ? "Synced to AniList" : "Sync to AniList"}
+      _disabled={{
+        opacity: 0.6,
+        cursor: "not-allowed",
+        transform: "none",
+      }}
+    >
+      <SiAnilist size={16} />
+    </Box>
   );
 };
 

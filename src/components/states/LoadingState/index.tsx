@@ -4,7 +4,7 @@ import React from "react";
 const LoadingState = () => {
   return (
     <Center data-testid="loading-center">
-      <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="red.600" size="lg" data-testid="loading-spinner" />
+      <Spinner thickness="3px" speed="0.65s" emptyColor="gray.600" color="tomato" size="lg" data-testid="loading-spinner" />
     </Center>
   );
 };
