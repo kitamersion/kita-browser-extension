@@ -1,11 +1,10 @@
 import { IVideo, SiteKey } from "@/types/video";
 import { formatDuration, formatTimestamp } from "@/utils";
-import { Box, Text, Flex, Link, Badge } from "@chakra-ui/react";
+import { Box, Text, Flex, Link, Badge, Tag, TagLabel } from "@chakra-ui/react";
 import React, { useMemo } from "react";
 import OriginToIcon from "./originToIcon";
 import UpdateVideo from "./updateVideo";
 import { useTagContext } from "@/context/tagContext";
-import TagItem from "@/pages/settings/components/tagItem";
 import { ITag } from "@/types/tag";
 import { IoTimerOutline } from "react-icons/io5";
 import { IoIosCalendar } from "react-icons/io";
@@ -79,48 +78,104 @@ const VideoItem = (video: IVideo) => {
       {/* Dark Gradient Overlay for better text readability - only for background images */}
       {backgroundImageUrl && <Box position="absolute" top={0} bottom={0} right={0} left={0} bg="kita.bg.overlay" zIndex={0} />}
 
-      {/* Top Row - AniList only */}
+      {/* Top Row - AniList sync only for Crunchyroll content without series mapping */}
       {anilistSyncComponent && (
-        <Box position="relative" zIndex={1} p={3}>
+        <Box position="relative" zIndex={1} p={3} pb={0}>
           {anilistSyncComponent}
         </Box>
       )}
 
-      {/* Main Content Area - Bottom Half */}
-      <Box position="relative" zIndex={1} mt="auto" p={4} pt={8}>
+      {/* Main Content Area */}
+      <Box
+        position="relative"
+        zIndex={1}
+        mt="auto"
+        p={4}
+        pt={anilistSyncComponent ? 2 : 4}
+        display="flex"
+        flexDirection="column"
+        minH="140px"
+      >
         {/* Title Section */}
         <Link href={video_url} isExternal display={"block"} mb={2}>
-          <Text as="b" fontSize="lg" color="kita.text.primary" textShadow="2px 2px 4px rgba(0,0,0,0.8)" noOfLines={2}>
+          <Text
+            as="b"
+            fontSize="lg"
+            color="text.primary"
+            textShadow={backgroundImageUrl ? "2px 2px 4px rgba(0,0,0,0.8)" : "none"}
+            noOfLines={2}
+          >
             {video_title}
           </Text>
         </Link>
 
         {/* Metadata Row */}
-        <Flex gap={4} mb={3} flexWrap="wrap">
+        <Flex gap={4} mb={renderTags.length > 0 ? 2 : 3} flexWrap="wrap">
           <Flex gap={1} alignItems="center">
-            <IoIosCalendar color="tomato" />
-            <Text fontSize="sm" color="white" fontWeight="medium">
+            <IoIosCalendar color="var(--chakra-colors-accent-primary)" />
+            <Text fontSize="sm" color={backgroundImageUrl ? "white" : "text.secondary"} fontWeight="medium">
               {formatTimestamp(created_at)}
             </Text>
           </Flex>
 
           <Flex gap={1} alignItems="center">
-            <IoTimerOutline color="tomato" />
-            <Text fontSize="sm" color="white" fontWeight="medium">
+            <IoTimerOutline color="var(--chakra-colors-accent-primary)" />
+            <Text fontSize="sm" color={backgroundImageUrl ? "white" : "text.secondary"} fontWeight="medium">
               {formatDuration(video_duration)}
             </Text>
           </Flex>
         </Flex>
 
-        {/* Tags Row */}
-        <Flex gap={2} flexWrap={"wrap"} mb={3}>
-          {renderTags.map((tag) => (
-            <TagItem key={tag.id} tag={tag} size="sm" />
-          ))}
-        </Flex>
+        {/* Tags Row - Only render if tags exist */}
+        {renderTags.length > 0 && (
+          <Flex gap={1.5} flexWrap={"wrap"} mb={3}>
+            {renderTags.slice(0, 3).map((tag) => (
+              <Tag
+                key={tag.id}
+                size="sm"
+                borderRadius="md"
+                bg={backgroundImageUrl ? "kita.primaryAlpha.600" : "kita.primaryAlpha.400"}
+                color="white"
+                border="1px solid"
+                borderColor={backgroundImageUrl ? "kita.primaryAlpha.700" : "kita.primaryAlpha.500"}
+                fontSize="xs"
+                fontWeight="medium"
+                px={2}
+                py={1}
+                _hover={{
+                  bg: backgroundImageUrl ? "kita.primaryAlpha.700" : "kita.primaryAlpha.500",
+                  borderColor: "accent.primary",
+                }}
+              >
+                <TagLabel fontSize="xs">{tag.name}</TagLabel>
+              </Tag>
+            ))}
+            {renderTags.length > 3 && (
+              <Tag
+                size="sm"
+                borderRadius="md"
+                bg={backgroundImageUrl ? "kita.primaryAlpha.600" : "kita.primaryAlpha.400"}
+                color="white"
+                border="1px solid"
+                borderColor={backgroundImageUrl ? "kita.primaryAlpha.700" : "kita.primaryAlpha.500"}
+                fontSize="xs"
+                fontWeight="medium"
+                px={2}
+                py={1}
+                opacity={0.7}
+                _hover={{
+                  bg: backgroundImageUrl ? "kita.primaryAlpha.700" : "kita.primaryAlpha.500",
+                  borderColor: "accent.primary",
+                }}
+              >
+                <TagLabel fontSize="xs">+{renderTags.length - 3}</TagLabel>
+              </Tag>
+            )}
+          </Flex>
+        )}
 
         {/* Bottom Row - Origin + Episode + Actions */}
-        <Flex justifyContent={"space-between"} alignItems="center">
+        <Flex justifyContent={"space-between"} alignItems="center" mt="auto">
           <Flex alignItems={"center"} gap={2}>
             <OriginToIcon siteKey={origin} iconSize={16} />
             {video.watching_episode_number && <Badge variant="kita">EP {video.watching_episode_number}</Badge>}

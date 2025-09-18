@@ -15,7 +15,17 @@ const Exporter = () => {
     });
   };
 
-  return <Button onClick={handleExportData}>Export settings and data</Button>;
+  return (
+    <Button
+      onClick={handleExportData}
+      bg="accent.primary"
+      color="white"
+      _hover={{ bg: "accent.primary", opacity: 0.9 }}
+      _active={{ bg: "accent.primary", opacity: 0.8 }}
+    >
+      Export settings and data
+    </Button>
+  );
 };
 
 export default Exporter;

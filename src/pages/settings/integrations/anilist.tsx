@@ -33,7 +33,7 @@ const Anilist = () => {
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
   const { hasCopied, onCopy } = useClipboard(anilistConfigState.redirectUrl ?? "");
 
-  const { data, loading, error } = useGetMeQuery({
+  const { data, loading } = useGetMeQuery({
     skip: anilistAuthStatus !== "authorized",
   });
 
@@ -64,35 +64,69 @@ const Anilist = () => {
   if (!isInitialized || loading) return <LoadingState />;
 
   return (
-    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
+    <Box
+      width={"full"}
+      boxShadow={"dark-lg"}
+      rounded={"2xl"}
+      p={4}
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      _hover={{
+        borderColor: "border.accent",
+        boxShadow: "2xl",
+      }}
+      transition="all 0.2s"
+    >
       <Flex flexDirection={"column"} gap={4}>
         <Flex justifyContent={"space-between"}>
-          <Heading as="h2" fontWeight={"bold"} fontSize={"large"}>
+          <Heading as="h2" fontWeight={"bold"} fontSize={"large"} color="text.primary">
             Anilist
           </Heading>
-          {anilistAuthStatus === "initial" && <Text>Not Connected</Text>}
-          {anilistAuthStatus === "pending" && <Text>Connecting...</Text>}
-          {anilistAuthStatus === "authorized" && <Text>Authorized</Text>}
-          {anilistAuthStatus === "unauthorized" && <Text>Unauthorized</Text>}
-          {anilistAuthStatus === "error" && <Text>Error Connecting</Text>}
+          {anilistAuthStatus === "initial" && <Text color="text.secondary">Not Connected</Text>}
+          {anilistAuthStatus === "pending" && <Text color="orange.400">Connecting...</Text>}
+          {anilistAuthStatus === "authorized" && <Text color="green.400">Authorized</Text>}
+          {anilistAuthStatus === "unauthorized" && <Text color="red.400">Unauthorized</Text>}
+          {anilistAuthStatus === "error" && <Text color="red.400">Error Connecting</Text>}
         </Flex>
         <form onSubmit={handleSubmit}>
           <Flex flexDirection={"column"} gap={4}>
             <FormControl id="anilistId">
-              <FormLabel>Anilist Id</FormLabel>
-              <Input name="anilistId" value={anilistConfigState?.anilistId} onChange={handleChange} />
+              <FormLabel color="text.secondary">Anilist Id</FormLabel>
+              <Input
+                name="anilistId"
+                value={anilistConfigState?.anilistId}
+                onChange={handleChange}
+                bg="bg.tertiary"
+                borderColor="border.primary"
+                color="text.primary"
+                _hover={{ borderColor: "border.primary" }}
+                _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+              />
             </FormControl>
             <FormControl id="secret">
-              <FormLabel>Secret</FormLabel>
+              <FormLabel color="text.secondary">Secret</FormLabel>
               <InputGroup size="md">
                 <Input
                   name="secret"
                   type={showPasswordInput ? "text" : "password"}
                   value={anilistConfigState?.secret}
                   onChange={handleChange}
+                  bg="bg.tertiary"
+                  borderColor="border.primary"
+                  color="text.primary"
+                  _hover={{ borderColor: "border.primary" }}
+                  _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
                 />
                 <InputRightElement width="4.5rem">
-                  <Button h="1.75rem" size="sm" onClick={handleShowPasswordInput}>
+                  <Button
+                    h="1.75rem"
+                    size="sm"
+                    onClick={handleShowPasswordInput}
+                    bg="bg.primary"
+                    color="text.primary"
+                    _hover={{ bg: "bg.primary", opacity: 0.9 }}
+                  >
                     {showPasswordInput ? "Hide" : "Show"}
                   </Button>
                 </InputRightElement>
@@ -100,13 +134,33 @@ const Anilist = () => {
             </FormControl>
             <FormControl id="anilistRedirectUrl" mt={10}>
               <FormLabel>
-                <Text>Redirect URL (readonly)</Text>
-                <Text fontSize={"small"}>Configure redirect to the URL below (This is your extension URL)</Text>
+                <Text color="text.secondary">Redirect URL (readonly)</Text>
+                <Text fontSize={"small"} color="text.tertiary">
+                  Configure redirect to the URL below (This is your extension URL)
+                </Text>
               </FormLabel>
               <InputGroup size="md">
-                <Input readOnly name="anilistRedirectUrl" type={"text"} value={anilistConfigState?.redirectUrl} onChange={handleChange} />
+                <Input
+                  readOnly
+                  name="anilistRedirectUrl"
+                  type={"text"}
+                  value={anilistConfigState?.redirectUrl}
+                  onChange={handleChange}
+                  bg="bg.tertiary"
+                  borderColor="border.primary"
+                  color="text.primary"
+                  _hover={{ borderColor: "border.primary" }}
+                  _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                />
                 <InputRightElement width="4.5rem">
-                  <Button h="1.75rem" size="sm" onClick={onCopy}>
+                  <Button
+                    h="1.75rem"
+                    size="sm"
+                    onClick={onCopy}
+                    bg="bg.primary"
+                    color="text.primary"
+                    _hover={{ bg: "bg.primary", opacity: 0.9 }}
+                  >
                     {hasCopied ? "Copied" : "Copy"}
                   </Button>
                 </InputRightElement>
@@ -114,12 +168,26 @@ const Anilist = () => {
             </FormControl>
 
             {anilistAuthStatus !== "authorized" && (
-              <Button colorScheme="green" type="submit">
+              <Button
+                colorScheme="green"
+                type="submit"
+                bg="green.500"
+                color="white"
+                _hover={{ bg: "green.600" }}
+                _active={{ bg: "green.700" }}
+              >
                 Connect
               </Button>
             )}
             {anilistAuthStatus === "authorized" && (
-              <Button colorScheme="red" onClick={handleDisconnect}>
+              <Button
+                colorScheme="red"
+                onClick={handleDisconnect}
+                bg="red.500"
+                color="white"
+                _hover={{ bg: "red.600" }}
+                _active={{ bg: "red.700" }}
+              >
                 Disconnect
               </Button>
             )}

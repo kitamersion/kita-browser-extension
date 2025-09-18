@@ -228,6 +228,39 @@ const theme = extendTheme({
         },
       },
     },
+    // Tag component overrides
+    Tag: {
+      variants: {
+        kita: {
+          bg: "kita.primaryAlpha.600", // More opaque for visibility on background images
+          color: "white",
+          border: "1px solid",
+          borderColor: "kita.primaryAlpha.700",
+          fontSize: "xs",
+          fontWeight: "medium",
+          px: 2,
+          py: 1,
+          _hover: {
+            bg: "kita.primaryAlpha.700",
+            borderColor: "accent.primary",
+          },
+        },
+        "kita-subtle": {
+          bg: "kita.primaryAlpha.400", // Semi-transparent tomato background
+          color: "white",
+          border: "1px solid",
+          borderColor: "kita.primaryAlpha.500",
+          fontSize: "xs",
+          fontWeight: "medium",
+          px: 2,
+          py: 1,
+          _hover: {
+            bg: "kita.primaryAlpha.500",
+            borderColor: "accent.primary",
+          },
+        },
+      },
+    },
     // Skeleton overrides for dark theme
     Skeleton: {
       defaultProps: {

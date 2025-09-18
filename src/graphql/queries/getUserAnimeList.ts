@@ -1,29 +1,5 @@
 import { gql } from "@apollo/client";
 
-export const GET_ME = gql`
-  query GetMe {
-    Viewer {
-      id
-      name
-      siteUrl
-      avatar {
-        medium
-      }
-      statistics {
-        anime {
-          count
-          minutesWatched
-        }
-
-        manga {
-          count
-          chaptersRead
-        }
-      }
-    }
-  }
-`;
-
 export const GET_USER_ANIME_LIST = gql`
   query GetUserAnimeList($status: MediaListStatus, $userId: Int) {
     MediaListCollection(userId: $userId, type: ANIME, status: $status, sort: [UPDATED_TIME_DESC]) {
