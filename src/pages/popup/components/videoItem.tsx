@@ -59,15 +59,7 @@ const VideoItem = (video: IVideo) => {
       />
 
       {/* Dark Gradient Overlay for better text readability */}
-      <Box
-        position="absolute"
-        top={0}
-        bottom={0}
-        right={0}
-        left={0}
-        bg="linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)"
-        zIndex={0}
-      />
+      <Box position="absolute" top={0} bottom={0} right={0} left={0} bg="kita.bg.overlay" zIndex={0} />
 
       {/* Top Row - AniList only */}
       {anilistSyncComponent && (
@@ -80,7 +72,7 @@ const VideoItem = (video: IVideo) => {
       <Box position="relative" zIndex={1} mt="auto" p={4} pt={8}>
         {/* Title Section */}
         <Link href={video_url} isExternal display={"block"} mb={2}>
-          <Text as="b" fontSize="lg" color="white" textShadow="2px 2px 4px rgba(0,0,0,0.8)" noOfLines={2}>
+          <Text as="b" fontSize="lg" color="kita.text.primary" textShadow="2px 2px 4px rgba(0,0,0,0.8)" noOfLines={2}>
             {video_title}
           </Text>
         </Link>
@@ -113,11 +105,7 @@ const VideoItem = (video: IVideo) => {
         <Flex justifyContent={"space-between"} alignItems="center">
           <Flex alignItems={"center"} gap={2}>
             <OriginToIcon siteKey={origin} iconSize={16} />
-            {video.watching_episode_number && (
-              <Badge rounded={"xl"} px={3} py={1} bg="rgba(255, 99, 71, 0.9)" color="white" fontSize="xs" fontWeight="bold">
-                EP {video.watching_episode_number}
-              </Badge>
-            )}
+            {video.watching_episode_number && <Badge variant="kita">EP {video.watching_episode_number}</Badge>}
           </Flex>
 
           <Flex gap={2}>

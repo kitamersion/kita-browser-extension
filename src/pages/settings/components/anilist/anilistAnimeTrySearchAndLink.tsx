@@ -302,8 +302,9 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   if (isSearching || isUpdatingList) {
     return (
       <Box
-        bg="rgba(255, 99, 71, 0.8)"
-        border="2px solid rgba(255, 99, 71, 0.9)"
+        bg="kita.primaryAlpha.800"
+        border="2px solid"
+        borderColor="accent.primary"
         rounded="lg"
         width={8}
         height={8}
@@ -338,8 +339,9 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   return (
     <Box
       as="button"
-      bg={isSynced ? "rgba(72, 187, 120, 0.8)" : "rgba(255, 99, 71, 0.8)"}
-      border={`2px solid ${isSynced ? "rgba(72, 187, 120, 0.9)" : "rgba(255, 99, 71, 0.9)"}`}
+      bg={isSynced ? "kita.success" : "kita.primaryAlpha.800"}
+      border="2px solid"
+      borderColor={isSynced ? "green.400" : "accent.primary"}
       rounded="lg"
       width={8}
       height={8}
@@ -350,7 +352,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       cursor="pointer"
       backdropFilter="blur(8px)"
       _hover={{
-        bg: isSynced ? "rgba(72, 187, 120, 0.9)" : "rgba(255, 99, 71, 0.9)",
+        bg: isSynced ? "green.400" : "accent.primary",
         transform: "scale(1.05)",
       }}
       transition="all 0.2s"
