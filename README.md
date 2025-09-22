@@ -30,6 +30,13 @@
 
 ---
 
+## Installation
+
+[![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
+[![](images/addon/chrome-web-store.png)](https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn)
+
+---
+
 ## Development
 
 ### Prerequisites
@@ -154,8 +161,3 @@ ext/
 
 dist/                 # Built extension (load this in Chrome)
 ```
-
-## Installation
-
-[![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
-[![](images/addon/chrome-web-store.png)](https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn)
