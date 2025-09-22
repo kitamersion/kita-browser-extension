@@ -13,8 +13,6 @@ import { useToastContext } from "./toastNotificationContext";
 import {
   decrementTotalVideoDuration,
   decrementTotalVideos,
-  getTotalVideoCount,
-  getTotalVideoDuration,
   incrementTotalVideoDuration,
   incrementTotalVideos,
   resetTotalVideoDuration,
@@ -73,14 +71,19 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     return calculateTotalDuration(filteredVideos);
   }, []);
 
-  const handleGetVideoSummary = useCallback(() => {
-    getTotalVideoDuration((duration) => {
-      setTotalDuration(duration);
-    });
+  const handleGetVideoSummary = useCallback(async () => {
+    try {
+      // Compute values directly from database instead of Chrome storage
+      const allVideos = await IndexedDB.getAllVideos();
+      const totalDuration = calculateTotalDuration(allVideos);
+      const totalCount = allVideos.length;
 
-    getTotalVideoCount((count) => {
-      setTotalVideoCount(count);
-    });
+      // Use functional state updates to ensure we get the latest state
+      setTotalDuration(totalDuration);
+      setTotalVideoCount(totalCount);
+    } catch (error) {
+      logger.error(`Error getting video summary: ${error}`);
+    }
   }, []);
 
   const handleGetVideos = useCallback(async () => {

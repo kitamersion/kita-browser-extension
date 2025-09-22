@@ -1,6 +1,6 @@
 import SummaryItem from "@/components/summaryItem";
 import { useVideoContext } from "@/context/videoContext";
-import { formatDuration } from "@/utils";
+import { formatDuration, formatDurationHuman } from "@/utils";
 import { VStack, SimpleGrid, Box } from "@chakra-ui/react";
 import React from "react";
 
@@ -18,7 +18,7 @@ const Summary = () => {
       {/* Second row - All Time centered (triangle layout) */}
       <Box w="full" display="flex" justifyContent="center">
         <Box w="50%">
-          <SummaryItem.Compact value={formatDuration(totalDuration)} title="All Time" />
+          <SummaryItem.Compact value={formatDurationHuman(totalDuration)} title="All Time" />
         </Box>
       </Box>
     </VStack>
