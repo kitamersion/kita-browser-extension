@@ -1,13 +1,13 @@
 import logger from "@/config/logger";
-import { kitaSchema } from "@/data/kitaschema";
+import { SETTINGS } from "@/api/settings";
 import { Callback } from "@/types/callback";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
 import { AuthStatus } from "@/types/kitaschema";
 
-const ANILIST_CONFIG_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistConfigKey;
-const ANILIST_AUTH_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAuthKey;
-const ANILIST_AUTH_STATE_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AuthStatus;
-const ANILIST_AUTO_SYNC_MEDIA_KEY = kitaSchema.ApplicationSettings.StorageKeys.IntegrationKeys.AnilistKeys.AnilistAutoSyncMediaKey;
+const ANILIST_CONFIG_KEY = SETTINGS.integrations.anilist.configKey.key;
+const ANILIST_AUTH_KEY = SETTINGS.integrations.anilist.authKey.key;
+const ANILIST_AUTH_STATE_KEY = SETTINGS.integrations.anilist.authStatus.key;
+const ANILIST_AUTO_SYNC_MEDIA_KEY = SETTINGS.integrations.anilist.autoSync.key;
 
 // get anilist config
 const getAnilistConfig = (callback: Callback<AnilistConfig | null>) => {

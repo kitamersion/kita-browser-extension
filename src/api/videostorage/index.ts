@@ -1,9 +1,9 @@
 import { Callback } from "@/types/callback";
-import { kitaSchema } from "../../data/kitaschema";
+import { SETTINGS } from "@/api/settings";
 import { IVideo } from "../../types/video";
 import logger from "../../config/logger";
 
-const VIDEO_KEY = kitaSchema.ApplicationSettings.StorageKeys.VideoKey;
+const VIDEO_KEY = SETTINGS.storage.video.key;
 
 // GET
 const getVideoById = (id: string, videos: IVideo[]) => {
@@ -72,4 +72,4 @@ const deleteAllVideos = (callback: Callback<null>) => {
   });
 };
 
-export { kitaSchema, getVideos, setVideo, setVideos, getVideoById, updateVideoById, deleteVideoById, deleteAllVideos };
+export { getVideos, setVideo, setVideos, getVideoById, updateVideoById, deleteVideoById, deleteAllVideos };

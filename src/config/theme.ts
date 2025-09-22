@@ -1,5 +1,5 @@
-import { kitaSchema } from "@/data/kitaschema";
 import { createLocalStorageManager, extendTheme, type ThemeConfig } from "@chakra-ui/react";
+import { SETTINGS } from "@/api/settings";
 
 export const enum ThemeScheme {
   DARK = "dark",
@@ -271,6 +271,6 @@ const theme = extendTheme({
   },
 });
 
-const colorModeManager = createLocalStorageManager(kitaSchema.ApplicationSettings.StorageKeys.ThemeKey);
+const colorModeManager = createLocalStorageManager(SETTINGS.application.theme.key);
 
 export { theme, colorModeManager };

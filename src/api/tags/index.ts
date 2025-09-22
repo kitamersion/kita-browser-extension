@@ -1,10 +1,10 @@
-import { kitaSchema } from "../videostorage";
+import { SETTINGS } from "@/api/settings";
 import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
 import logger from "../../config/logger";
 
-const TAG_KEY = kitaSchema.ApplicationSettings.StorageKeys.TagKey;
-const DEFAULT_TAGS_INITIALIZED_KEY = kitaSchema.ApplicationSettings.StorageKeys.DefaultTagsInitializedKey;
+const TAG_KEY = SETTINGS.storage.tag.key;
+const DEFAULT_TAGS_INITIALIZED_KEY = SETTINGS.application.defaultTagsInitialized.key;
 
 // GET_BY_ID
 const getTagById = (id: string, tags: ITag[]) => {

@@ -1,8 +1,8 @@
 import { Callback } from "@/types/callback";
-import { kitaSchema } from "../videostorage";
+import { SETTINGS } from "@/api/settings";
 import logger from "@/config/logger";
 
-const TAG_TOTAL_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.TagStatisticsKeys.TotalTagsKey;
+const TAG_TOTAL_KEY = SETTINGS.statistics.totalTags.key;
 
 const getTotalTagCount = (callback: Callback<number>) => {
   chrome.storage.local.get(TAG_TOTAL_KEY, (data) => {

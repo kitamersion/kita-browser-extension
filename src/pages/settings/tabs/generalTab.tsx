@@ -2,8 +2,8 @@ import LoadingState from "@/components/states/LoadingState";
 import { Flex, Heading, TabPanel } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import Exporter from "../components/exporter";
-import Importer from "../components/importer";
 import ManuallyCopySettingsAndData from "../components/manuallyCopySettingsAndData";
+import Importer from "../components/importer";
 
 const GeneralTab = () => {
   return (

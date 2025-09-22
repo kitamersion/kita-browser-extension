@@ -1,9 +1,9 @@
 import { Callback } from "@/types/callback";
-import { kitaSchema } from "../videostorage";
+import { SETTINGS } from "@/api/settings";
 import logger from "@/config/logger";
 
-const VIDEO_TOTAL_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalVideosKey;
-const VIDEO_TOTAL_DURATION_KEY = kitaSchema.ApplicationSettings.StorageKeys.StatisticsKeys.VideoStatisticsKeys.TotalDurationSecondsKey;
+const VIDEO_TOTAL_KEY = SETTINGS.statistics.totalVideos.key;
+const VIDEO_TOTAL_DURATION_KEY = SETTINGS.statistics.totalDuration.key;
 
 const getTotalVideoCount = (callback: Callback<number>) => {
   chrome.storage.local.get(VIDEO_TOTAL_KEY, (data) => {
