@@ -153,26 +153,57 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
               expires_at = expires_at + ONE_YEAR_MS;
             }
 
-            // Create mapping using storage API (will set normalized_title, created_at etc.)
-            const createdMapping = await seriesMappingStorage.createMapping({
-              series_title: mapping.series_title,
-              source_platform: mapping.source_platform as any,
-              season_year: mapping.season_year,
-              anilist_series_id: mapping.anilist_series_id,
-              mal_series_id: mapping.mal_series_id,
-              kitsu_series_id: mapping.kitsu_series_id,
-              tmdb_series_id: mapping.tmdb_series_id,
-              user_confirmed: mapping.user_confirmed ?? false,
-              total_episodes: mapping.total_episodes,
-              series_description: mapping.series_description,
-              cover_image: mapping.cover_image,
-              background_cover_image: mapping.background_cover_image,
-              banner_image: mapping.banner_image,
-            });
+            // Check if mapping already exists to make import idempotent
+            const existingMapping = await seriesMappingStorage.findMapping(
+              mapping.series_title,
+              mapping.source_platform as any,
+              mapping.season_year,
+              mapping.anilist_series_id,
+              false // Don't create if not found
+            );
 
-            // Update expires_at to our calculated value
-            if (createdMapping) {
-              await seriesMappingStorage.updateMapping(createdMapping.id, { expires_at });
+            if (existingMapping) {
+              // Update existing mapping with imported data and extended TTL
+              await seriesMappingStorage.updateMapping(existingMapping.id, {
+                // Update all fields from the imported mapping
+                series_title: mapping.series_title,
+                source_platform: mapping.source_platform,
+                season_year: mapping.season_year,
+                anilist_series_id: mapping.anilist_series_id,
+                mal_series_id: mapping.mal_series_id,
+                kitsu_series_id: mapping.kitsu_series_id,
+                tmdb_series_id: mapping.tmdb_series_id,
+                user_confirmed: mapping.user_confirmed ?? false,
+                total_episodes: mapping.total_episodes,
+                series_description: mapping.series_description,
+                cover_image: mapping.cover_image,
+                background_cover_image: mapping.background_cover_image,
+                banner_image: mapping.banner_image,
+                expires_at, // Apply the calculated TTL extension
+                updated_at: now,
+              });
+            } else {
+              // Create new mapping if it doesn't exist
+              const createdMapping = await seriesMappingStorage.createMapping({
+                series_title: mapping.series_title,
+                source_platform: mapping.source_platform as any,
+                season_year: mapping.season_year,
+                anilist_series_id: mapping.anilist_series_id,
+                mal_series_id: mapping.mal_series_id,
+                kitsu_series_id: mapping.kitsu_series_id,
+                tmdb_series_id: mapping.tmdb_series_id,
+                user_confirmed: mapping.user_confirmed ?? false,
+                total_episodes: mapping.total_episodes,
+                series_description: mapping.series_description,
+                cover_image: mapping.cover_image,
+                background_cover_image: mapping.background_cover_image,
+                banner_image: mapping.banner_image,
+              });
+
+              // Update expires_at to our calculated value
+              if (createdMapping) {
+                await seriesMappingStorage.updateMapping(createdMapping.id, { expires_at });
+              }
             }
           } catch (err) {
             logger.error(`Failed to import series mapping ${mapping.series_title}: ${err}`);
