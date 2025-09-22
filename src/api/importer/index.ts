@@ -5,6 +5,8 @@ import IndexedDB from "@/db/index";
 import { generateUniqueCode } from "@/utils";
 import logger from "@/config/logger";
 import { settingsManager, SETTINGS } from "@/api/settings";
+import { seriesMappingStorage } from "@/api/seriesMapping";
+import { ISeriesMapping } from "@/types/integrations/seriesMapping";
 
 const BATCH_SIZE = 50;
 
@@ -65,6 +67,7 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       (data.UserItems.Tags?.length || 0) +
       (data.UserItems.VideoTagRelationships?.length || 0) +
       (data.UserItems.AutoTags?.length || 0) +
+      (data.UserItems.SeriesMappings?.length || 0) +
       1; // +1 for settings
 
     let processedItems = 0;
@@ -128,6 +131,58 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
         onProgress
       );
       processedItems += autoTagsToAdd.length;
+    }
+
+    // Import series mappings
+    const seriesMappingsToAdd = data.UserItems.SeriesMappings as ISeriesMapping[] | undefined;
+    if (seriesMappingsToAdd && seriesMappingsToAdd.length > 0) {
+      await processBatchWithProgress(
+        seriesMappingsToAdd,
+        async (mapping: ISeriesMapping) => {
+          try {
+            const now = Date.now();
+            const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+            let expires_at = mapping.expires_at ?? now + ONE_YEAR_MS;
+
+            // If mapping is expired, reset TTL to 1 year from now
+            // If mapping is not expired, extend TTL by 1 year
+            if (expires_at <= now) {
+              expires_at = now + ONE_YEAR_MS;
+            } else {
+              expires_at = expires_at + ONE_YEAR_MS;
+            }
+
+            // Create mapping using storage API (will set normalized_title, created_at etc.)
+            const createdMapping = await seriesMappingStorage.createMapping({
+              series_title: mapping.series_title,
+              source_platform: mapping.source_platform as any,
+              season_year: mapping.season_year,
+              anilist_series_id: mapping.anilist_series_id,
+              mal_series_id: mapping.mal_series_id,
+              kitsu_series_id: mapping.kitsu_series_id,
+              tmdb_series_id: mapping.tmdb_series_id,
+              user_confirmed: mapping.user_confirmed ?? false,
+              total_episodes: mapping.total_episodes,
+              series_description: mapping.series_description,
+              cover_image: mapping.cover_image,
+              background_cover_image: mapping.background_cover_image,
+              banner_image: mapping.banner_image,
+            });
+
+            // Update expires_at to our calculated value
+            if (createdMapping) {
+              await seriesMappingStorage.updateMapping(createdMapping.id, { expires_at });
+            }
+          } catch (err) {
+            logger.error(`Failed to import series mapping ${mapping.series_title}: ${err}`);
+          }
+        },
+        "Importing series mappings",
+        onProgress
+      );
+
+      processedItems += seriesMappingsToAdd.length;
     }
 
     // Import application settings with backward compatibility

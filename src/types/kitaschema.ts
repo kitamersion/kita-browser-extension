@@ -2,6 +2,7 @@ import { IAutoTag } from "./autotag";
 import { IVideoTag } from "./relationship";
 import { ITag } from "./tag";
 import { IVideo } from "./video";
+import { ISeriesMapping } from "./integrations/seriesMapping";
 
 export type StorageKeys = {
   ApplicationEnabledKey: string;
@@ -27,6 +28,7 @@ export type UserItems = {
   Tags: ITag[];
   VideoTagRelationships: IVideoTag[];
   AutoTags: IAutoTag[];
+  SeriesMappings: ISeriesMapping[];
 };
 
 export type IntegrationKeys = {

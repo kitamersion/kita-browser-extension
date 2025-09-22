@@ -4,11 +4,12 @@ import IndexedDB from "@/db/index";
 
 const getKitaSchema = async (): Promise<KitaSchema> => {
   // Get all data in parallel for better performance
-  const [videos, tags, videoTagRelationships, autoTags] = await Promise.all([
+  const [videos, tags, videoTagRelationships, autoTags, seriesMappings] = await Promise.all([
     IndexedDB.getAllVideos(),
     IndexedDB.getAllTags(),
     IndexedDB.getAllVideoTags(),
     IndexedDB.getAllAutoTags(),
+    IndexedDB.getAllSeriesMappings(),
   ]);
 
   // Get application settings using the new settings manager
@@ -27,6 +28,7 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
       Tags: tags ?? [],
       VideoTagRelationships: videoTagRelationships ?? [],
       AutoTags: autoTags ?? [],
+      SeriesMappings: seriesMappings ?? [],
     },
     ApplicationSettings: {
       IsReady: false, // @todo: implement
