@@ -191,7 +191,6 @@ const theme = extendTheme({
           borderColor: "kita.primary",
           _hover: {
             bg: "kita.primary",
-            transform: "scale(1.05)",
           },
           _active: {
             bg: "kita.primary",
@@ -246,7 +245,6 @@ const theme = extendTheme({
           },
         },
         "kita-subtle": {
-          bg: "kita.primaryAlpha.400", // Semi-transparent tomato background
           color: "white",
           border: "1px solid",
           borderColor: "kita.primaryAlpha.500",

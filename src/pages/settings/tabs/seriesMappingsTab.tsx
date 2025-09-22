@@ -271,13 +271,14 @@ const SeriesMappingsTab = () => {
           _hover={{ bg: "kita.primaryAlpha.100", borderColor: "kita.border.accent", boxShadow: "xl" }}
         >
           <VStack spacing={4}>
-            <Flex gap={4} wrap="wrap" align="center" w="full">
+            <Flex gap={4} wrap="wrap" align="center" w="full" alignItems="center">
               {/* Search */}
               <InputGroup maxW="300px">
                 <InputLeftElement>
                   <SearchIcon color="text.tertiary" />
                 </InputLeftElement>
                 <Input
+                  rounded="lg"
                   placeholder="Search by series title..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -293,6 +294,7 @@ const SeriesMappingsTab = () => {
 
               {/* Platform filter */}
               <Select
+                rounded="lg"
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value as SourcePlatform | "all")}
                 maxW="200px"
@@ -336,7 +338,7 @@ const SeriesMappingsTab = () => {
             <Spinner size="lg" />
           </Flex>
         ) : filteredMappings.length === 0 ? (
-          <Alert status="info">
+          <Alert status="info" variant="kita" rounded="3xl">
             <AlertIcon />
             {mappings.length === 0
               ? "No series mappings found. Mappings are created automatically when you sync with AniList."

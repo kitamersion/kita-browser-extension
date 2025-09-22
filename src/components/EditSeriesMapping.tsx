@@ -13,7 +13,6 @@ import {
   IconButton,
   Input,
   Select,
-  useColorMode,
   useDisclosure,
   Text,
   Box,
@@ -39,7 +38,6 @@ interface EditSeriesMappingProps {
 
 const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappingUpdated }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { colorMode } = useColorMode();
   const toast = useToast();
 
   const [editedMapping, setEditedMapping] = useState<ISeriesMapping>(mapping);
@@ -134,10 +132,12 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
     <>
       <IconButton size="sm" variant="ghost" icon={<EditIcon />} aria-label="Edit mapping" onClick={onOpen} />
       <Drawer onClose={onClose} isOpen={isOpen} size="full" placement="bottom">
-        <DrawerOverlay />
-        <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent p="6" bg="bg.primary" color="text.primary">
           <DrawerCloseButton />
-          <DrawerHeader>Editing Series Mapping</DrawerHeader>
+          <DrawerHeader color="accent.primary" fontSize="xl" fontWeight="bold">
+            Editing Series Mapping
+          </DrawerHeader>
           <DrawerBody>
             <form onSubmit={handleSubmit}>
               <Flex flexDirection="column" gap={4}>
@@ -298,28 +298,37 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
                 </FormControl>
 
                 <VStack spacing={2} align="stretch" mt={4}>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.tertiary">
                     Created: {formatDate(editedMapping.created_at)}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.tertiary">
                     Last Updated: {formatDate(editedMapping.updated_at)}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.tertiary">
                     Expires: {formatDate(editedMapping.expires_at)}
                   </Text>
                 </VStack>
 
-                <Button mt={4} type="submit" colorScheme="blue" isLoading={isSubmitting} loadingText="Saving...">
+                <Button mt={4} type="submit" variant="kita" isLoading={isSubmitting} loadingText="Saving...">
                   Save Changes
                 </Button>
               </Flex>
             </form>
 
-            <Box width="full" my={5}>
-              <Text fontWeight="bold" mb={2}>
+            <Box width="full" my={5} bg="bg.secondary" border="1px solid" borderColor="border.primary" rounded="lg" p={4}>
+              <Text fontWeight="bold" mb={2} color="text.primary">
                 JSON Data (for debugging)
               </Text>
-              <Textarea value={mappingJsonBlob} mb="4" minHeight="200px" readOnly fontSize="sm" fontFamily="mono" />
+              <Textarea
+                value={mappingJsonBlob}
+                mb="4"
+                minHeight="200px"
+                readOnly
+                fontSize="sm"
+                fontFamily="mono"
+                bg="bg.primary"
+                color="text.primary"
+              />
             </Box>
           </DrawerBody>
         </DrawerContent>

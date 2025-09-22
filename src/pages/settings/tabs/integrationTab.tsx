@@ -12,15 +12,7 @@ const IntegrationTab = () => {
         <Anilist />
       </Grid>
       <Center mt={6}>
-        <Alert
-          status="warning"
-          rounded={"3xl"}
-          fontSize={14}
-          maxWidth={"70%"}
-          bg="bg.secondary"
-          borderColor="border.primary"
-          color="text.primary"
-        >
+        <Alert status="warning" rounded={"3xl"} fontSize={14} maxWidth={"70%"} variant="kita">
           <AlertIcon color="orange.400" />
           Please note that Kitamersion is an independent entity and is not affiliated with any of the integrations displayed on this page.
         </Alert>
