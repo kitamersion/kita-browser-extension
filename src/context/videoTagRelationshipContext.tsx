@@ -8,7 +8,7 @@ import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
 import IndexedDB from "@/db/index";
 import { useApplicationContext } from "./applicationContext";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 type VideoTagRelationshipContextType = {
   videoTagRelationship: IVideoTag[];
@@ -30,11 +30,11 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   const [relationships, setRelationships] = useState<IVideoTag[]>([]);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  const handleVideoTagAddRelationship = useCallback((eventData: any) => {
+  const handleVideoTagAddRelationship = useCallback(async (eventData: any) => {
     const videoTagRelationship = eventData.value as IVideoTag[];
 
     if (!videoTagRelationship || videoTagRelationship.length === 0) {
-      logger.warn("No video tag relationship found from event handler");
+      await logger.warn("No video tag relationship found from event handler");
       return;
     }
 

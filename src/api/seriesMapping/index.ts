@@ -1,6 +1,6 @@
 import { ISeriesMapping, SourcePlatform } from "@/types/integrations/seriesMapping";
 import eventbus from "@/api/eventbus";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { getDateFromNow } from "@/utils";
 import db from "@/db";
 
@@ -43,7 +43,7 @@ class SeriesMappingStorage {
     try {
       return await db.getAllSeriesMappings();
     } catch (error) {
-      logger.error("Error getting series mappings");
+      await logger.error("Error getting series mappings");
       return [];
     }
   }
@@ -61,7 +61,9 @@ class SeriesMappingStorage {
     additionalData?: IMappingAdditionalData
   ): Promise<ISeriesMapping | undefined> {
     const normalizedTitle = this.normalizeTitle(seriesTitle);
-    logger.info(`findMapping: "${seriesTitle}" normalized to "${normalizedTitle}" (platform: ${sourcePlatform}, year: ${seasonYear})`);
+    await logger.info(
+      `findMapping: "${seriesTitle}" normalized to "${normalizedTitle}" (platform: ${sourcePlatform}, year: ${seasonYear})`
+    );
 
     try {
       // Try to find existing mapping
@@ -76,7 +78,7 @@ class SeriesMappingStorage {
       // If no mapping exists but we have an AniList series ID and forceCreate is true,
       // automatically create a mapping for future editing
       if (forceCreate && anilistSeriesId) {
-        logger.info(`Auto-creating series mapping for future editing: ${seriesTitle} -> ${anilistSeriesId}`);
+        await logger.info(`Auto-creating series mapping for future editing: ${seriesTitle} -> ${anilistSeriesId}`);
 
         const newMapping = await this.createMapping({
           series_title: seriesTitle,
@@ -97,7 +99,7 @@ class SeriesMappingStorage {
 
       return undefined;
     } catch (error) {
-      logger.error("Error finding series mapping");
+      await logger.error("Error finding series mapping");
       return undefined;
     } finally {
       // Cleanup expired mappings after the operation
@@ -129,10 +131,10 @@ class SeriesMappingStorage {
     try {
       await db.addSeriesMapping(newMapping);
       eventbus.publish(SERIES_MAPPING_ADDED, { message: "Series mapping created", value: newMapping });
-      logger.info(`Created series mapping: ${mapping.series_title} -> AniList ID: ${mapping.anilist_series_id}`);
+      await logger.info(`Created series mapping: ${mapping.series_title} -> AniList ID: ${mapping.anilist_series_id}`);
       return newMapping;
     } catch (error) {
-      logger.error("Error creating series mapping");
+      await logger.error("Error creating series mapping");
       throw error;
     }
   }
@@ -144,7 +146,7 @@ class SeriesMappingStorage {
     try {
       const existingMapping = await db.getSeriesMappingById(id);
       if (!existingMapping) {
-        logger.warn(`Series mapping not found for update: ${id}`);
+        await logger.warn(`Series mapping not found for update: ${id}`);
         return undefined;
       }
 
@@ -157,11 +159,11 @@ class SeriesMappingStorage {
 
       await db.updateSeriesMapping(updatedMapping);
       eventbus.publish(SERIES_MAPPING_UPDATED, { message: "Series mapping updated", value: updatedMapping });
-      logger.info(`Updated series mapping: ${updatedMapping.series_title}`);
+      await logger.info(`Updated series mapping: ${updatedMapping.series_title}`);
 
       return updatedMapping;
     } catch (error) {
-      logger.error("Error updating series mapping");
+      await logger.error("Error updating series mapping");
       return undefined;
     }
   }
@@ -173,17 +175,17 @@ class SeriesMappingStorage {
     try {
       const existingMapping = await db.getSeriesMappingById(id);
       if (!existingMapping) {
-        logger.warn(`Series mapping not found for removal: ${id}`);
+        await logger.warn(`Series mapping not found for removal: ${id}`);
         return false;
       }
 
       await db.deleteSeriesMapping(id);
       eventbus.publish(SERIES_MAPPING_REMOVED, { message: "Series mapping removed", value: existingMapping });
-      logger.info(`Removed series mapping: ${existingMapping.series_title}`);
+      await logger.info(`Removed series mapping: ${existingMapping.series_title}`);
 
       return true;
     } catch (error) {
-      logger.error("Error removing series mapping");
+      await logger.error("Error removing series mapping");
       return false;
     }
   }
@@ -195,7 +197,7 @@ class SeriesMappingStorage {
     try {
       return await db.getSeriesMappingsByPlatform(sourcePlatform);
     } catch (error) {
-      logger.error("Error getting mappings by platform");
+      await logger.error("Error getting mappings by platform");
       return [];
     }
   }
@@ -238,11 +240,11 @@ class SeriesMappingStorage {
       }
 
       if (deletedCount > 0) {
-        logger.info(`Cleaned up ${deletedCount} expired series mappings`);
+        await logger.info(`Cleaned up ${deletedCount} expired series mappings`);
       }
       return deletedCount;
     } catch (error) {
-      logger.error(`Error cleaning up expired mappings: ${error}`);
+      await logger.error(`Error cleaning up expired mappings: ${error}`);
       return 0;
     }
   }

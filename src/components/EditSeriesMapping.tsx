@@ -29,7 +29,7 @@ import {
 import { EditIcon } from "@chakra-ui/icons";
 import { ISeriesMapping } from "@/types/integrations/seriesMapping";
 import { seriesMappingStorage } from "@/api/seriesMapping";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 interface EditSeriesMappingProps {
   mapping: ISeriesMapping;
@@ -106,7 +106,7 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
         }
 
         onClose();
-        logger.info(`Successfully updated series mapping: ${updatedMapping.series_title}`);
+        await logger.info(`Successfully updated series mapping: ${updatedMapping.series_title}`);
       } else {
         throw new Error("Failed to update mapping");
       }

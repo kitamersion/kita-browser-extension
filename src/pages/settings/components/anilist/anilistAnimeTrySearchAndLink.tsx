@@ -9,7 +9,7 @@ import { VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_UPDATED_BY_ID } from "@/data/events";
 import { useToastContext } from "@/context/toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { IVideoTag } from "@/types/relationship";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { useAnilistContext } from "@/context/anilistContext";
 import { seriesMappingStorage } from "@/api/seriesMapping";
 import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
@@ -65,7 +65,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const checkExistingMapping = useCallback(async (): Promise<ISeriesMapping | null> => {
     const sourcePlatform = getSourcePlatform();
     try {
-      logger.info(
+      await logger.info(
         `Checking existing mapping for: "${video.series_title}" (platform: ${sourcePlatform}, year: ${video.watching_season_year})`
       );
 
@@ -78,14 +78,14 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       );
 
       if (mapping) {
-        logger.info(`Found existing mapping: "${mapping.series_title}" -> AniList ID: ${mapping.anilist_series_id}`);
+        await logger.info(`Found existing mapping: "${mapping.series_title}" -> AniList ID: ${mapping.anilist_series_id}`);
       } else {
-        logger.info("No existing mapping found");
+        await logger.info("No existing mapping found");
       }
 
       return mapping || null;
     } catch (error) {
-      logger.error(`Error checking existing mapping: ${error}`);
+      await logger.error(`Error checking existing mapping: ${error}`);
       return null;
     }
   }, [getSourcePlatform, video.series_title, video.watching_season_year]);
@@ -109,10 +109,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
           user_confirmed: userConfirmed,
         });
 
-        logger.info(`Created series mapping: ${video.series_title} -> ${result.title.english || result.title.romaji}`);
+        await logger.info(`Created series mapping: ${video.series_title} -> ${result.title.english || result.title.romaji}`);
         return mapping;
       } catch (error) {
-        logger.error(`Error creating mapping: ${error}`);
+        await logger.error(`Error creating mapping: ${error}`);
         return null;
       }
     },
@@ -177,7 +177,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
           setSyncStatus("complete");
         }
       } catch (error) {
-        logger.error(`Error syncing to AniList: ${error}`);
+        await logger.error(`Error syncing to AniList: ${error}`);
         showToast({
           title: "Failed to sync to AniList",
           status: "error",
@@ -199,17 +199,17 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       const existingMapping = await checkExistingMapping();
 
       if (existingMapping?.anilist_series_id) {
-        logger.info("Using existing series mapping");
+        await logger.info("Using existing series mapping");
         await seriesMappingStorage.extendMappingTTL(existingMapping.id);
         await syncToAnilist(existingMapping);
         return;
       }
 
       // Step 2: No existing mapping, search AniList
-      logger.info("No mapping found, searching AniList");
+      await logger.info("No mapping found, searching AniList");
       getMediaBySearch({ variables: { search: video.series_title, isAdult: false } });
     } catch (error) {
-      logger.error(`Error starting sync: ${error}`);
+      await logger.error(`Error starting sync: ${error}`);
       setSyncStatus("error");
     }
   }, [checkExistingMapping, getMediaBySearch, video.series_title, syncToAnilist, syncStatus]);
@@ -238,57 +238,59 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
   // Handle search results
   useEffect(() => {
-    if (searchData?.anime?.results && searchData.anime.results.length > 0 && syncStatus === "searching") {
-      const results: ISeriesSearchResult[] = searchData.anime.results.map((result) => ({
-        id: result?.id || 0,
-        title: {
-          english: result?.title?.english || undefined,
-          romaji: undefined,
-          native: result?.title?.native || undefined,
-        },
-        seasonYear: result?.seasonYear || undefined,
-        episodes: result?.episodes || undefined,
-        coverImage: {
-          large: undefined,
-          extraLarge: result?.coverImage?.extraLarge || undefined,
-        },
-        bannerImage: result?.bannerImage || undefined,
-        description: undefined,
-        idMal: result?.idMal || undefined,
-      }));
-      setSearchResults(results);
+    (async () => {
+      if (searchData?.anime?.results && searchData.anime.results.length > 0 && syncStatus === "searching") {
+        const results: ISeriesSearchResult[] = searchData.anime.results.map((result) => ({
+          id: result?.id || 0,
+          title: {
+            english: result?.title?.english || undefined,
+            romaji: undefined,
+            native: result?.title?.native || undefined,
+          },
+          seasonYear: result?.seasonYear || undefined,
+          episodes: result?.episodes || undefined,
+          coverImage: {
+            large: undefined,
+            extraLarge: result?.coverImage?.extraLarge || undefined,
+          },
+          bannerImage: result?.bannerImage || undefined,
+          description: undefined,
+          idMal: result?.idMal || undefined,
+        }));
+        setSearchResults(results);
 
-      // Try automatic matching first
-      const autoMatch = results.find((result) => result.seasonYear === video.watching_season_year);
+        // Try automatic matching first
+        const autoMatch = results.find((result) => result.seasonYear === video.watching_season_year);
 
-      if (autoMatch) {
-        // Auto-match found, create mapping and sync
-        logger.info("Auto-match found by season year");
-        setSyncStatus("mapping");
+        if (autoMatch) {
+          // Auto-match found, create mapping and sync
+          await logger.info("Auto-match found by season year");
+          setSyncStatus("mapping");
 
-        createMappingFromResult(autoMatch, false).then(async (mapping) => {
-          if (mapping) {
-            await syncToAnilist(mapping);
-          } else {
-            setSyncStatus("error");
-          }
-        });
-      } else if (results.length > 0) {
-        // Show selection UI for any results (single or multiple)
-        logger.info(`Found ${results.length} result(s), showing selection UI`);
-        setShowMappingSelection(true);
-        setSyncStatus("idle"); // Wait for user selection
-      } else {
-        // No results found
-        logger.warn("No search results found");
-        showToast({
-          title: "No results found on AniList",
-          description: `Could not find any matching anime for "${video.series_title}"`,
-          status: "error",
-        });
-        setSyncStatus("error");
+          createMappingFromResult(autoMatch, false).then(async (mapping) => {
+            if (mapping) {
+              await syncToAnilist(mapping);
+            } else {
+              setSyncStatus("error");
+            }
+          });
+        } else if (results.length > 0) {
+          // Show selection UI for any results (single or multiple)
+          await logger.info(`Found ${results.length} result(s), showing selection UI`);
+          setShowMappingSelection(true);
+          setSyncStatus("idle"); // Wait for user selection
+        } else {
+          // No results found
+          await logger.warn("No search results found");
+          showToast({
+            title: "No results found on AniList",
+            description: `Could not find any matching anime for "${video.series_title}"`,
+            status: "error",
+          });
+          setSyncStatus("error");
+        }
       }
-    }
+    })();
   }, [searchData, video.watching_season_year, video.series_title, showToast, createMappingFromResult, syncToAnilist, syncStatus]);
 
   if (!isAnilistReady) {

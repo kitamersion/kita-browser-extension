@@ -14,7 +14,7 @@ import {
   OBJECT_STORE_SERIES_MAPPINGS,
 } from "./schema";
 import { setApplicationEnabled } from "@/api/applicationStorage";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { IAutoTag } from "@/types/autotag";
 import { ISeriesMapping } from "@/types/integrations/seriesMapping";
 
@@ -35,17 +35,21 @@ class IndexedDB {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().then((granted) => {
-          if (granted) {
-            logger.info("Storage will not be cleared except by explicit user action");
-            resolve(true);
-          } else {
-            logger.info("Storage may be cleared by the UA under storage pressure.");
-            resolve(false);
-          }
+          (async () => {
+            if (granted) {
+              await logger.info("Storage will not be cleared except by explicit user action");
+              resolve(true);
+            } else {
+              await logger.info("Storage may be cleared by the UA under storage pressure.");
+              resolve(false);
+            }
+          })();
         });
       } else {
-        logger.info("Persistent storage API not supported");
-        resolve(false);
+        (async () => {
+          await logger.info("Persistent storage API not supported");
+          resolve(false);
+        })();
       }
     });
   }
@@ -55,12 +59,16 @@ class IndexedDB {
   // ================================================================================
   public openDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      logger.info("connecting database...");
+      (async () => {
+        await logger.info("connecting database...");
+      })();
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event) => {
         setApplicationEnabled(false, () => {});
-        logger.warn("database upgrade needed...");
+        (async () => {
+          await logger.warn("database upgrade needed...");
+        })();
         this.db = (event.target as IDBOpenDBRequest).result;
         const db = this.db;
         const transaction = (event.target as IDBOpenDBRequest).transaction;
@@ -70,7 +78,9 @@ class IndexedDB {
         // Handle version 8 migration - remove cache_media_metadata store
         if (oldVersion < 8 && newVersion >= 8) {
           if (db.objectStoreNames.contains("cache_media_metadata")) {
-            logger.info("Removing cache_media_metadata store - replaced by series_mappings");
+            (async () => {
+              await logger.info("Removing cache_media_metadata store - replaced by series_mappings");
+            })();
             db.deleteObjectStore("cache_media_metadata");
           }
         }
@@ -79,18 +89,24 @@ class IndexedDB {
           for (const storeSchema of schema.stores) {
             let store: IDBObjectStore | null = null;
             if (!db.objectStoreNames.contains(storeSchema.name)) {
-              logger.debug(`creating object store: ${storeSchema.name}`);
+              (async () => {
+                await logger.debug(`creating object store: ${storeSchema.name}`);
+              })();
               store = db.createObjectStore(storeSchema.name, storeSchema.options);
             } else {
               // get the existing object store
-              logger.debug(`getting existing object store: ${storeSchema.name}`);
+              (async () => {
+                await logger.debug(`getting existing object store: ${storeSchema.name}`);
+              })();
               store = transaction?.objectStore(storeSchema.name) ?? null;
             }
 
             if (store && storeSchema.indexes) {
               for (const indexSchema of storeSchema.indexes) {
                 if (!store.indexNames.contains(indexSchema.name)) {
-                  logger.debug(`creating index: ${indexSchema.name}`);
+                  (async () => {
+                    await logger.debug(`creating index: ${indexSchema.name}`);
+                  })();
                   store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
                 }
               }
@@ -101,15 +117,19 @@ class IndexedDB {
 
       request.onsuccess = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result;
-        logger.info("database connected successfully!");
+        (async () => {
+          await logger.info("database connected successfully!");
+        })();
         setApplicationEnabled(true, () => {});
         resolve(this.db);
       };
 
       request.onerror = (event) => {
-        logger.error(`error opening database: ${event}`);
+        (async () => {
+          await logger.error(`error opening database: ${event}`);
+        })();
         setApplicationEnabled(true, () => {});
-        reject(event);
+        reject(new Error(`Database error: ${event}`));
       };
     });
   }
@@ -658,7 +678,9 @@ class IndexedDB {
       };
 
       request.onerror = () => {
-        logger.error("Error getting all series mappings from IndexedDB");
+        (async () => {
+          await logger.error("Error getting all series mappings from IndexedDB");
+        })();
         reject(request.error);
       };
     });

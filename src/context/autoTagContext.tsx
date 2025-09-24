@@ -4,7 +4,7 @@ import { AUTO_TAG_ADD_OR_UPDATE, AUTO_TAG_DELETE_BY_ID, TAG_DELETE_BY_ID } from 
 import { useApplicationContext } from "./applicationContext";
 import { IAutoTag } from "@/types/autotag";
 import IndexedDB from "@/db/index";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { useToastContext } from "./toastNotificationContext";
 
 type AutoTagContextType = {
@@ -37,13 +37,13 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
   const handleAddOrUpdateAutoTag = useCallback(
     async (eventData: any) => {
-      logger.debug(eventData.message);
+      await logger.debug(eventData.message);
       const autoTagToAdd = eventData.value as IAutoTag;
       if (!autoTagToAdd) {
-        logger.warn("no auto tag to add");
+        await logger.warn("no auto tag to add");
         return;
       }
-      logger.debug("auto tag added");
+      await logger.debug("auto tag added");
       await IndexedDB.addAutoTag(autoTagToAdd);
       handleGetAutoTags();
 
@@ -58,7 +58,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleDeleteAutoTagById = useCallback(async (eventData: any) => {
     const autoTagId = eventData.value as string;
     if (!autoTagId) {
-      logger.warn("no auto tag id to delete");
+      await logger.warn("no auto tag id to delete");
       return;
     }
     await IndexedDB.deleteAutoTagById(autoTagId);
@@ -69,7 +69,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        logger.warn("No tag id found from event handler");
+        await logger.warn("No tag id found from event handler");
         return;
       }
 
@@ -78,7 +78,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
       // if there is a tagId we neeed to remove it from the auto tag and update the record
       if (autoTags.length === 0) {
-        logger.info("Autotag cascade remove, tag is not found in any auto tag, skipping...");
+        await logger.info("Autotag cascade remove, tag is not found in any auto tag, skipping...");
         return;
       }
 

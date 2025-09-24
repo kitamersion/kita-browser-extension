@@ -29,7 +29,7 @@ import { SearchIcon, DeleteIcon, ExternalLinkIcon, DownloadIcon, RepeatIcon } fr
 import { seriesMappingStorage } from "@/api/seriesMapping";
 import { SeriesMappingUtils } from "@/utils/seriesMappingUtils";
 import { ISeriesMapping, SourcePlatform } from "@/types/integrations/seriesMapping";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import EditSeriesMapping from "@/components/EditSeriesMapping";
 
 const SeriesMappingsTab = () => {
@@ -48,7 +48,7 @@ const SeriesMappingsTab = () => {
       const [allMappings, mappingStats] = await Promise.all([seriesMappingStorage.getAllMappings(), SeriesMappingUtils.getMappingStats()]);
       setMappings(allMappings);
       setStats(mappingStats);
-      logger.info(`Loaded ${allMappings.length} series mappings`);
+      await logger.info(`Loaded ${allMappings.length} series mappings`);
     } catch (error) {
       toast({
         title: "Error loading mappings",
@@ -57,7 +57,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      logger.error("Failed to load mappings");
+      await logger.error("Failed to load mappings");
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      logger.error("Failed to delete mapping");
+      await logger.error("Failed to delete mapping");
     }
   };
 
@@ -143,7 +143,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      logger.error("Failed to export mappings");
+      await logger.error("Failed to export mappings");
     }
   };
 
@@ -161,13 +161,13 @@ const SeriesMappingsTab = () => {
       });
     } catch (error) {
       toast({
-        title: "Cleanup failed",
+        title: "Clean failed",
         description: "Failed to clean expired mappings",
         status: "error",
         duration: 5000,
         isClosable: true,
       });
-      logger.error("Failed to clean expired mappings");
+      await logger.error("Failed to clean expired mappings");
     }
   };
 

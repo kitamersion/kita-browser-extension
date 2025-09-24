@@ -6,7 +6,7 @@ import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
 import { useApplicationContext } from "./applicationContext";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 type TagContextType = { tags: ITag[]; totalTagCount: number; isInitialized: boolean };
 
@@ -43,7 +43,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        logger.warn("No tag id found from event handler");
+        await logger.warn("No tag id found from event handler");
         return;
       }
 
@@ -60,7 +60,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const name = eventData.value.name as string;
       if (!name) {
-        logger.warn("Empty or null tag name");
+        await logger.warn("Empty or null tag name");
         return;
       }
 

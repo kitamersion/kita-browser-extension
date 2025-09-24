@@ -21,7 +21,7 @@ import {
 import IndexedDB from "@/db/index";
 import { useApplicationContext } from "./applicationContext";
 import { filterVideos, generateUniqueCode, getDateFromNow } from "@/utils";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 const DAY_IN_DAYS = 1;
 const WEEK_IN_DAYS = 7;
@@ -82,7 +82,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
       setTotalDuration(totalDuration);
       setTotalVideoCount(totalCount);
     } catch (error) {
-      logger.error(`Error getting video summary: ${error}`);
+      await logger.error(`Error getting video summary: ${error}`);
     }
   }, []);
 
@@ -126,7 +126,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        logger.warn("No video id found from event handler");
+        await logger.warn("No video id found from event handler");
         return;
       }
 
@@ -183,7 +183,7 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        logger.warn("No tag id found from event handler");
+        await logger.warn("No tag id found from event handler");
         return;
       }
       // check totalVideos for videos with tag id and remove the tag from the video tags property the record then call setVideos to update storage
@@ -222,14 +222,14 @@ export const VideoProvider = ({ children }: PropsWithChildren<unknown>) => {
         const uniqueCode = generateUniqueCode(videoToAdd.video_title, origin);
         const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
         if (hasExistingVideoItem) {
-          logger.info("video already exists, skipping...");
+          await logger.info("video already exists, skipping...");
           return;
         }
         await IndexedDB.addVideo({ ...videoToAdd, unique_code: uniqueCode });
         incrementTotalVideos();
         incrementTotalVideoDuration(videoToAdd.video_duration ?? 0);
       } catch (error) {
-        logger.error(`error while adding video: ${error}`);
+        await logger.error(`error while adding video: ${error}`);
       }
 
       handleGetVideos();

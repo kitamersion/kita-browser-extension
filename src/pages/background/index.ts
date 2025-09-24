@@ -1,6 +1,6 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";

@@ -1,7 +1,7 @@
 import { SETTINGS } from "@/api/settings";
 import { Callback } from "@/types/callback";
 import { ITag } from "@/types/tag";
-import logger from "../../config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 const TAG_KEY = SETTINGS.storage.tag.key;
 const DEFAULT_TAGS_INITIALIZED_KEY = SETTINGS.application.defaultTagsInitialized.key;

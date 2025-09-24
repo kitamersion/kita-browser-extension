@@ -12,31 +12,34 @@ import { VideoTagRelationshipProvider } from "@/context/videoTagRelationshipCont
 import { AnilistProvider } from "@/context/anilistContext";
 import { GraphqlProvider } from "@/context/apolloContext";
 import { AutoTagProvider } from "@/context/autoTagContext";
+import { LoggerProvider } from "@/context/loggingContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
     <ChakraProvider theme={theme} colorModeManager={colorModeManager}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-      <ToastProvider>
-        <ApplicationProvider>
-          <AnilistProvider>
-            <GraphqlProvider>
-              <VideoTagRelationshipProvider>
-                <VideoProvider>
-                  <TagProvider>
-                    <AutoTagProvider>
-                      <GlobalLayoutWrapper>
-                        <Navigation />
-                        <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                      </GlobalLayoutWrapper>
-                    </AutoTagProvider>
-                  </TagProvider>
-                </VideoProvider>
-              </VideoTagRelationshipProvider>
-            </GraphqlProvider>
-          </AnilistProvider>
-        </ApplicationProvider>
-      </ToastProvider>
+      <LoggerProvider>
+        <ToastProvider>
+          <ApplicationProvider>
+            <AnilistProvider>
+              <GraphqlProvider>
+                <VideoTagRelationshipProvider>
+                  <VideoProvider>
+                    <TagProvider>
+                      <AutoTagProvider>
+                        <GlobalLayoutWrapper>
+                          <Navigation />
+                          <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                        </GlobalLayoutWrapper>
+                      </AutoTagProvider>
+                    </TagProvider>
+                  </VideoProvider>
+                </VideoTagRelationshipProvider>
+              </GraphqlProvider>
+            </AnilistProvider>
+          </ApplicationProvider>
+        </ToastProvider>
+      </LoggerProvider>
     </ChakraProvider>
   );
 };

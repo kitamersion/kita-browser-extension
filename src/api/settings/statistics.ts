@@ -1,7 +1,7 @@
 import IndexedDB from "@/db/index";
 import { VideoStatistics, TagStatistics, Statistics } from "@/types/kitaschema";
 import { calculateTotalDuration } from "@/api/statistics";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 class StatisticsService {
   /**

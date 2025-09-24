@@ -1,6 +1,6 @@
 import { seriesMappingStorage } from "@/api/seriesMapping";
 import { ISeriesMapping, SourcePlatform } from "@/types/integrations/seriesMapping";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 /**
  * Series Mapping Utilities
@@ -153,7 +153,7 @@ export class SeriesMappingUtils {
       logger.info(`Imported ${mappings.length} series mappings`);
       return mappings.length;
     } catch (error) {
-      logger.error("Failed to import mappings");
+      await logger.error("Failed to import mappings");
       throw error;
     }
   }

@@ -1,10 +1,10 @@
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { KitaSchema } from "@/types/kitaschema";
 import { getKitaSchema } from "@/api/schemaGenerator";
 
 const exportToJSON = async (fileName: string): Promise<KitaSchema | null> => {
   try {
-    logger.info("exporting...");
+    await logger.info("exporting...");
     const data = await getKitaSchema();
 
     // Create and download the file
@@ -23,7 +23,7 @@ const exportToJSON = async (fileName: string): Promise<KitaSchema | null> => {
 
     return data;
   } catch (error) {
-    logger.error(`Export failed: ${error}`);
+    await logger.error(`Export failed: ${error}`);
     throw error;
   }
 };

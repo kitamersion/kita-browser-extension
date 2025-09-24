@@ -1,5 +1,5 @@
 import { SettingDefinition } from "./types";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 class SettingsManager {
   /**
@@ -19,7 +19,9 @@ class SettingsManager {
 
           // Validate if validator is provided
           if (setting.validator && !setting.validator(value)) {
-            logger.warn(`Invalid value for setting ${setting.key}, using default`);
+            (async () => {
+              await logger.warn(`Invalid value for setting ${setting.key}, using default`);
+            })();
             resolve(setting.defaultValue);
             return;
           }
@@ -27,7 +29,9 @@ class SettingsManager {
           resolve(value);
         });
       } catch (error) {
-        logger.error(`Error getting setting ${setting.key}: ${error}`);
+        (async () => {
+          await logger.error(`Error getting setting ${setting.key}: ${error}`);
+        })();
         reject(error);
       }
     });
@@ -42,7 +46,9 @@ class SettingsManager {
         // Validate value if validator is provided
         if (setting.validator && !setting.validator(value)) {
           const error = new Error(`Invalid value for setting ${setting.key}`);
-          logger.error(error.message);
+          (async () => {
+            await logger.error(error.message);
+          })();
           reject(error);
           return;
         }
@@ -54,12 +60,16 @@ class SettingsManager {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
           } else {
-            logger.info(`Setting ${setting.key} updated`);
+            (async () => {
+              await logger.info(`Setting ${setting.key} updated`);
+            })();
             resolve();
           }
         });
       } catch (error) {
-        logger.error(`Error setting ${setting.key}: ${error}`);
+        (async () => {
+          await logger.error(`Error setting ${setting.key}: ${error}`);
+        })();
         reject(error);
       }
     });
