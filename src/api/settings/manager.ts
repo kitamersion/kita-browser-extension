@@ -19,9 +19,8 @@ class SettingsManager {
 
           // Validate if validator is provided
           if (setting.validator && !setting.validator(value)) {
-            (async () => {
-              await logger.warn(`Invalid value for setting ${setting.key}, using default`);
-            })();
+            logger.warn(`Invalid value for setting ${setting.key}, using default`);
+
             resolve(setting.defaultValue);
             return;
           }
@@ -29,9 +28,8 @@ class SettingsManager {
           resolve(value);
         });
       } catch (error) {
-        (async () => {
-          await logger.error(`Error getting setting ${setting.key}: ${error}`);
-        })();
+        logger.error(`Error getting setting ${setting.key}: ${error}`);
+
         reject(error);
       }
     });
@@ -46,9 +44,9 @@ class SettingsManager {
         // Validate value if validator is provided
         if (setting.validator && !setting.validator(value)) {
           const error = new Error(`Invalid value for setting ${setting.key}`);
-          (async () => {
-            await logger.error(error.message);
-          })();
+
+          logger.error(error.message);
+
           reject(error);
           return;
         }
@@ -60,16 +58,14 @@ class SettingsManager {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
           } else {
-            (async () => {
-              await logger.info(`Setting ${setting.key} updated`);
-            })();
+            logger.info(`Setting ${setting.key} updated`);
+
             resolve();
           }
         });
       } catch (error) {
-        (async () => {
-          await logger.error(`Error setting ${setting.key}: ${error}`);
-        })();
+        logger.error(`Error setting ${setting.key}: ${error}`);
+
         reject(error);
       }
     });

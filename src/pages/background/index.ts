@@ -16,7 +16,7 @@ export type RuntimeResponse = {
 type RuntimeStatus = "error" | "success" | "unknown";
 
 // EVENT HANDLERS
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   let parsedPayload;
   try {
     parsedPayload = JSON.parse(request.payload);
@@ -28,68 +28,65 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === VIDEO_ADD) {
-    (async () => {
-      logger.info("received VIDEO_ADD event");
-      const { id, video_title, origin, video_duration } = parsedPayload as IVideo;
-      const uniqueCode = generateUniqueCode(video_title, origin);
+    logger.info("received VIDEO_ADD event");
+    const { id, video_title, origin, video_duration } = parsedPayload as IVideo;
+    const uniqueCode = generateUniqueCode(video_title, origin);
 
-      try {
-        const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
-        if (hasExistingVideoItem) {
-          logger.info("video already exists, skipping...");
+    try {
+      const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
+      if (hasExistingVideoItem) {
+        logger.info("video already exists, skipping...");
+        return;
+      }
+
+      // apply auto tags
+      const autoTag = await IndexedDB.getAutoTagByOrigin(origin);
+      if (autoTag) {
+        parsedPayload.tags = autoTag.tags;
+      }
+
+      await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
+      incrementTotalVideos();
+      incrementTotalVideoDuration(video_duration ?? 0);
+
+      if (autoTag) {
+        const videoTagRelationship: IVideoTag[] = autoTag.tags.map((tag_id) => {
+          return {
+            id: self.crypto.randomUUID(),
+            video_id: id,
+            tag_id: tag_id,
+          };
+        });
+
+        if (videoTagRelationship.length === 0) {
+          logger.warn("no video tag relationship to add");
           return;
         }
-
-        // apply auto tags
-        const autoTag = await IndexedDB.getAutoTagByOrigin(origin);
-        if (autoTag) {
-          parsedPayload.tags = autoTag.tags;
-        }
-
-        await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
-        incrementTotalVideos();
-        incrementTotalVideoDuration(video_duration ?? 0);
-
-        if (autoTag) {
-          const videoTagRelationship: IVideoTag[] = autoTag.tags.map((tag_id) => {
-            return {
-              id: self.crypto.randomUUID(),
-              video_id: id,
-              tag_id: tag_id,
-            };
-          });
-
-          if (videoTagRelationship.length === 0) {
-            logger.warn("no video tag relationship to add");
-            return;
-          }
-          videoTagRelationship.forEach(async (videoTagRelationship) => {
-            await IndexedDB.addVideoTag(videoTagRelationship);
-          });
-        }
-      } catch (error) {
-        logger.error(`error while adding video: ${error}`);
+        videoTagRelationship.forEach(async (videoTagRelationship) => {
+          await IndexedDB.addVideoTag(videoTagRelationship);
+        });
       }
-    })();
+    } catch (error) {
+      logger.error(`error while adding video: ${error}`);
+    }
+
     return;
   }
 
   // handle anilist auth connect
   if (request.type === INTEGRATION_ANILIST_AUTH_CONNECT) {
-    (async () => {
-      const success = await authorizeAnilist(parsedPayload as AnilistConfig);
-      if (success) {
-        setAnilistAuthStatus("authorized", async () => {
-          const tag = await IndexedDB.getTagByCode("ANILIST");
+    const success = await authorizeAnilist(parsedPayload as AnilistConfig);
+    if (success) {
+      setAnilistAuthStatus("authorized", async () => {
+        const tag = await IndexedDB.getTagByCode("ANILIST");
 
-          if (!tag) {
-            await IndexedDB.addTag({ name: "AniList", owner: "INTEGRATION_ANILIST" });
-          }
-        });
-      } else {
-        setAnilistAuthStatus("error", () => {});
-      }
-    })();
+        if (!tag) {
+          await IndexedDB.addTag({ name: "AniList", owner: "INTEGRATION_ANILIST" });
+        }
+      });
+    } else {
+      setAnilistAuthStatus("error", () => {});
+    }
   }
 });
 

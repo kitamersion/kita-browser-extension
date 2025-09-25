@@ -71,23 +71,23 @@ class VideoTracker {
   }
 
   async _handleVideoCapture() {
-    await logger.info(`_handleVideoCapture called on: ${window.location.href}`);
+    logger.info(`_handleVideoCapture called on: ${window.location.href}`);
 
     // Debounce: prevent rapid successive captures
     const now = Date.now();
     if (now - this.lastCaptureTime < this.CAPTURE_DEBOUNCE_MS) {
-      await logger.info(`video capture debounced (${now - this.lastCaptureTime}ms since last capture)`);
+      logger.info(`video capture debounced (${now - this.lastCaptureTime}ms since last capture)`);
       return;
     }
     this.lastCaptureTime = now;
 
     // Only capture if we're actually on a video page
     if (!this._isVideo()) {
-      await logger.info("not on a video page, skipping capture");
+      logger.info("not on a video page, skipping capture");
       return;
     }
 
-    await logger.info("proceeding with video capture...");
+    logger.info("proceeding with video capture...");
     const url = window.location.href;
     const videoTitle = this._getTitle();
 
@@ -113,7 +113,7 @@ class VideoTracker {
         videoDuration = parseInt(videoDurationText ?? "0");
         break;
       default:
-        await logger.error("UNKNOWN ORIGIN");
+        logger.error("UNKNOWN ORIGIN");
         break;
     }
 
@@ -137,19 +137,17 @@ class VideoTracker {
     }
 
     const payload = JSON.stringify(newRecord);
-    await logger.info(`attempting to send VIDEO_ADD message for: ${videoTitle} (${origin}) - ${url}`);
+    logger.info(`attempting to send VIDEO_ADD message for: ${videoTitle} (${origin}) - ${url}`);
 
     chrome.runtime.sendMessage({ type: VIDEO_ADD, payload: payload }, (response) => {
-      (async () => {
-        if (chrome.runtime.lastError) {
-          await logger.error(`failed to send VIDEO_ADD message: ${chrome.runtime.lastError.message}`);
-        } else {
-          await logger.info(`VIDEO_ADD message sent successfully: ${JSON.stringify(response)}`);
-        }
-      })();
+      if (chrome.runtime.lastError) {
+        logger.error(`failed to send VIDEO_ADD message: ${chrome.runtime.lastError.message}`);
+      } else {
+        logger.info(`VIDEO_ADD message sent successfully: ${JSON.stringify(response)}`);
+      }
     });
 
-    await logger.info("video added from content");
+    logger.info("video added from content");
   }
 
   _crunchyrollSeriesMetadata() {
@@ -296,8 +294,8 @@ getContentScriptEnabled((isContentEnabled) => {
 });
 
 // listen for messages to disable/enable content script
-chrome.runtime.onMessage.addListener(async (request) => {
-  await logger.info(`content script received message: ${JSON.stringify(request)}`);
+chrome.runtime.onMessage.addListener((request) => {
+  logger.info(`content script received message: ${JSON.stringify(request)}`);
   if (!request.IsContentScriptEnabled) {
     videoTracker?.destroy();
   } else {

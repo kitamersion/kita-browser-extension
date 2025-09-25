@@ -11,7 +11,7 @@ const ANILIST_AUTO_SYNC_MEDIA_KEY = SETTINGS.integrations.anilist.autoSync.key;
 
 // get anilist config
 const getAnilistConfig = async (callback: Callback<AnilistConfig | null>) => {
-  await logger.info("fetching anilist config");
+  logger.info("fetching anilist config");
 
   chrome.storage.local.get(ANILIST_CONFIG_KEY, (data) => {
     const anilist = data?.[ANILIST_CONFIG_KEY] || null;
@@ -21,36 +21,32 @@ const getAnilistConfig = async (callback: Callback<AnilistConfig | null>) => {
 
 // set anilist config
 const setAnilistConfig = async (anilist: AnilistConfig, callback: Callback<AnilistConfig>) => {
-  await logger.info("setting anilist config");
+  logger.info("setting anilist config");
 
   chrome.storage.local.set({ [ANILIST_CONFIG_KEY]: anilist }, () => {
-    (async () => {
-      await logger.info("setting anilist config");
-      callback(anilist);
-    })();
+    logger.info("setting anilist config");
+    callback(anilist);
   });
 };
 
 // delete anilist config
 const deleteAnilistConfig = async (callback: Callback<void>) => {
-  await logger.info("deleting anilist config");
+  logger.info("deleting anilist config");
 
   chrome.storage.local.remove(ANILIST_CONFIG_KEY, () => {
-    (async () => {
-      await logger.info("deleting anilist config");
-      callback();
-    })();
+    logger.info("deleting anilist config");
+    callback();
   });
 };
 
 // get anilist auth
 const getAnilistAuth = async (callback: Callback<AnilistAuth | null>) => {
-  await logger.info("fetching anilist auth");
+  logger.info("fetching anilist auth");
 
   // Check for token in environment first (for development)
   const envToken = process.env.ANILIST_ACCESS_TOKEN;
   if (envToken) {
-    await logger.info("using anilist token from environment");
+    logger.info("using anilist token from environment");
     callback({
       access_token: envToken,
       token_type: "Bearer",
@@ -61,123 +57,107 @@ const getAnilistAuth = async (callback: Callback<AnilistAuth | null>) => {
   }
 
   chrome.storage.local.get(ANILIST_AUTH_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching anilist auth");
-      const anilist = data?.[ANILIST_AUTH_KEY] || null;
-      callback(anilist);
-    })();
+    logger.info("fetching anilist auth");
+    const anilist = data?.[ANILIST_AUTH_KEY] || null;
+    callback(anilist);
   });
 };
 
 // set anilist auth
 const setAnilistAuth = async (anilist: AnilistAuth, callback: Callback<AnilistAuth>) => {
-  await logger.info("setting anilist auth");
+  logger.info("setting anilist auth");
 
   chrome.storage.local.set({ [ANILIST_AUTH_KEY]: anilist }, () => {
-    (async () => {
-      await logger.info("setting anilist auth");
-      callback(anilist);
-    })();
+    logger.info("setting anilist auth");
+    callback(anilist);
   });
 };
 
 // delete anilist auth
 const deleteAnilistAuth = async (callback: Callback<void>) => {
-  await logger.info("deleting anilist auth");
+  logger.info("deleting anilist auth");
 
   chrome.storage.local.remove(ANILIST_AUTH_KEY, () => {
-    (async () => {
-      await logger.info("deleting anilist auth");
-      callback();
-    })();
+    logger.info("deleting anilist auth");
+    callback();
   });
 };
 
 // get anilist auth status
 const getAnilistAuthStatus = async (callback: Callback<AuthStatus | null>) => {
-  await logger.info("fetching anilist auth state");
+  logger.info("fetching anilist auth state");
 
   // If we have an env token, consider it authorized
   const envToken = process.env.ANILIST_ACCESS_TOKEN;
   if (envToken) {
-    await logger.info("using authorized status from environment token");
+    logger.info("using authorized status from environment token");
     callback("authorized");
     return;
   }
 
   chrome.storage.local.get(ANILIST_AUTH_STATE_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching anilist auth state");
-      const state = data?.[ANILIST_AUTH_STATE_KEY] || null;
-      callback(state);
-    })();
+    logger.info("fetching anilist auth state");
+    const state = data?.[ANILIST_AUTH_STATE_KEY] || null;
+    callback(state);
   });
 };
 
 // set anilist auth status
 const setAnilistAuthStatus = async (status: AuthStatus, callback: Callback<AuthStatus>) => {
-  await logger.info("setting anilist auth status");
+  logger.info("setting anilist auth status");
 
   chrome.storage.local.set({ [ANILIST_AUTH_STATE_KEY]: status }, () => {
-    (async () => {
-      await logger.info("setting anilist auth state");
-      callback(status);
-    })();
+    logger.info("setting anilist auth state");
+    callback(status);
   });
 };
 
 // delete anilist auth status
 const deleteAnilistAuthStatus = async (callback: Callback<void>) => {
-  await logger.info("deleting anilist auth status");
+  logger.info("deleting anilist auth status");
 
   chrome.storage.local.remove(ANILIST_AUTH_STATE_KEY, () => {
-    (async () => {
-      await logger.info("deleting anilist auth status");
-      callback();
-    })();
+    logger.info("deleting anilist auth status");
+    callback();
   });
 };
 
 // get ANILIST_AUTO_SYNC_MEDIA_KEY
 const getAnilistAutoSyncMedia = async (callback: Callback<boolean>) => {
-  await logger.info("fetching anilist auto sync media");
+  logger.info("fetching anilist auto sync media");
 
   chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching anilist auto sync media");
-      const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
-      callback(state);
-    })();
+    logger.info("fetching anilist auto sync media");
+    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
+    callback(state);
   });
 };
 
 // set ANILIST_AUTO_SYNC_MEDIA_KEY
 const setAnilistAutoSyncMedia = async (value: boolean, callback: Callback<boolean>) => {
-  await logger.info(`setting anilist auto sync media to: ${value}`);
+  logger.info(`setting anilist auto sync media to: ${value}`);
 
   chrome.storage.local.set({ [ANILIST_AUTO_SYNC_MEDIA_KEY]: value }, () => {
-    (async () => {
-      await logger.info(`setting anilist auto sync media to: ${value}`);
-      callback(value);
-    })();
+    logger.info(`setting anilist auto sync media to: ${value}`);
+    callback(value);
   });
 };
 
 const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
-  getAnilistAuth(async (data) => {
+  getAnilistAuth((data) => {
     if (!data) {
-      await logger.info("no anilist auth data");
+      logger.info("no anilist auth data");
       callback("initial");
       return;
     }
     if (!data?.access_token) {
-      await logger.info("no access token");
+      logger.info("no access token");
       callback("initial");
       return;
     }
 
     if (!data?.issued_at) {
-      await logger.info("no issued_at");
+      logger.info("no issued_at");
       callback("unauthorized");
       return;
     }
@@ -185,11 +165,11 @@ const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
     const nowInSeconds = Date.now() / 1000;
     const issuedInSeconds = data?.issued_at / 1000;
     if (nowInSeconds > issuedInSeconds + data?.expires_in) {
-      await logger.info("access token expired");
+      logger.info("access token expired");
       callback("unauthorized");
       return;
     }
-    await logger.info("authorized with anilist");
+    logger.info("authorized with anilist");
     callback("authorized");
   });
 };

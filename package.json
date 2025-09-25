@@ -101,7 +101,7 @@
     "@chakra-ui/react": "^2.4.1",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@kitamersion/kita-logging": "^1.0.1",
+    "@kitamersion/kita-logging": "1.0.4",
     "@types/jsonfile": "^6.1.4",
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",

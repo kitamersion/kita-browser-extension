@@ -48,7 +48,7 @@ const SeriesMappingsTab = () => {
       const [allMappings, mappingStats] = await Promise.all([seriesMappingStorage.getAllMappings(), SeriesMappingUtils.getMappingStats()]);
       setMappings(allMappings);
       setStats(mappingStats);
-      await logger.info(`Loaded ${allMappings.length} series mappings`);
+      logger.info(`Loaded ${allMappings.length} series mappings`);
     } catch (error) {
       toast({
         title: "Error loading mappings",
@@ -57,7 +57,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      await logger.error("Failed to load mappings");
+      logger.error("Failed to load mappings");
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      await logger.error("Failed to delete mapping");
+      logger.error("Failed to delete mapping");
     }
   };
 
@@ -143,7 +143,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      await logger.error("Failed to export mappings");
+      logger.error("Failed to export mappings");
     }
   };
 
@@ -167,7 +167,7 @@ const SeriesMappingsTab = () => {
         duration: 5000,
         isClosable: true,
       });
-      await logger.error("Failed to clean expired mappings");
+      logger.error("Failed to clean expired mappings");
     }
   };
 

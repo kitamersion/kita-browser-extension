@@ -7,21 +7,17 @@ const VIDEO_TOTAL_DURATION_KEY = SETTINGS.statistics.totalDuration.key;
 
 const getTotalVideoCount = async (callback: Callback<number>) => {
   chrome.storage.local.get(VIDEO_TOTAL_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching videos");
-      const items = data?.[VIDEO_TOTAL_KEY] || 0;
-      callback(items);
-    })();
+    logger.info("fetching videos");
+    const items = data?.[VIDEO_TOTAL_KEY] || 0;
+    callback(items);
   });
 };
 
 const incrementTotalVideos = () => {
   getTotalVideoCount((count) => {
     const newCount = count + 1;
-    (async () => {
-      await logger.info("incrementing video total");
-      chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
-    })();
+    logger.info("incrementing video total");
+    chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
   });
 };
 
@@ -29,26 +25,22 @@ const decrementTotalVideos = () => {
   getTotalVideoCount((count) => {
     if (count === 0) return;
     const newCount = count - 1;
-    (async () => {
-      await logger.info("decrementing video total");
-      chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
-    })();
+    logger.info("decrementing video total");
+    chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: newCount });
   });
 };
 
 const resetTotalVideos = async () => {
-  await logger.info("resetting video total");
+  logger.info("resetting video total");
   chrome.storage.local.set({ [VIDEO_TOTAL_KEY]: 0 });
 };
 
 // get total video duration
 const getTotalVideoDuration = async (callback: Callback<number>) => {
   chrome.storage.local.get(VIDEO_TOTAL_DURATION_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching video duration");
-      const items = data?.[VIDEO_TOTAL_DURATION_KEY] || 0;
-      callback(items);
-    })();
+    logger.info("fetching video duration");
+    const items = data?.[VIDEO_TOTAL_DURATION_KEY] || 0;
+    callback(items);
   });
 };
 
@@ -56,10 +48,8 @@ const getTotalVideoDuration = async (callback: Callback<number>) => {
 const incrementTotalVideoDuration = (duration: number) => {
   getTotalVideoDuration((totalDuration) => {
     const newDuration = totalDuration + duration;
-    (async () => {
-      await logger.info("incrementing video duration");
-      chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
-    })();
+    logger.info("incrementing video duration");
+    chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
   });
 };
 
@@ -68,16 +58,14 @@ const decrementTotalVideoDuration = (duration: number) => {
   getTotalVideoDuration((totalDuration) => {
     if (totalDuration === 0) return;
     const newDuration = totalDuration - duration;
-    (async () => {
-      await logger.info("decrementing video duration");
-      chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
-    })();
+    logger.info("decrementing video duration");
+    chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: newDuration });
   });
 };
 
 // reset total video duration
 const resetTotalVideoDuration = async () => {
-  await logger.info("resetting video duration");
+  logger.info("resetting video duration");
   chrome.storage.local.set({ [VIDEO_TOTAL_DURATION_KEY]: 0 });
 };
 

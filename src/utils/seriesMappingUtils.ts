@@ -153,7 +153,7 @@ export class SeriesMappingUtils {
       logger.info(`Imported ${mappings.length} series mappings`);
       return mappings.length;
     } catch (error) {
-      await logger.error("Failed to import mappings");
+      logger.error("Failed to import mappings");
       throw error;
     }
   }

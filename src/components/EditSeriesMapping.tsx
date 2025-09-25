@@ -106,7 +106,7 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
         }
 
         onClose();
-        await logger.info(`Successfully updated series mapping: ${updatedMapping.series_title}`);
+        logger.info(`Successfully updated series mapping: ${updatedMapping.series_title}`);
       } else {
         throw new Error("Failed to update mapping");
       }

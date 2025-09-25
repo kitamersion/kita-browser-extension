@@ -12,11 +12,9 @@ const getVideoById = (id: string, videos: IVideo[]) => {
 
 const getVideos = async (callback: Callback<IVideo[]>) => {
   chrome.storage.local.get(VIDEO_KEY, (data) => {
-    (async () => {
-      await logger.info("fetching videos");
-      const items = data?.[VIDEO_KEY] || [];
-      callback(items);
-    })();
+    logger.info("fetching videos");
+    const items = data?.[VIDEO_KEY] || [];
+    callback(items);
   });
 };
 
@@ -25,17 +23,16 @@ const setVideo = (video: IVideo, callback: Callback<IVideo>) => {
   getVideos((data) => {
     const localVideos = data;
     localVideos.push(video);
-    (async () => {
-      await logger.info("setting single video");
-      chrome.storage.local.set({ [VIDEO_KEY]: localVideos }, () => {
-        callback(video);
-      });
-    })();
+
+    logger.info("setting single video");
+    chrome.storage.local.set({ [VIDEO_KEY]: localVideos }, () => {
+      callback(video);
+    });
   });
 };
 
 const setVideos = async (videos: IVideo[], callback: Callback<null>) => {
-  await logger.info("setting videos");
+  logger.info("setting videos");
   chrome.storage.local.set({ [VIDEO_KEY]: videos }, () => {
     callback(null);
   });
@@ -48,7 +45,7 @@ const updateVideoById = async (id: string, videoNext: IVideo, videos: IVideo[], 
     }
     return v;
   });
-  await logger.info(`updating video id: ${id}`);
+  logger.info(`updating video id: ${id}`);
   chrome.storage.local.set({ [VIDEO_KEY]: updatedVideos }, () => {
     callback(updatedVideos);
   });
@@ -62,7 +59,7 @@ const deleteVideoById = async (id: string, videos: IVideo[], callback: Callback<
     return;
   }
   localVideos.splice(index, 1);
-  await logger.info(`delete video index: ${index}`);
+  logger.info(`delete video index: ${index}`);
   chrome.storage.local.set({ [VIDEO_KEY]: localVideos }, () => {
     callback(localVideos);
   });
@@ -70,7 +67,7 @@ const deleteVideoById = async (id: string, videos: IVideo[], callback: Callback<
 
 // DELETE
 const deleteAllVideos = async (callback: Callback<null>) => {
-  await logger.info("deleting all videos");
+  logger.info("deleting all videos");
   chrome.storage.local.remove(VIDEO_KEY, () => {
     callback(null);
   });

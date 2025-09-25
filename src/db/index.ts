@@ -35,21 +35,17 @@ class IndexedDB {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().then((granted) => {
-          (async () => {
-            if (granted) {
-              await logger.info("Storage will not be cleared except by explicit user action");
-              resolve(true);
-            } else {
-              await logger.info("Storage may be cleared by the UA under storage pressure.");
-              resolve(false);
-            }
-          })();
+          if (granted) {
+            logger.info("Storage will not be cleared except by explicit user action");
+            resolve(true);
+          } else {
+            logger.info("Storage may be cleared by the UA under storage pressure.");
+            resolve(false);
+          }
         });
       } else {
-        (async () => {
-          await logger.info("Persistent storage API not supported");
-          resolve(false);
-        })();
+        logger.info("Persistent storage API not supported");
+        resolve(false);
       }
     });
   }
@@ -59,16 +55,15 @@ class IndexedDB {
   // ================================================================================
   public openDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      (async () => {
-        await logger.info("connecting database...");
-      })();
+      logger.info("connecting database...");
+
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event) => {
         setApplicationEnabled(false, () => {});
-        (async () => {
-          await logger.warn("database upgrade needed...");
-        })();
+
+        logger.warn("database upgrade needed...");
+
         this.db = (event.target as IDBOpenDBRequest).result;
         const db = this.db;
         const transaction = (event.target as IDBOpenDBRequest).transaction;
@@ -78,9 +73,8 @@ class IndexedDB {
         // Handle version 8 migration - remove cache_media_metadata store
         if (oldVersion < 8 && newVersion >= 8) {
           if (db.objectStoreNames.contains("cache_media_metadata")) {
-            (async () => {
-              await logger.info("Removing cache_media_metadata store - replaced by series_mappings");
-            })();
+            logger.info("Removing cache_media_metadata store - replaced by series_mappings");
+
             db.deleteObjectStore("cache_media_metadata");
           }
         }
@@ -89,24 +83,22 @@ class IndexedDB {
           for (const storeSchema of schema.stores) {
             let store: IDBObjectStore | null = null;
             if (!db.objectStoreNames.contains(storeSchema.name)) {
-              (async () => {
-                await logger.debug(`creating object store: ${storeSchema.name}`);
-              })();
+              logger.debug(`creating object store: ${storeSchema.name}`);
+
               store = db.createObjectStore(storeSchema.name, storeSchema.options);
             } else {
               // get the existing object store
-              (async () => {
-                await logger.debug(`getting existing object store: ${storeSchema.name}`);
-              })();
+
+              logger.debug(`getting existing object store: ${storeSchema.name}`);
+
               store = transaction?.objectStore(storeSchema.name) ?? null;
             }
 
             if (store && storeSchema.indexes) {
               for (const indexSchema of storeSchema.indexes) {
                 if (!store.indexNames.contains(indexSchema.name)) {
-                  (async () => {
-                    await logger.debug(`creating index: ${indexSchema.name}`);
-                  })();
+                  logger.debug(`creating index: ${indexSchema.name}`);
+
                   store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
                 }
               }
@@ -117,17 +109,16 @@ class IndexedDB {
 
       request.onsuccess = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result;
-        (async () => {
-          await logger.info("database connected successfully!");
-        })();
+
+        logger.info("database connected successfully!");
+
         setApplicationEnabled(true, () => {});
         resolve(this.db);
       };
 
       request.onerror = (event) => {
-        (async () => {
-          await logger.error(`error opening database: ${event}`);
-        })();
+        logger.error(`error opening database: ${event}`);
+
         setApplicationEnabled(true, () => {});
         reject(new Error(`Database error: ${event}`));
       };
@@ -678,9 +669,8 @@ class IndexedDB {
       };
 
       request.onerror = () => {
-        (async () => {
-          await logger.error("Error getting all series mappings from IndexedDB");
-        })();
+        logger.error("Error getting all series mappings from IndexedDB");
+
         reject(request.error);
       };
     });

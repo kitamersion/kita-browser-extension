@@ -43,7 +43,7 @@ class SeriesMappingStorage {
     try {
       return await db.getAllSeriesMappings();
     } catch (error) {
-      await logger.error("Error getting series mappings");
+      logger.error("Error getting series mappings");
       return [];
     }
   }
@@ -61,9 +61,7 @@ class SeriesMappingStorage {
     additionalData?: IMappingAdditionalData
   ): Promise<ISeriesMapping | undefined> {
     const normalizedTitle = this.normalizeTitle(seriesTitle);
-    await logger.info(
-      `findMapping: "${seriesTitle}" normalized to "${normalizedTitle}" (platform: ${sourcePlatform}, year: ${seasonYear})`
-    );
+    logger.info(`findMapping: "${seriesTitle}" normalized to "${normalizedTitle}" (platform: ${sourcePlatform}, year: ${seasonYear})`);
 
     try {
       // Try to find existing mapping
@@ -78,7 +76,7 @@ class SeriesMappingStorage {
       // If no mapping exists but we have an AniList series ID and forceCreate is true,
       // automatically create a mapping for future editing
       if (forceCreate && anilistSeriesId) {
-        await logger.info(`Auto-creating series mapping for future editing: ${seriesTitle} -> ${anilistSeriesId}`);
+        logger.info(`Auto-creating series mapping for future editing: ${seriesTitle} -> ${anilistSeriesId}`);
 
         const newMapping = await this.createMapping({
           series_title: seriesTitle,
@@ -99,7 +97,7 @@ class SeriesMappingStorage {
 
       return undefined;
     } catch (error) {
-      await logger.error("Error finding series mapping");
+      logger.error("Error finding series mapping");
       return undefined;
     } finally {
       // Cleanup expired mappings after the operation
@@ -131,10 +129,10 @@ class SeriesMappingStorage {
     try {
       await db.addSeriesMapping(newMapping);
       eventbus.publish(SERIES_MAPPING_ADDED, { message: "Series mapping created", value: newMapping });
-      await logger.info(`Created series mapping: ${mapping.series_title} -> AniList ID: ${mapping.anilist_series_id}`);
+      logger.info(`Created series mapping: ${mapping.series_title} -> AniList ID: ${mapping.anilist_series_id}`);
       return newMapping;
     } catch (error) {
-      await logger.error("Error creating series mapping");
+      logger.error("Error creating series mapping");
       throw error;
     }
   }
@@ -146,7 +144,7 @@ class SeriesMappingStorage {
     try {
       const existingMapping = await db.getSeriesMappingById(id);
       if (!existingMapping) {
-        await logger.warn(`Series mapping not found for update: ${id}`);
+        logger.warn(`Series mapping not found for update: ${id}`);
         return undefined;
       }
 
@@ -159,11 +157,11 @@ class SeriesMappingStorage {
 
       await db.updateSeriesMapping(updatedMapping);
       eventbus.publish(SERIES_MAPPING_UPDATED, { message: "Series mapping updated", value: updatedMapping });
-      await logger.info(`Updated series mapping: ${updatedMapping.series_title}`);
+      logger.info(`Updated series mapping: ${updatedMapping.series_title}`);
 
       return updatedMapping;
     } catch (error) {
-      await logger.error("Error updating series mapping");
+      logger.error("Error updating series mapping");
       return undefined;
     }
   }
@@ -175,17 +173,17 @@ class SeriesMappingStorage {
     try {
       const existingMapping = await db.getSeriesMappingById(id);
       if (!existingMapping) {
-        await logger.warn(`Series mapping not found for removal: ${id}`);
+        logger.warn(`Series mapping not found for removal: ${id}`);
         return false;
       }
 
       await db.deleteSeriesMapping(id);
       eventbus.publish(SERIES_MAPPING_REMOVED, { message: "Series mapping removed", value: existingMapping });
-      await logger.info(`Removed series mapping: ${existingMapping.series_title}`);
+      logger.info(`Removed series mapping: ${existingMapping.series_title}`);
 
       return true;
     } catch (error) {
-      await logger.error("Error removing series mapping");
+      logger.error("Error removing series mapping");
       return false;
     }
   }
@@ -197,7 +195,7 @@ class SeriesMappingStorage {
     try {
       return await db.getSeriesMappingsByPlatform(sourcePlatform);
     } catch (error) {
-      await logger.error("Error getting mappings by platform");
+      logger.error("Error getting mappings by platform");
       return [];
     }
   }
@@ -240,11 +238,11 @@ class SeriesMappingStorage {
       }
 
       if (deletedCount > 0) {
-        await logger.info(`Cleaned up ${deletedCount} expired series mappings`);
+        logger.info(`Cleaned up ${deletedCount} expired series mappings`);
       }
       return deletedCount;
     } catch (error) {
-      await logger.error(`Error cleaning up expired mappings: ${error}`);
+      logger.error(`Error cleaning up expired mappings: ${error}`);
       return 0;
     }
   }

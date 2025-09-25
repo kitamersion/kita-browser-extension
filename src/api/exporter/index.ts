@@ -4,7 +4,7 @@ import { getKitaSchema } from "@/api/schemaGenerator";
 
 const exportToJSON = async (fileName: string): Promise<KitaSchema | null> => {
   try {
-    await logger.info("exporting...");
+    logger.info("exporting...");
     const data = await getKitaSchema();
 
     // Create and download the file
@@ -23,7 +23,7 @@ const exportToJSON = async (fileName: string): Promise<KitaSchema | null> => {
 
     return data;
   } catch (error) {
-    await logger.error(`Export failed: ${error}`);
+    logger.error(`Export failed: ${error}`);
     throw error;
   }
 };

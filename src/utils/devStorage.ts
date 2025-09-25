@@ -9,9 +9,7 @@ export const devStorage = {
       chrome.storage.local.get([key], (result) => {
         const value = result[key];
         if (ENV === "dev") {
-          (async () => {
-            await logger.info(`🔍 DEV STORAGE GET: ${key} = ${JSON.stringify(value)}`);
-          })();
+          logger.info(`🔍 DEV STORAGE GET: ${key} = ${JSON.stringify(value)}`);
         }
         resolve(value);
       });
@@ -20,27 +18,23 @@ export const devStorage = {
 
   set: (key: string, value: any): Promise<void> => {
     return new Promise((resolve) => {
-      (async () => {
-        if (ENV === "dev") {
-          await logger.info(`💾 DEV STORAGE SET: ${key} = ${JSON.stringify(value)}`);
-        }
-        chrome.storage.local.set({ [key]: value }, () => {
-          resolve();
-        });
-      })();
+      if (ENV === "dev") {
+        logger.info(`💾 DEV STORAGE SET: ${key} = ${JSON.stringify(value)}`);
+      }
+      chrome.storage.local.set({ [key]: value }, () => {
+        resolve();
+      });
     });
   },
 
   remove: (key: string): Promise<void> => {
     return new Promise((resolve) => {
-      (async () => {
-        if (ENV === "dev") {
-          await logger.info(`🗑️ DEV STORAGE REMOVE: ${key}`);
-        }
-        chrome.storage.local.remove([key], () => {
-          resolve();
-        });
-      })();
+      if (ENV === "dev") {
+        logger.info(`🗑️ DEV STORAGE REMOVE: ${key}`);
+      }
+      chrome.storage.local.remove([key], () => {
+        resolve();
+      });
     });
   },
 
@@ -48,10 +42,8 @@ export const devStorage = {
   dumpAll: (): Promise<void> => {
     return new Promise((resolve) => {
       chrome.storage.local.get(null, (items) => {
-        (async () => {
-          await logger.info(`🗂️ DEV STORAGE DUMP ALL: ${JSON.stringify(items, null, 2)}`);
-          resolve();
-        })();
+        logger.info(`🗂️ DEV STORAGE DUMP ALL: ${JSON.stringify(items, null, 2)}`);
+        resolve();
       });
     });
   },

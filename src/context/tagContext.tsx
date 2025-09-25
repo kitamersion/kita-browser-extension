@@ -43,7 +43,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        await logger.warn("No tag id found from event handler");
+        logger.warn("No tag id found from event handler");
         return;
       }
 
@@ -60,7 +60,7 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const name = eventData.value.name as string;
       if (!name) {
-        await logger.warn("Empty or null tag name");
+        logger.warn("Empty or null tag name");
         return;
       }
 

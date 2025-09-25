@@ -34,7 +34,7 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
     const videoTagRelationship = eventData.value as IVideoTag[];
 
     if (!videoTagRelationship || videoTagRelationship.length === 0) {
-      await logger.warn("No video tag relationship found from event handler");
+      logger.warn("No video tag relationship found from event handler");
       return;
     }
 

@@ -39,7 +39,7 @@ const processBatchWithProgress = async <T>(
       onProgress({ phase, current, total, percentage });
     }
 
-    await logger.info(`${phase}: ${current}/${total} (${percentage}%)`);
+    logger.info(`${phase}: ${current}/${total} (${percentage}%)`);
 
     // Progressive delay based on dataset size
     if (i + BATCH_SIZE < items.length) {
@@ -58,7 +58,7 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
 
     onProgress?.({ phase: "Parsing data", current: 25, total: 100, percentage: 25 });
 
-    await logger.info("Starting import process...");
+    logger.info("Starting import process...");
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Count total items for overall progress
@@ -206,7 +206,7 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
               }
             }
           } catch (err) {
-            await logger.error(`Failed to import series mapping ${mapping.series_title}: ${err}`);
+            logger.error(`Failed to import series mapping ${mapping.series_title}: ${err}`);
           }
         },
         "Importing series mappings",
@@ -258,9 +258,9 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
     onProgress?.({ phase: "Finalizing", current: totalItems, total: totalItems, percentage: 100 });
     await new Promise((resolve) => setTimeout(resolve, 200));
 
-    await logger.info("Import completed successfully");
+    logger.info("Import completed successfully");
   } catch (error) {
-    await logger.error(`Error while importing data: ${error}`);
+    logger.error(`Error while importing data: ${error}`);
     throw error;
   }
 };

@@ -37,13 +37,13 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
   const handleAddOrUpdateAutoTag = useCallback(
     async (eventData: any) => {
-      await logger.debug(eventData.message);
+      logger.debug(eventData.message);
       const autoTagToAdd = eventData.value as IAutoTag;
       if (!autoTagToAdd) {
-        await logger.warn("no auto tag to add");
+        logger.warn("no auto tag to add");
         return;
       }
-      await logger.debug("auto tag added");
+      logger.debug("auto tag added");
       await IndexedDB.addAutoTag(autoTagToAdd);
       handleGetAutoTags();
 
@@ -58,7 +58,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
   const handleDeleteAutoTagById = useCallback(async (eventData: any) => {
     const autoTagId = eventData.value as string;
     if (!autoTagId) {
-      await logger.warn("no auto tag id to delete");
+      logger.warn("no auto tag id to delete");
       return;
     }
     await IndexedDB.deleteAutoTagById(autoTagId);
@@ -69,7 +69,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
     async (eventData: any) => {
       const id = eventData.value.id as string;
       if (!id) {
-        await logger.warn("No tag id found from event handler");
+        logger.warn("No tag id found from event handler");
         return;
       }
 
@@ -78,7 +78,7 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
 
       // if there is a tagId we neeed to remove it from the auto tag and update the record
       if (autoTags.length === 0) {
-        await logger.info("Autotag cascade remove, tag is not found in any auto tag, skipping...");
+        logger.info("Autotag cascade remove, tag is not found in any auto tag, skipping...");
         return;
       }
 
