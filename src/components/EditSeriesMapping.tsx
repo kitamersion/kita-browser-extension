@@ -132,7 +132,7 @@ const EditSeriesMapping: React.FC<EditSeriesMappingProps> = ({ mapping, onMappin
     <>
       <IconButton size="sm" variant="ghost" icon={<EditIcon />} aria-label="Edit mapping" onClick={onOpen} />
       <Drawer onClose={onClose} isOpen={isOpen} size="full" placement="bottom">
-        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerOverlay />
         <DrawerContent p="6" bg="bg.primary" color="text.primary">
           <DrawerCloseButton />
           <DrawerHeader color="accent.primary" fontSize="xl" fontWeight="bold">

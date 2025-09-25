@@ -17,8 +17,19 @@ import {
   Badge,
   Spacer,
   IconButton,
+  Switch,
+  FormControl,
+  FormLabel,
+  SimpleGrid,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerCloseButton,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { DownloadIcon, RepeatIcon } from "@chakra-ui/icons";
+import { DownloadIcon, RepeatIcon, SettingsIcon } from "@chakra-ui/icons";
 import LoadingState from "@/components/states/LoadingState";
 import { LogEntry } from "@kitamersion/kita-logging/lib/types";
 import { config, logger, history } from "@kitamersion/kita-logging";
@@ -30,6 +41,7 @@ type RawLog = {
   prefix?: string;
   timestamp?: number;
   timestampISO?: string;
+  stack?: string;
 };
 
 const levelColor = (level: string) => {
@@ -53,20 +65,34 @@ const formatWhen = (log: RawLog) => {
 
 const LogsTab: React.FC = () => {
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<RawLog[]>([]);
   const [prefix, setPrefix] = useState("");
   const [retention, setRetention] = useState<number>(7);
   const [pageSize, setPageSize] = useState<number>(50);
+  const [flushInterval, setFlushInterval] = useState<number>(2000);
+  const [batchSize, setBatchSize] = useState<number>(50);
+  const [maxBufferSize, setMaxBufferSize] = useState<number>(5000);
+  const [persistToLocalStorage, setPersistToLocalStorage] = useState<boolean>(true);
+  const [captureStack, setCaptureStack] = useState<boolean>(true);
+  const [maxStackChars, setMaxStackChars] = useState<number>(2000);
 
   const loadConfig = React.useCallback(async () => {
     setLoading(true);
     try {
       const cfg = await config.viewCurrentConfigurations();
+      const bufferedOpts = await config.getBufferedOptions();
       setPrefix(cfg.logPrefix || "");
       setRetention(cfg.logRetentionDays || 7);
+      setFlushInterval(bufferedOpts.flushIntervalMs || 2000);
+      setBatchSize(bufferedOpts.batchSize || 50);
+      setMaxBufferSize(bufferedOpts.maxBufferSize || 5000);
+      setPersistToLocalStorage(bufferedOpts.persistToLocalStorage ?? true);
+      setCaptureStack(bufferedOpts.captureStack ?? true);
+      setMaxStackChars(bufferedOpts.maxStackChars || 2000);
     } catch (err) {
-      logger?.error?.(`Error loading logger config: ${err}`);
+      (logger as any)?.error?.(`Error loading logger config: ${err}`);
       toast({ title: "Failed to load logger config", status: "error", duration: 2500 });
     } finally {
       setLoading(false);
@@ -85,6 +111,7 @@ const LogsTab: React.FC = () => {
         prefix: l.prefix,
         timestamp: typeof l.timestamp === "number" ? l.timestamp : undefined,
         timestampISO: l.timestampISO || (typeof l.timestamp === "number" ? new Date(l.timestamp).toISOString() : undefined),
+        stack: l.stack,
       }));
       setLogs(normalized.slice(0, pageSize));
     } catch (err) {
@@ -104,6 +131,14 @@ const LogsTab: React.FC = () => {
     try {
       await config.setLogPrefix(prefix);
       await config.setLogRetentionDays(retention);
+      await config.setBufferedOptions({
+        flushIntervalMs: flushInterval,
+        batchSize,
+        maxBufferSize,
+        persistToLocalStorage,
+        captureStack,
+        maxStackChars,
+      });
       toast({ title: "Logger config saved", status: "success", duration: 2500 });
       // refresh runtime logger prefix if provided by API
       if (typeof (logger as any).refresh === "function") await (logger as any).refresh();
@@ -119,16 +154,6 @@ const LogsTab: React.FC = () => {
       await loadLogs();
     } catch (err) {
       toast({ title: "Flush failed", status: "error", duration: 2500 });
-    }
-  };
-
-  const refreshRuntime = async () => {
-    try {
-      await (logger as any).refresh?.();
-      toast({ title: "Logger refreshed", status: "success", duration: 1500 });
-      await loadConfig();
-    } catch (err) {
-      toast({ title: "Refresh failed", status: "error", duration: 2500 });
     }
   };
 
@@ -184,35 +209,12 @@ const LogsTab: React.FC = () => {
             <Spacer />
             <HStack>
               <IconButton aria-label="flush" title="Flush buffer" icon={<RepeatIcon />} onClick={flushBuffer} />
+              <IconButton aria-label="settings" title="Logger settings" icon={<SettingsIcon />} onClick={onOpen} />
               <Button leftIcon={<DownloadIcon />} onClick={exportLogs} colorScheme="blue">
                 Export
               </Button>
             </HStack>
           </Flex>
-
-          <Box>
-            <Heading as="h3" size="sm" mb={2}>
-              Configuration
-            </Heading>
-            <Flex gap={2} alignItems="center">
-              <Input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="Log prefix" />
-              <NumberInput max={365} min={1} value={retention} onChange={(valueString) => setRetention(Number(valueString))} width="120px">
-                <NumberInputField />
-              </NumberInput>
-              <Button colorScheme="green" onClick={saveConfig}>
-                Save
-              </Button>
-              <Button onClick={refreshRuntime} colorScheme="gray">
-                Refresh
-              </Button>
-              <Button onClick={deleteExpired} colorScheme="orange">
-                Purge expired
-              </Button>
-              <Button onClick={deleteAllLogs} colorScheme="red">
-                Delete all
-              </Button>
-            </Flex>
-          </Box>
 
           <Divider />
 
@@ -220,19 +222,21 @@ const LogsTab: React.FC = () => {
             <Heading as="h3" size="sm" mb={2}>
               Recent Logs
             </Heading>
-            <HStack>
-              <Text color="text.secondary">Page size:</Text>
-              <Select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} width="120px">
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </Select>
-              <Button onClick={loadLogs} colorScheme="green">
-                Refresh
-              </Button>
-            </HStack>
+            <Flex alignItems="center" justifyContent="space-between">
+              <HStack>
+                <Text color="text.secondary">Page size:</Text>
+                <Select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} width="120px">
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </Select>
+                <Button onClick={loadLogs} colorScheme="green">
+                  Refresh
+                </Button>
+              </HStack>
+            </Flex>
 
-            <VStack align="stretch" spacing={3} mt={4}>
+            <VStack alignItems="stretch" spacing={3} mt={2}>
               {logs.length === 0 && <Text color="text.secondary">No logs found.</Text>}
               {logs.map((l) => (
                 <Box key={l.id} p={3} bg="bg.secondary" borderRadius={8} boxShadow="sm">
@@ -248,10 +252,124 @@ const LogsTab: React.FC = () => {
                       {formatWhen(l)}
                     </Text>
                   </Flex>
+                  {l.stack && (
+                    <Text color="text.secondary" fontSize="sm" mt={2} whiteSpace="pre-wrap" bg="bg.primary" p={2} borderRadius={4}>
+                      {l.stack}
+                    </Text>
+                  )}
                 </Box>
               ))}
             </VStack>
           </Box>
+
+          <Drawer isOpen={isOpen} onClose={onClose} size="md">
+            <DrawerOverlay />
+            <DrawerContent bg="bg.primary" color="text.primary">
+              <DrawerHeader>Logger Settings</DrawerHeader>
+              <DrawerCloseButton />
+              <DrawerBody>
+                <VStack align="stretch" spacing={6}>
+                  <Box>
+                    <Heading as="h3" size="sm" mb={2}>
+                      Configuration
+                    </Heading>
+                    <VStack align="stretch" spacing={4}>
+                      <Flex gap={4} alignItems="end">
+                        <FormControl>
+                          <FormLabel>Log Prefix</FormLabel>
+                          <Input value={prefix} onChange={(e) => setPrefix(e.target.value)} placeholder="Log prefix" />
+                        </FormControl>
+                        <FormControl>
+                          <FormLabel>Log Retention Days</FormLabel>
+                          <NumberInput
+                            max={365}
+                            min={1}
+                            value={retention}
+                            onChange={(valueString) => setRetention(Number(valueString))}
+                            width="140px"
+                          >
+                            <NumberInputField />
+                          </NumberInput>
+                        </FormControl>
+                      </Flex>
+                      <Flex gap={2} wrap="wrap">
+                        <Button colorScheme="green" onClick={saveConfig}>
+                          Save
+                        </Button>
+                        <Button onClick={deleteExpired} colorScheme="orange">
+                          Purge expired
+                        </Button>
+                        <Button onClick={deleteAllLogs} colorScheme="red">
+                          Delete all
+                        </Button>
+                      </Flex>
+                    </VStack>
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Heading as="h4" size="sm" mb={2}>
+                      Buffered Logger Options
+                    </Heading>
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                      <FormControl>
+                        <FormLabel>Flush Interval (ms)</FormLabel>
+                        <NumberInput
+                          value={flushInterval}
+                          onChange={(valueString) => setFlushInterval(Number(valueString))}
+                          min={500}
+                          max={10000}
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>Batch Size</FormLabel>
+                        <NumberInput value={batchSize} onChange={(valueString) => setBatchSize(Number(valueString))} min={1} max={200}>
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>Max Buffer Size</FormLabel>
+                        <NumberInput
+                          value={maxBufferSize}
+                          onChange={(valueString) => setMaxBufferSize(Number(valueString))}
+                          min={100}
+                          max={10000}
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+                      <FormControl display="flex" alignItems="center">
+                        <FormLabel mb={0} mr={2}>
+                          Persist to LocalStorage
+                        </FormLabel>
+                        <Switch isChecked={persistToLocalStorage} onChange={(e) => setPersistToLocalStorage(e.target.checked)} />
+                      </FormControl>
+                      <FormControl display="flex" alignItems="center">
+                        <FormLabel mb={0} mr={2}>
+                          Capture Stack
+                        </FormLabel>
+                        <Switch isChecked={captureStack} onChange={(e) => setCaptureStack(e.target.checked)} />
+                      </FormControl>
+                      <FormControl>
+                        <FormLabel>Max Stack Chars</FormLabel>
+                        <NumberInput
+                          value={maxStackChars}
+                          onChange={(valueString) => setMaxStackChars(Number(valueString))}
+                          min={100}
+                          max={10000}
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+                    </SimpleGrid>
+                  </Box>
+                </VStack>
+              </DrawerBody>
+            </DrawerContent>
+          </Drawer>
         </VStack>
       )}
     </TabPanel>
