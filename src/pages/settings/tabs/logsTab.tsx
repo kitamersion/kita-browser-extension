@@ -15,8 +15,6 @@ import {
   useToast,
   Select,
   Badge,
-  Spacer,
-  IconButton,
   Switch,
   FormControl,
   FormLabel,
@@ -29,7 +27,6 @@ import {
   DrawerCloseButton,
   useDisclosure,
 } from "@chakra-ui/react";
-import { DownloadIcon, RepeatIcon, SettingsIcon } from "@chakra-ui/icons";
 import LoadingState from "@/components/states/LoadingState";
 import { LogEntry } from "@kitamersion/kita-logging/lib/types";
 import { config, logger, history } from "@kitamersion/kita-logging";
@@ -77,6 +74,7 @@ const LogsTab: React.FC = () => {
   const [persistToLocalStorage, setPersistToLocalStorage] = useState<boolean>(true);
   const [captureStack, setCaptureStack] = useState<boolean>(true);
   const [maxStackChars, setMaxStackChars] = useState<number>(2000);
+  const [totalLogCount, setTotalLogCount] = useState<number>(0);
 
   const loadConfig = React.useCallback(async () => {
     setLoading(true);
@@ -113,6 +111,7 @@ const LogsTab: React.FC = () => {
         timestampISO: l.timestampISO || (typeof l.timestamp === "number" ? new Date(l.timestamp).toISOString() : undefined),
         stack: l.stack,
       }));
+      setTotalLogCount(normalized.length);
       setLogs(normalized.slice(0, pageSize));
     } catch (err) {
       logger.error(`Error loading logs: ${err}`);
@@ -189,6 +188,7 @@ const LogsTab: React.FC = () => {
     try {
       await history.deleteAllLogs();
       await loadLogs();
+      onClose();
       toast({ title: "Deleted all logs", status: "success", duration: 2500 });
     } catch (err) {
       toast({ title: "Failed to delete logs", status: "error", duration: 2500 });
@@ -201,28 +201,22 @@ const LogsTab: React.FC = () => {
         <LoadingState />
       ) : (
         <VStack alignItems="stretch" gap={6}>
-          <Flex alignItems="center" gap={4}>
-            <Heading as="h2" size="md" color="text.primary">
+          <VStack spacing={4} align="stretch">
+            <Heading size="lg" color="accent.primary">
               Kita Logging
             </Heading>
-            <Text color="text.secondary">View and manage application logs</Text>
-            <Spacer />
-            <HStack>
-              <IconButton aria-label="flush" title="Flush buffer" icon={<RepeatIcon />} onClick={flushBuffer} />
-              <IconButton aria-label="settings" title="Logger settings" icon={<SettingsIcon />} onClick={onOpen} />
-              <Button leftIcon={<DownloadIcon />} onClick={exportLogs} colorScheme="blue">
-                Export
-              </Button>
-            </HStack>
-          </Flex>
+            <Text color="text.secondary" fontSize="sm">
+              View and manage application logs
+            </Text>
+          </VStack>
 
           <Divider />
 
           <Box>
-            <Heading as="h3" size="sm" mb={2}>
-              Recent Logs
-            </Heading>
             <Flex alignItems="center" justifyContent="space-between">
+              <Heading as="h3" size="sm" mb={2}>
+                Recent Logs ({logs.length} of {totalLogCount})
+              </Heading>
               <HStack>
                 <Text color="text.secondary">Page size:</Text>
                 <Select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} width="120px">
@@ -292,17 +286,6 @@ const LogsTab: React.FC = () => {
                           </NumberInput>
                         </FormControl>
                       </Flex>
-                      <Flex gap={2} wrap="wrap">
-                        <Button colorScheme="green" onClick={saveConfig}>
-                          Save
-                        </Button>
-                        <Button onClick={deleteExpired} colorScheme="orange">
-                          Purge expired
-                        </Button>
-                        <Button onClick={deleteAllLogs} colorScheme="red">
-                          Delete all
-                        </Button>
-                      </Flex>
                     </VStack>
                   </Box>
 
@@ -341,18 +324,6 @@ const LogsTab: React.FC = () => {
                           <NumberInputField />
                         </NumberInput>
                       </FormControl>
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb={0} mr={2}>
-                          Persist to LocalStorage
-                        </FormLabel>
-                        <Switch isChecked={persistToLocalStorage} onChange={(e) => setPersistToLocalStorage(e.target.checked)} />
-                      </FormControl>
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb={0} mr={2}>
-                          Capture Stack
-                        </FormLabel>
-                        <Switch isChecked={captureStack} onChange={(e) => setCaptureStack(e.target.checked)} />
-                      </FormControl>
                       <FormControl>
                         <FormLabel>Max Stack Chars</FormLabel>
                         <NumberInput
@@ -366,6 +337,42 @@ const LogsTab: React.FC = () => {
                       </FormControl>
                     </SimpleGrid>
                   </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Heading as="h4" size="sm" mb={2}>
+                      Options
+                    </Heading>
+                    <VStack align="stretch" spacing={3}>
+                      <FormControl display="flex" alignItems="center">
+                        <FormLabel mb={0} mr={2}>
+                          Persist to LocalStorage
+                        </FormLabel>
+                        <Switch isChecked={persistToLocalStorage} onChange={(e) => setPersistToLocalStorage(e.target.checked)} />
+                      </FormControl>
+                      <FormControl display="flex" alignItems="center">
+                        <FormLabel mb={0} mr={2}>
+                          Capture Stack
+                        </FormLabel>
+                        <Switch isChecked={captureStack} onChange={(e) => setCaptureStack(e.target.checked)} />
+                      </FormControl>
+                    </VStack>
+                  </Box>
+
+                  <Divider />
+
+                  <Flex gap={2} wrap="wrap">
+                    <Button colorScheme="green" onClick={saveConfig}>
+                      Save
+                    </Button>
+                    <Button onClick={deleteExpired} colorScheme="orange">
+                      Purge expired
+                    </Button>
+                    <Button onClick={deleteAllLogs} colorScheme="red">
+                      Delete all
+                    </Button>
+                  </Flex>
                 </VStack>
               </DrawerBody>
             </DrawerContent>
