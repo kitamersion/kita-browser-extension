@@ -12,13 +12,11 @@ import {
   useDisclosure,
   Text,
   Button,
-  useColorMode,
 } from "@chakra-ui/react";
 import React from "react";
 import { MdDelete } from "react-icons/md";
 
 const DeleteAll = () => {
-  const { colorMode } = useColorMode();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const handleDeleteAll = () => {
@@ -37,17 +35,23 @@ const DeleteAll = () => {
         onClick={onOpen}
       />
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
-        <DrawerOverlay />
-        <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
-          <DrawerCloseButton />
-          <DrawerHeader>Are you sure?</DrawerHeader>
+        <DrawerOverlay bg="rgba(0, 0, 0, 0.8)" />
+        <DrawerContent p="6" bg="bg.primary" border="1px solid" borderColor="border.primary" borderRadius="xl">
+          <DrawerCloseButton color="text.secondary" />
+          <DrawerHeader color="text.primary">Are you sure?</DrawerHeader>
           <DrawerBody>
             <Flex gap="6" flexDirection={"column"}>
-              <Text>This will delete all items! You will not be able to recover any items that are currently added.</Text>
+              <Text color="text.secondary">
+                This will delete all items! You will not be able to recover any items that are currently added.
+              </Text>
 
               <Flex gap="2">
-                <Button onClick={handleDeleteAll}>Confirm</Button>
-                <Button onClick={onClose}>Cancel</Button>
+                <Button onClick={handleDeleteAll} bg="red.500" color="white" _hover={{ bg: "red.600" }} _active={{ bg: "red.700" }}>
+                  Confirm
+                </Button>
+                <Button onClick={onClose} variant="ghost" color="text.secondary" _hover={{ bg: "bg.tertiary" }}>
+                  Cancel
+                </Button>
               </Flex>
             </Flex>
           </DrawerBody>

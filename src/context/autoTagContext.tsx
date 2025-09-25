@@ -4,7 +4,7 @@ import { AUTO_TAG_ADD_OR_UPDATE, AUTO_TAG_DELETE_BY_ID, TAG_DELETE_BY_ID } from 
 import { useApplicationContext } from "./applicationContext";
 import { IAutoTag } from "@/types/autotag";
 import IndexedDB from "@/db/index";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { useToastContext } from "./toastNotificationContext";
 
 type AutoTagContextType = {

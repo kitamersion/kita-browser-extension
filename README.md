@@ -30,6 +30,13 @@
 
 ---
 
+## Installation
+
+[![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
+[![](images/addon/chrome-web-store.png)](https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn)
+
+---
+
 ## Development
 
 ### Prerequisites
@@ -52,6 +59,16 @@ npm install
 
 - `dev` - Uses browser local storage (for development)
 - `prod` - Uses production storage (for building extension)
+
+  **For AniList integration in development:**
+  1.  Open `scripts/get-anilist-token.html` in your browser
+  2.  Enter your AniList Client ID (get this from [AniList Developer Settings](https://anilist.co/settings/developer))
+  3.  Click the authorization link and approve the app
+  4.  Copy the redirect URL and paste it in the token extractor
+  5.  Add the extracted token to your `.env` file:
+      ```
+      ANILIST_ACCESS_TOKEN=your_token_here
+      ```
 
 3. **Development workflow**
 
@@ -144,8 +161,3 @@ ext/
 
 dist/                 # Built extension (load this in Chrome)
 ```
-
-## Installation
-
-[![](images/addon/firefox-addons.png)](https://addons.mozilla.org/en-US/firefox/addon/kita-browser/)
-[![](images/addon/chrome-web-store.png)](https://chromewebstore.google.com/detail/kita-browser/bfcnppooaljdcjdkcgdnlbggjoimlcgn)

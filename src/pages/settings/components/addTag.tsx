@@ -29,8 +29,22 @@ const AddTag = () => {
         value={tagName}
         onChange={(e) => handleInputChange(e)}
         onKeyDown={(e) => handleKeyPress(e)}
+        bg="bg.primary"
+        borderColor="border.primary"
+        color="text.primary"
+        _hover={{ borderColor: "border.primary" }}
+        _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+        _placeholder={{ color: "text.tertiary" }}
       />
-      <Button rounded={"2xl"} onClick={handleSetTag}>
+      <Button
+        rounded={"2xl"}
+        onClick={handleSetTag}
+        bg="accent.primary"
+        color="white"
+        _hover={{ bg: "accent.primary", opacity: 0.9 }}
+        _active={{ bg: "accent.primary", opacity: 0.8 }}
+        isDisabled={!tagName.trim()}
+      >
         Add Tag
       </Button>
     </Flex>
