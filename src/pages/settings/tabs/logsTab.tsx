@@ -26,7 +26,9 @@ import {
   DrawerBody,
   DrawerCloseButton,
   useDisclosure,
+  IconButton,
 } from "@chakra-ui/react";
+import { DownloadIcon, RepeatIcon, SettingsIcon } from "@chakra-ui/icons";
 import LoadingState from "@/components/states/LoadingState";
 import { LogEntry } from "@kitamersion/kita-logging/lib/types";
 import { config, logger, history } from "@kitamersion/kita-logging";
@@ -202,12 +204,23 @@ const LogsTab: React.FC = () => {
       ) : (
         <VStack alignItems="stretch" gap={6}>
           <VStack spacing={4} align="stretch">
-            <Heading size="lg" color="accent.primary">
-              Kita Logging
-            </Heading>
-            <Text color="text.secondary" fontSize="sm">
-              View and manage application logs
-            </Text>
+            <Flex alignItems="center" justifyContent="space-between">
+              <Box>
+                <Heading size="lg" color="accent.primary">
+                  Kita Logging
+                </Heading>
+                <Text color="text.secondary" fontSize="sm">
+                  View and manage application logs
+                </Text>
+              </Box>
+              <HStack>
+                <IconButton aria-label="flush" title="Flush buffer" icon={<RepeatIcon />} onClick={flushBuffer} />
+                <IconButton aria-label="settings" title="Logger settings" icon={<SettingsIcon />} onClick={onOpen} />
+                <Button leftIcon={<DownloadIcon />} onClick={exportLogs} colorScheme="blue">
+                  Export
+                </Button>
+              </HStack>
+            </Flex>
           </VStack>
 
           <Divider />
