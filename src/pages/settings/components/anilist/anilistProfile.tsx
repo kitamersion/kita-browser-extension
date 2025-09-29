@@ -33,6 +33,7 @@ import {
 import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { FaPlay, FaPause, FaCheck, FaRedo, FaTrash, FaCalendarPlus } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
+import db from "@/db";
 
 interface AnimeListEntry {
   id: number;
@@ -75,6 +76,7 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
   });
   const [loadedStatuses, setLoadedStatuses] = useState<Record<string, boolean>>({});
   const [statusData, setStatusData] = useState<Record<string, any>>({});
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const toast = useToast();
 
@@ -185,55 +187,68 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
     }
   };
 
-  const toggleSection = (status: string) => {
-    const isOpening = !openSections[status];
-    setOpenSections((prev) => ({
-      ...prev,
-      [status]: !prev[status],
-    }));
+  // Load profile and default open section on mount (with cache)
+  useEffect(() => {
+    const fetchProfileAndList = async () => {
+      if (!Viewer?.id) return;
+      setProfileLoading(true);
+      // Profile cache
+      const profileKey = `profile:${Viewer.id}`;
+      const cachedProfile = await db.getAniListCache(profileKey);
+      if (!cachedProfile) {
+        // Cache profile (Viewer prop)
+        await db.setAniListCache(profileKey, Viewer);
+      }
+      // Anime list cache
+      const listKey = `list:${Viewer.id}:${MediaListStatus.Current}`;
+      const cachedList = await db.getAniListCache(listKey);
+      if (cachedList) {
+        setStatusData((prev) => ({ ...prev, [MediaListStatus.Current]: cachedList }));
+        setLoadedStatuses((prev) => ({ ...prev, [MediaListStatus.Current]: true }));
+        setProfileLoading(false);
+      } else {
+        getAnimeList({
+          variables: {
+            userId: Viewer.id,
+            status: MediaListStatus.Current,
+          },
+          onCompleted: async (data) => {
+            setStatusData((prev) => ({ ...prev, [MediaListStatus.Current]: data }));
+            setLoadedStatuses((prev) => ({ ...prev, [MediaListStatus.Current]: true }));
+            await db.setAniListCache(listKey, data);
+            setProfileLoading(false);
+          },
+        });
+      }
+    };
+    fetchProfileAndList();
+  }, [Viewer, Viewer?.id, getAnimeList, loadedStatuses]);
 
-    // If opening a section and data hasn't been loaded yet, fetch it
+  const toggleSection = async (status: string) => {
+    const isOpening = !openSections[status];
+    setOpenSections((prev) => ({ ...prev, [status]: !prev[status] }));
+    // If opening a section and data hasn't been loaded yet, fetch it (with cache)
     if (isOpening && !loadedStatuses[status] && Viewer?.id) {
-      getAnimeList({
-        variables: {
-          userId: Viewer.id,
-          status: status as MediaListStatus,
-        },
-        onCompleted: (data) => {
-          setStatusData((prev) => ({
-            ...prev,
-            [status]: data,
-          }));
-          setLoadedStatuses((prev) => ({
-            ...prev,
-            [status]: true,
-          }));
-        },
-      });
+      const listKey = `list:${Viewer.id}:${status}`;
+      const cachedList = await db.getAniListCache(listKey);
+      if (cachedList) {
+        setStatusData((prev) => ({ ...prev, [status]: cachedList }));
+        setLoadedStatuses((prev) => ({ ...prev, [status]: true }));
+      } else {
+        getAnimeList({
+          variables: {
+            userId: Viewer.id,
+            status: status as MediaListStatus,
+          },
+          onCompleted: async (data) => {
+            setStatusData((prev) => ({ ...prev, [status]: data }));
+            setLoadedStatuses((prev) => ({ ...prev, [status]: true }));
+            await db.setAniListCache(listKey, data);
+          },
+        });
+      }
     }
   };
-
-  // Load default open section on mount
-  useEffect(() => {
-    if (Viewer?.id && !loadedStatuses[MediaListStatus.Current]) {
-      getAnimeList({
-        variables: {
-          userId: Viewer.id,
-          status: MediaListStatus.Current,
-        },
-        onCompleted: (data) => {
-          setStatusData((prev) => ({
-            ...prev,
-            [MediaListStatus.Current]: data,
-          }));
-          setLoadedStatuses((prev) => ({
-            ...prev,
-            [MediaListStatus.Current]: true,
-          }));
-        },
-      });
-    }
-  }, [Viewer?.id, getAnimeList, loadedStatuses]);
 
   // Define the statuses we want to display
   const displayStatuses = [MediaListStatus.Current, MediaListStatus.Paused, MediaListStatus.Planning, MediaListStatus.Completed];
@@ -307,113 +322,123 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
         <VStack spacing={4} align="stretch">
           {displayStatuses.map((status) => {
             const listData = statusData[status];
-            const isLoading = openSections[status] && !loadedStatuses[status] && animeListLoading;
+            const entries = listData?.MediaListCollection?.lists?.[0]?.entries || [];
+            const hasEntries = entries.length > 0;
+            const isSectionOpen = openSections[status];
+            const isLoading = isSectionOpen && !loadedStatuses[status] && animeListLoading;
+            const showSpinner = isSectionOpen && isLoading && !hasEntries;
 
             return (
               <Box key={status}>
                 <Button
                   variant="ghost"
-                  rightIcon={openSections[status] ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  rightIcon={isSectionOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
                   onClick={() => toggleSection(status)}
                   size="sm"
                   color="text.primary"
-                  _hover={{ bg: "bg.tertiary" }}
+                  _hover={{ bg: "bg.tertiary", boxShadow: "md" }}
                   w="full"
                   justifyContent="space-between"
+                  borderRadius="md"
+                  transition="all 0.2s"
                 >
-                  <Text fontWeight="medium">{status}</Text>
-                  {isLoading && <Spinner size="sm" />}
+                  <Text fontWeight="medium" letterSpacing={0.5}>
+                    {status}
+                  </Text>
+                  {showSpinner && <Spinner size="sm" thickness="3px" color="accent.primary" speed="0.7s" />}
                 </Button>
 
-                <Collapse in={openSections[status]} animateOpacity>
+                <Collapse in={isSectionOpen} animateOpacity>
                   <VStack spacing={3} mt={4} align="stretch">
-                    {listData?.MediaListCollection?.lists?.[0]?.entries?.map((entry: any) => (
-                      <Box
-                        key={entry.id}
-                        bg="bg.tertiary"
-                        borderRadius="md"
-                        p={3}
-                        border="1px solid"
-                        borderColor="border.primary"
-                        _hover={{
-                          borderColor: "border.accent",
-                          bg: "bg.secondary",
-                        }}
-                        transition="all 0.2s"
-                      >
-                        <Flex gap={3}>
-                          <Image
-                            src={entry.media.coverImage.medium}
-                            alt={entry.media.title.userPreferred}
-                            boxSize="60px"
-                            objectFit="cover"
-                            borderRadius="md"
-                            fallbackSrc="/placeholder-anime.png"
-                          />
-                          <Box flex={1} minW={0}>
-                            <Link
-                              href={entry.media.siteUrl}
-                              isExternal
-                              color="text.primary"
-                              fontWeight="medium"
-                              fontSize="sm"
-                              noOfLines={2}
-                              _hover={{ color: "accent.primary" }}
-                            >
-                              {entry.media.title.userPreferred}
-                            </Link>
-
-                            <HStack spacing={2} mt={1}>
-                              <Badge colorScheme={getStatusColor(entry.status)} size="sm">
-                                <Flex alignItems="center" gap={1}>
-                                  {getStatusIcon(entry.status)}
-                                  <Text fontSize="xs">{entry.status}</Text>
-                                </Flex>
-                              </Badge>
-                              {entry.media.format && (
-                                <Badge variant="outline" size="sm" color="text.tertiary">
-                                  {entry.media.format}
+                    {hasEntries &&
+                      entries.map((entry: any) => (
+                        <Box
+                          key={entry.id}
+                          bg="bg.tertiary"
+                          borderRadius="md"
+                          p={3}
+                          border="1px solid"
+                          borderColor="border.primary"
+                          _hover={{ borderColor: "border.accent", bg: "bg.secondary", boxShadow: "md" }}
+                          transition="all 0.2s"
+                        >
+                          <Flex gap={3} alignItems="center">
+                            <Image
+                              src={entry.media.coverImage.medium}
+                              alt={entry.media.title.userPreferred}
+                              boxSize="60px"
+                              objectFit="cover"
+                              borderRadius="md"
+                              fallbackSrc="/placeholder-anime.png"
+                              border="1px solid"
+                              borderColor="border.primary"
+                              transition="all 0.2s"
+                            />
+                            <Box flex={1} minW={0}>
+                              <Link
+                                href={entry.media.siteUrl}
+                                isExternal
+                                color="text.primary"
+                                fontWeight="medium"
+                                fontSize="sm"
+                                noOfLines={2}
+                                _hover={{ color: "accent.primary", textDecoration: "underline" }}
+                              >
+                                {entry.media.title.userPreferred}
+                              </Link>
+                              <HStack spacing={2} mt={1}>
+                                <Badge colorScheme={getStatusColor(entry.status)} size="sm" borderRadius="md">
+                                  <Flex alignItems="center" gap={1}>
+                                    {getStatusIcon(entry.status)}
+                                    <Text fontSize="xs">{entry.status}</Text>
+                                  </Flex>
                                 </Badge>
-                              )}
-                            </HStack>
-
-                            <Box mt={2}>
-                              <Flex alignItems="center" gap={2} mb={1}>
-                                <Text fontSize="xs" color="text.secondary">
-                                  Progress: {entry.progress}/{entry.media.episodes || "?"}
-                                </Text>
-                                {entry.media.nextAiringEpisode && (
-                                  <Text fontSize="xs" color="accent.primary">
-                                    EP {entry.media.nextAiringEpisode.episode} in{" "}
-                                    {Math.floor(entry.media.nextAiringEpisode.timeUntilAiring / 3600)}h
-                                  </Text>
+                                {entry.media.format && (
+                                  <Badge variant="outline" size="sm" color="text.tertiary" borderRadius="md">
+                                    {entry.media.format}
+                                  </Badge>
                                 )}
-                              </Flex>
-                              <Progress
-                                value={entry.media.episodes ? (entry.progress / entry.media.episodes) * 100 : 0}
-                                size="sm"
-                                colorScheme="orange"
-                                bg="bg.primary"
-                              />
+                              </HStack>
+                              <Box mt={2}>
+                                <Flex alignItems="center" gap={2} mb={1}>
+                                  <Text fontSize="xs" color="text.secondary">
+                                    Progress: {entry.progress}/{entry.media.episodes || "?"}
+                                  </Text>
+                                  {entry.media.nextAiringEpisode && (
+                                    <Text fontSize="xs" color="accent.primary">
+                                      EP {entry.media.nextAiringEpisode.episode} in{" "}
+                                      {Math.floor(entry.media.nextAiringEpisode.timeUntilAiring / 3600)}h
+                                    </Text>
+                                  )}
+                                </Flex>
+                                <Progress
+                                  value={entry.media.episodes ? (entry.progress / entry.media.episodes) * 100 : 0}
+                                  size="sm"
+                                  colorScheme="orange"
+                                  bg="bg.primary"
+                                  borderRadius="md"
+                                  transition="all 0.2s"
+                                />
+                              </Box>
                             </Box>
-                          </Box>
-                          <IconButton
-                            aria-label="Edit entry"
-                            icon={<MdEdit />}
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditEntry(entry)}
-                            _hover={{ bg: "bg.primary" }}
-                          />
-                        </Flex>
-                      </Box>
-                    ))}
-                    {(!listData?.MediaListCollection?.lists?.[0]?.entries || listData.MediaListCollection.lists[0].entries.length === 0) &&
-                      !isLoading && (
-                        <Text color="text.tertiary" textAlign="center" py={4}>
-                          No anime in {status}
-                        </Text>
-                      )}
+                            <IconButton
+                              aria-label="Edit entry"
+                              icon={<MdEdit />}
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditEntry(entry)}
+                              _hover={{ bg: "bg.primary", boxShadow: "md" }}
+                              borderRadius="md"
+                              transition="all 0.2s"
+                            />
+                          </Flex>
+                        </Box>
+                      ))}
+                    {!hasEntries && !showSpinner && (
+                      <Text color="text.tertiary" textAlign="center" py={4} fontSize="sm" opacity={0.7}>
+                        No anime in {status}
+                      </Text>
+                    )}
                   </VStack>
                 </Collapse>
               </Box>

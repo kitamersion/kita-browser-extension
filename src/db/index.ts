@@ -12,7 +12,10 @@ import {
   OBJECT_STORE_VIDEO_TAGS,
   OBJECT_STORE_AUTO_TAG,
   OBJECT_STORE_SERIES_MAPPINGS,
+  OBJECT_STORE_ANILIST_CACHE,
 } from "./schema";
+const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+// ...existing code...
 import { setApplicationEnabled } from "@/api/applicationStorage";
 import { logger } from "@kitamersion/kita-logging";
 import { IAutoTag } from "@/types/autotag";
@@ -29,25 +32,6 @@ class IndexedDB {
       IndexedDB.instance = new IndexedDB();
     }
     return IndexedDB.instance;
-  }
-
-  public requestPersistentStorage(): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (navigator.storage && navigator.storage.persist) {
-        navigator.storage.persist().then((granted) => {
-          if (granted) {
-            logger.info("Storage will not be cleared except by explicit user action");
-            resolve(true);
-          } else {
-            logger.info("Storage may be cleared by the UA under storage pressure.");
-            resolve(false);
-          }
-        });
-      } else {
-        logger.info("Persistent storage API not supported");
-        resolve(false);
-      }
-    });
   }
 
   // ================================================================================
@@ -884,6 +868,57 @@ class IndexedDB {
         logger.error("Error cleaning up expired series mappings from IndexedDB");
         reject(request.error);
       };
+    });
+  }
+
+  // ====================== AniList Cache =====================
+  // key: string (e.g. "profile:<userId>", "list:<userId>:<status>")
+  public setAniListCache(key: string, value: any, ttl: number = ANILIST_CACHE_TTL): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const expires_at = Date.now() + ttl;
+      const request = store.put({ key, value, expires_at });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public getAniListCache(key: string): Promise<any | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.expires_at > Date.now()) {
+          resolve(result.value);
+        } else {
+          resolve(undefined);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public requestPersistentStorage(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then((granted) => {
+          if (granted) {
+            logger.info("Storage will not be cleared except by explicit user action");
+            resolve(true);
+          } else {
+            logger.info("Storage may be cleared by the UA under storage pressure.");
+            resolve(false);
+          }
+        });
+      } else {
+        logger.info("Persistent storage API not supported");
+        resolve(false);
+      }
     });
   }
 }

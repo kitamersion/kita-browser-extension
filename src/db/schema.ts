@@ -15,7 +15,8 @@ type DBSchema = {
 };
 
 export const DB_NAME = "kitamersiondb";
-export const DB_VERSION = 8;
+export const DB_VERSION = 9; // bump version for new store
+export const OBJECT_STORE_ANILIST_CACHE = "anilist_cache";
 export const OBJECT_STORE_VIDEOS = "videos";
 export const OBJECT_STORE_TAGS = "tags";
 export const OBJECT_STORE_VIDEO_TAGS = "video_tags";
@@ -160,5 +161,20 @@ export const DB_SCHEMAS: DBSchema[] = [
     version: 8,
     // Migration to remove cache_media_metadata store - it's replaced by series_mappings
     stores: [],
+  },
+  {
+    version: 9,
+    stores: [
+      {
+        name: OBJECT_STORE_ANILIST_CACHE,
+        options: { keyPath: "key" },
+        indexes: [
+          {
+            name: "expires_at",
+            options: { unique: false },
+          },
+        ],
+      },
+    ],
   },
 ];
