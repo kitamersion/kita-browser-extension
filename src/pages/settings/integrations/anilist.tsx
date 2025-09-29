@@ -17,8 +17,6 @@ import {
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
-import { useGetMeQuery } from "@/graphql";
-import AnilistProfile from "../components/anilist/anilistProfile";
 import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
 const Anilist = () => {
@@ -32,10 +30,6 @@ const Anilist = () => {
   const [showPasswordInput, setShowPasswordInput] = React.useState(false);
   const handleShowPasswordInput = () => setShowPasswordInput(!showPasswordInput);
   const { hasCopied, onCopy } = useClipboard(anilistConfigState.redirectUrl ?? "");
-
-  const { data, loading } = useGetMeQuery({
-    skip: anilistAuthStatus !== "authorized",
-  });
 
   useEffect(() => {
     if (isInitialized) {
@@ -61,7 +55,7 @@ const Anilist = () => {
     eventBus.publish(INTEGRATION_ANILIST_AUTH_DISCONNECT, { message: "delete anilist auth", value: "" });
   };
 
-  if (!isInitialized || loading) return <LoadingState />;
+  if (!isInitialized) return <LoadingState />;
 
   return (
     <Box
@@ -194,7 +188,6 @@ const Anilist = () => {
           </Flex>
         </form>
 
-        {anilistAuthStatus === "authorized" && <AnilistProfile Viewer={data?.Viewer} />}
         <AutoSyncMediaToggle />
       </Flex>
     </Box>
