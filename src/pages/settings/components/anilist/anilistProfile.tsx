@@ -34,6 +34,7 @@ import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { FaPlay, FaPause, FaCheck, FaRedo, FaTrash, FaCalendarPlus } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import db from "@/db";
+import { useGetMeQuery } from "@/graphql";
 
 interface AnimeListEntry {
   id: number;
@@ -65,7 +66,7 @@ interface AnimeListEntry {
   };
 }
 
-const AnilistProfile = ({ Viewer }: GetMeQuery) => {
+const AnilistProfile = () => {
   const { isOpen: isEditModalOpen, onOpen: openEditModal, onClose: closeEditModal } = useDisclosure();
   const [selectedEntry, setSelectedEntry] = useState<AnimeListEntry | null>(null);
   const [editProgress, setEditProgress] = useState<string>("");
@@ -76,6 +77,7 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
   });
   const [loadedStatuses, setLoadedStatuses] = useState<Record<string, boolean>>({});
   const [statusData, setStatusData] = useState<Record<string, any>>({});
+  const [profile, setProfile] = useState<GetMeQuery["Viewer"] | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
   const toast = useToast();
@@ -83,9 +85,14 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
   const [getAnimeList, { loading: animeListLoading }] = useGetUserAnimeListLazyQuery();
   const [updateMediaList, { loading: isUpdating }] = useSaveMediaListEntryMutation();
 
+  // Use the GetMeQuery hook
+  const { refetch: refetchMe } = useGetMeQuery({
+    skip: true,
+  });
+
   const daysWatched = useMemo(() => {
-    return Viewer?.statistics?.anime?.minutesWatched ? (Viewer?.statistics?.anime?.minutesWatched / 1440).toFixed(2) : "0.00";
-  }, [Viewer?.statistics?.anime?.minutesWatched]);
+    return profile?.statistics?.anime?.minutesWatched ? (profile.statistics.anime.minutesWatched / 1440).toFixed(2) : "0.00";
+  }, [profile?.statistics?.anime?.minutesWatched]);
 
   const handleEditEntry = useCallback(
     (entry: AnimeListEntry) => {
@@ -128,10 +135,10 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
       });
 
       // Refresh the list
-      if (Viewer?.id) {
+      if (profile?.id) {
         getAnimeList({
           variables: {
-            userId: Viewer.id,
+            userId: profile.id,
             status: finalStatus,
           },
         });
@@ -147,7 +154,7 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
         duration: 5000,
       });
     }
-  }, [selectedEntry, editProgress, editStatus, editScore, updateMediaList, toast, Viewer?.id, getAnimeList, closeEditModal]);
+  }, [selectedEntry, editProgress, editStatus, editScore, updateMediaList, toast, profile?.id, getAnimeList, closeEditModal]);
 
   const getStatusIcon = (status: MediaListStatus) => {
     switch (status) {
@@ -189,18 +196,37 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
 
   // Load profile and default open section on mount (with cache)
   useEffect(() => {
-    const fetchProfileAndList = async () => {
-      if (!Viewer?.id) return;
+    let isMounted = true;
+    const fetchProfile = async () => {
       setProfileLoading(true);
-      // Profile cache
-      const profileKey = `profile:${Viewer.id}`;
+      const profileKey = "profile";
       const cachedProfile = await db.getAniListCache(profileKey);
-      if (!cachedProfile) {
-        // Cache profile (Viewer prop)
-        await db.setAniListCache(profileKey, Viewer);
+      if (cachedProfile && isMounted) {
+        setProfile(cachedProfile);
+        setProfileLoading(false);
+      } else {
+        // Only fetch if cache is missing
+        const { data: fetchedData } = await refetchMe();
+        if (fetchedData?.Viewer && isMounted) {
+          setProfile(fetchedData.Viewer);
+          await db.setAniListCache(profileKey, fetchedData.Viewer);
+        }
+        if (isMounted) setProfileLoading(false);
       }
+    };
+    fetchProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, [refetchMe]);
+
+  // Load anime list for the profile
+  useEffect(() => {
+    if (!profile?.id) return;
+    setProfileLoading(true);
+    const fetchList = async () => {
       // Anime list cache
-      const listKey = `list:${Viewer.id}:${MediaListStatus.Current}`;
+      const listKey = `list:${profile.id}:${MediaListStatus.Current}`;
       const cachedList = await db.getAniListCache(listKey);
       if (cachedList) {
         setStatusData((prev) => ({ ...prev, [MediaListStatus.Current]: cachedList }));
@@ -209,7 +235,7 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
       } else {
         getAnimeList({
           variables: {
-            userId: Viewer.id,
+            userId: profile.id,
             status: MediaListStatus.Current,
           },
           onCompleted: async (data) => {
@@ -221,15 +247,16 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
         });
       }
     };
-    fetchProfileAndList();
-  }, [Viewer, Viewer?.id, getAnimeList, loadedStatuses]);
+    fetchList();
+    // Only run when profile changes
+  }, [profile, getAnimeList]);
 
   const toggleSection = async (status: string) => {
     const isOpening = !openSections[status];
     setOpenSections((prev) => ({ ...prev, [status]: !prev[status] }));
     // If opening a section and data hasn't been loaded yet, fetch it (with cache)
-    if (isOpening && !loadedStatuses[status] && Viewer?.id) {
-      const listKey = `list:${Viewer.id}:${status}`;
+    if (isOpening && !loadedStatuses[status] && profile?.id) {
+      const listKey = `list:${profile.id}:${status}`;
       const cachedList = await db.getAniListCache(listKey);
       if (cachedList) {
         setStatusData((prev) => ({ ...prev, [status]: cachedList }));
@@ -237,7 +264,7 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
       } else {
         getAnimeList({
           variables: {
-            userId: Viewer.id,
+            userId: profile.id,
             status: status as MediaListStatus,
           },
           onCompleted: async (data) => {
@@ -268,53 +295,68 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
     >
       <VStack spacing={6} align="stretch">
         {/* User Profile Section */}
-        <Flex gap={4} alignItems="center">
-          <Avatar name={Viewer?.name} src={Viewer?.avatar?.medium ?? ""} size="lg" />
-          <Box flex={1}>
-            <Heading size="md" color="text.primary" mb={1}>
-              {Viewer?.name}
-            </Heading>
-            <Link href={Viewer?.siteUrl ?? "#"} isExternal target={"_blank"} color="accent.primary" fontSize="sm" _hover={{ opacity: 0.8 }}>
-              View AniList profile <ExternalLinkIcon mx="2px" />
-            </Link>
-          </Box>
-        </Flex>
+        {profileLoading ? (
+          <Flex justifyContent="center" alignItems="center" minH="120px">
+            <Spinner size="lg" color="accent.primary" thickness="4px" speed="0.7s" />
+          </Flex>
+        ) : (
+          <Flex gap={4} alignItems="center">
+            <Avatar name={profile?.name} src={profile?.avatar?.medium ?? ""} size="lg" />
+            <Box flex={1}>
+              <Heading size="md" color="text.primary" mb={1}>
+                {profile?.name}
+              </Heading>
+              <Link
+                href={profile?.siteUrl ?? "#"}
+                isExternal
+                target={"_blank"}
+                color="accent.primary"
+                fontSize="sm"
+                _hover={{ opacity: 0.8 }}
+              >
+                View AniList profile <ExternalLinkIcon mx="2px" />
+              </Link>
+            </Box>
+          </Flex>
+        )}
 
         {/* Stats Grid */}
-        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-          <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
-            <Text fontSize="sm" color="text.secondary">
-              Anime Count
-            </Text>
-            <Text fontSize="lg" fontWeight="bold" color="accent.primary">
-              {Viewer?.statistics?.anime?.count || 0}
-            </Text>
-          </Box>
-          <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
-            <Text fontSize="sm" color="text.secondary">
-              Days Watched
-            </Text>
-            <Text fontSize="lg" fontWeight="bold" color="accent.primary">
-              {daysWatched}
-            </Text>
-          </Box>
-          <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
-            <Text fontSize="sm" color="text.secondary">
-              Manga Count
-            </Text>
-            <Text fontSize="lg" fontWeight="bold" color="accent.primary">
-              {Viewer?.statistics?.manga?.count || 0}
-            </Text>
-          </Box>
-          <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
-            <Text fontSize="sm" color="text.secondary">
-              Chapters Read
-            </Text>
-            <Text fontSize="lg" fontWeight="bold" color="accent.primary">
-              {Viewer?.statistics?.manga?.chaptersRead || 0}
-            </Text>
-          </Box>
-        </Grid>
+        {!profileLoading && (
+          <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+            <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
+              <Text fontSize="sm" color="text.secondary">
+                Anime Count
+              </Text>
+              <Text fontSize="lg" fontWeight="bold" color="accent.primary">
+                {profile?.statistics?.anime?.count || 0}
+              </Text>
+            </Box>
+            <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
+              <Text fontSize="sm" color="text.secondary">
+                Days Watched
+              </Text>
+              <Text fontSize="lg" fontWeight="bold" color="accent.primary">
+                {daysWatched}
+              </Text>
+            </Box>
+            <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
+              <Text fontSize="sm" color="text.secondary">
+                Manga Count
+              </Text>
+              <Text fontSize="lg" fontWeight="bold" color="accent.primary">
+                {profile?.statistics?.manga?.count || 0}
+              </Text>
+            </Box>
+            <Box bg="bg.tertiary" p={3} borderRadius="md" border="1px solid" borderColor="border.primary">
+              <Text fontSize="sm" color="text.secondary">
+                Chapters Read
+              </Text>
+              <Text fontSize="lg" fontWeight="bold" color="accent.primary">
+                {profile?.statistics?.manga?.chaptersRead || 0}
+              </Text>
+            </Box>
+          </Grid>
+        )}
 
         <Divider borderColor="border.primary" />
 
