@@ -85,17 +85,6 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
     return Viewer?.statistics?.anime?.minutesWatched ? (Viewer?.statistics?.anime?.minutesWatched / 1440).toFixed(2) : "0.00";
   }, [Viewer?.statistics?.anime?.minutesWatched]);
 
-  useEffect(() => {
-    if (Viewer?.id) {
-      // Fetch all anime lists
-      getAnimeList({
-        variables: {
-          userId: Viewer.id,
-        },
-      });
-    }
-  }, [Viewer?.id, getAnimeList]);
-
   const handleEditEntry = useCallback(
     (entry: AnimeListEntry) => {
       setSelectedEntry(entry);
