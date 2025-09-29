@@ -39,12 +39,18 @@ const QuickAddTags = () => {
   };
 
   return (
-    <Table variant="simple" size="sm">
+    <Table variant="simple" size="sm" bg="bg.primary" borderRadius="lg">
       <Thead>
         <Tr>
-          <Th>Tag Name</Th>
-          <Th>Status</Th>
-          <Th>Action</Th>
+          <Th color="text.secondary" borderColor="border.primary">
+            Tag Name
+          </Th>
+          <Th color="text.secondary" borderColor="border.primary">
+            Status
+          </Th>
+          <Th color="text.secondary" borderColor="border.primary">
+            Action
+          </Th>
         </Tr>
       </Thead>
       <Tbody>
@@ -54,11 +60,22 @@ const QuickAddTags = () => {
 
           return (
             <Tr key={tag.code}>
-              <Td>{tag.name}</Td>
-              <Td>{tagExists ? "✅" : "❌"}</Td>
-              <Td>
+              <Td color="text.primary" borderColor="border.primary">
+                {tag.name}
+              </Td>
+              <Td color="text.primary" borderColor="border.primary">
+                {tagExists ? "✅" : "❌"}
+              </Td>
+              <Td borderColor="border.primary">
                 {isMissing && (
-                  <Button size="xs" onClick={() => addMissingTag(tag.name)}>
+                  <Button
+                    size="xs"
+                    onClick={() => addMissingTag(tag.name)}
+                    bg="accent.primary"
+                    color="white"
+                    _hover={{ bg: "accent.primary", opacity: 0.9 }}
+                    _active={{ bg: "accent.primary", opacity: 0.8 }}
+                  >
                     <Flex gap={1} alignItems="center">
                       <IoMdAdd />
                       Add tag

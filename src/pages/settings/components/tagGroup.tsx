@@ -15,7 +15,20 @@ const TagGroup = () => {
     return <LoadingState />;
   }
   return (
-    <Box width={"full"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
+    <Box
+      width={"full"}
+      boxShadow={"dark-lg"}
+      rounded={"2xl"}
+      p={4}
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      _hover={{
+        borderColor: "border.accent",
+        boxShadow: "2xl",
+      }}
+      transition="all 0.2s"
+    >
       <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
         <SummaryItem>
           <SummaryItem.Value value={totalTagCount} />

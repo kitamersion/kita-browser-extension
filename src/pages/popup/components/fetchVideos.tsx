@@ -5,6 +5,8 @@ import React, { useEffect, useState } from "react";
 import { FaRegCirclePlay } from "react-icons/fa6";
 import { FaRegStopCircle } from "react-icons/fa";
 
+const POLLING_MS = 3000;
+
 const FetchVideos = () => {
   const [isPolling, setIsPolling] = useState(false);
 
@@ -21,7 +23,7 @@ const FetchVideos = () => {
       return;
     }
 
-    const intervalId = setInterval(handleRefreshData, 10000);
+    const intervalId = setInterval(handleRefreshData, POLLING_MS);
     return () => clearInterval(intervalId);
   }, [isPolling]);
 

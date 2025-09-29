@@ -11,12 +11,14 @@ import {
   OBJECT_STORE_TAGS,
   OBJECT_STORE_VIDEO_TAGS,
   OBJECT_STORE_AUTO_TAG,
-  OBJECT_STORE_CACHED_MEDIA_METADATA,
+  OBJECT_STORE_SERIES_MAPPINGS,
+  OBJECT_STORE_ANILIST_CACHE,
 } from "./schema";
+const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 import { setApplicationEnabled } from "@/api/applicationStorage";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 import { IAutoTag } from "@/types/autotag";
-import { IMediaCache } from "@/types/integrations/cache";
+import { ISeriesMapping } from "@/types/integrations/seriesMapping";
 
 class IndexedDB {
   private static instance: IndexedDB;
@@ -31,49 +33,47 @@ class IndexedDB {
     return IndexedDB.instance;
   }
 
-  public requestPersistentStorage(): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (navigator.storage && navigator.storage.persist) {
-        navigator.storage.persist().then((granted) => {
-          if (granted) {
-            logger.info("Storage will not be cleared except by explicit user action");
-            resolve(true);
-          } else {
-            logger.info("Storage may be cleared by the UA under storage pressure.");
-            resolve(false);
-          }
-        });
-      } else {
-        logger.info("Persistent storage API not supported");
-        resolve(false);
-      }
-    });
-  }
-
   // ================================================================================
   // ======================     INITIALIZE SCHEMA         ===========================
   // ================================================================================
   public openDatabase(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       logger.info("connecting database...");
+
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event) => {
         setApplicationEnabled(false, () => {});
+
         logger.warn("database upgrade needed...");
+
         this.db = (event.target as IDBOpenDBRequest).result;
         const db = this.db;
         const transaction = (event.target as IDBOpenDBRequest).transaction;
+        const oldVersion = (event as any).oldVersion;
+        const newVersion = (event as any).newVersion;
+
+        // Handle version 8 migration - remove cache_media_metadata store
+        if (oldVersion < 8 && newVersion >= 8) {
+          if (db.objectStoreNames.contains("cache_media_metadata")) {
+            logger.info("Removing cache_media_metadata store - replaced by series_mappings");
+
+            db.deleteObjectStore("cache_media_metadata");
+          }
+        }
 
         for (const schema of DB_SCHEMAS) {
           for (const storeSchema of schema.stores) {
             let store: IDBObjectStore | null = null;
             if (!db.objectStoreNames.contains(storeSchema.name)) {
               logger.debug(`creating object store: ${storeSchema.name}`);
+
               store = db.createObjectStore(storeSchema.name, storeSchema.options);
             } else {
               // get the existing object store
+
               logger.debug(`getting existing object store: ${storeSchema.name}`);
+
               store = transaction?.objectStore(storeSchema.name) ?? null;
             }
 
@@ -81,6 +81,7 @@ class IndexedDB {
               for (const indexSchema of storeSchema.indexes) {
                 if (!store.indexNames.contains(indexSchema.name)) {
                   logger.debug(`creating index: ${indexSchema.name}`);
+
                   store.createIndex(indexSchema.name, indexSchema.name, indexSchema.options);
                 }
               }
@@ -91,15 +92,18 @@ class IndexedDB {
 
       request.onsuccess = (event) => {
         this.db = (event.target as IDBOpenDBRequest).result;
+
         logger.info("database connected successfully!");
+
         setApplicationEnabled(true, () => {});
         resolve(this.db);
       };
 
       request.onerror = (event) => {
         logger.error(`error opening database: ${event}`);
+
         setApplicationEnabled(true, () => {});
-        reject(event);
+        reject(new Error(`Database error: ${event}`));
       };
     });
   }
@@ -624,115 +628,324 @@ class IndexedDB {
   }
 
   // ================================================================================
-  // =======================    CACHED MEDIA SERIES         =========================
+  // ======================     SERIES MAPPINGS STORE         ======================
   // ================================================================================
 
-  // NOTE: this cache is lightweight, it only stores generic metadata about a series to reduce unnecessary API calls
-
-  // get all media cache
-  getAllMediaCache(): Promise<IMediaCache[]> {
+  // Get all series mappings
+  getAllSeriesMappings(): Promise<ISeriesMapping[]> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const request = mediaCacheStore.getAll();
+      if (!this.db) {
+        resolve([]);
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const request = store.getAll();
+
       request.onsuccess = () => {
-        resolve(request.result);
+        const mappings: ISeriesMapping[] = request.result || [];
+        // Filter out expired mappings
+        const now = Date.now();
+        const validMappings = mappings.filter((mapping) => mapping.expires_at > now);
+        resolve(validMappings);
       };
+
       request.onerror = () => {
+        logger.error("Error getting all series mappings from IndexedDB");
+
         reject(request.error);
       };
     });
   }
 
-  // get media cache by id
-  getMediaCacheById(id: string): Promise<IMediaCache | undefined> {
+  // Get series mapping by ID
+  getSeriesMappingById(id: string): Promise<ISeriesMapping | undefined> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const request = mediaCacheStore.get(id);
+      if (!this.db) {
+        resolve(undefined);
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const request = store.get(id);
+
       request.onsuccess = () => {
-        resolve(request.result);
+        const mapping: ISeriesMapping | undefined = request.result;
+        if (mapping && mapping.expires_at > Date.now()) {
+          resolve(mapping);
+        } else {
+          resolve(undefined);
+        }
       };
+
       request.onerror = () => {
+        logger.error(`Error getting series mapping ${id} from IndexedDB`);
         reject(request.error);
       };
     });
   }
 
-  // get media cache by unique_code
-  getMediaCacheByUniqueCode(unique_code: string): Promise<IMediaCache | undefined> {
+  // Find series mapping by normalized title and platform
+  findSeriesMappingByTitle(normalizedTitle: string, sourcePlatform: string, seasonYear?: number): Promise<ISeriesMapping | undefined> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readonly");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const index = mediaCacheStore.index("unique_code");
-      const request = index.get(unique_code);
+      if (!this.db) {
+        resolve(undefined);
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const index = store.index("normalized_title");
+      const request = index.openCursor(IDBKeyRange.only(normalizedTitle));
+
       request.onsuccess = () => {
-        resolve(request.result);
+        const cursor = request.result;
+        if (cursor) {
+          const mapping: ISeriesMapping = cursor.value;
+
+          // Check if expired
+          if (mapping.expires_at <= Date.now()) {
+            cursor.continue();
+            return;
+          }
+
+          // Check platform match
+          if (mapping.source_platform !== sourcePlatform) {
+            cursor.continue();
+            return;
+          }
+
+          // Check season year if provided
+          if (seasonYear && mapping.season_year && mapping.season_year !== seasonYear) {
+            cursor.continue();
+            return;
+          }
+
+          resolve(mapping);
+        } else {
+          resolve(undefined);
+        }
       };
+
       request.onerror = () => {
+        logger.error("Error finding series mapping by title from IndexedDB");
         reject(request.error);
       };
     });
   }
 
-  // add or update media cache
-  addOrUpdateMediaCache(mediaCache: IMediaCache): Promise<void> {
+  // Add series mapping
+  addSeriesMapping(mapping: ISeriesMapping): Promise<ISeriesMapping> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const request = mediaCacheStore.put(mediaCache);
+      if (!this.db) {
+        reject(new Error("Database not initialized"));
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const request = store.add(mapping);
+
       request.onsuccess = () => {
+        logger.info(`Added series mapping: ${mapping.series_title} -> AniList ID: ${mapping.anilist_series_id}`);
+        resolve(mapping);
+      };
+
+      request.onerror = () => {
+        logger.error("Error adding series mapping to IndexedDB");
+        reject(request.error);
+      };
+    });
+  }
+
+  // Update series mapping
+  updateSeriesMapping(mapping: ISeriesMapping): Promise<ISeriesMapping> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("Database not initialized"));
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const request = store.put(mapping);
+
+      request.onsuccess = () => {
+        logger.info(`Updated series mapping: ${mapping.series_title}`);
+        resolve(mapping);
+      };
+
+      request.onerror = () => {
+        logger.error("Error updating series mapping in IndexedDB");
+        reject(request.error);
+      };
+    });
+  }
+
+  // Delete series mapping
+  deleteSeriesMapping(id: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("Database not initialized"));
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const request = store.delete(id);
+
+      request.onsuccess = () => {
+        logger.info(`Deleted series mapping: ${id}`);
+        resolve(true);
+      };
+
+      request.onerror = () => {
+        logger.error(`Error deleting series mapping ${id} from IndexedDB`);
+        reject(request.error);
+      };
+    });
+  }
+
+  // Get mappings by platform
+  getSeriesMappingsByPlatform(sourcePlatform: string): Promise<ISeriesMapping[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        resolve([]);
+        return;
+      }
+
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
+      const index = store.index("source_platform");
+      const request = index.getAll(sourcePlatform);
+
+      request.onsuccess = () => {
+        const mappings: ISeriesMapping[] = request.result || [];
+        // Filter out expired mappings
+        const now = Date.now();
+        const validMappings = mappings.filter((mapping) => mapping.expires_at > now);
+        resolve(validMappings);
+      };
+
+      request.onerror = () => {
+        logger.error(`Error getting series mappings for platform ${sourcePlatform} from IndexedDB`);
+        reject(request.error);
+      };
+    });
+  }
+
+  // Clean up expired series mappings
+  cleanupExpiredSeriesMappings(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
         resolve();
-      };
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
+        return;
+      }
 
-  // delete media cache by id
-  deleteMediaCacheById(id: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) return;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      mediaCacheStore.delete(id);
-      transaction.oncomplete = () => {
-        resolve();
-      };
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
-    });
-  }
-
-  // delete all expired cached items
-  deleteExpiredMediaCache(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) return;
+      const transaction = this.db.transaction([OBJECT_STORE_SERIES_MAPPINGS], "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SERIES_MAPPINGS);
       let deleteCount = 0;
-      const transaction = this.db.transaction(OBJECT_STORE_CACHED_MEDIA_METADATA, "readwrite");
-      const mediaCacheStore = transaction.objectStore(OBJECT_STORE_CACHED_MEDIA_METADATA);
-      const index = mediaCacheStore.index("expires_at");
+
+      const index = store.index("expires_at");
       const request = index.openCursor(IDBKeyRange.upperBound(Date.now()));
+
       request.onsuccess = () => {
-        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        const cursor = request.result;
         if (cursor) {
           cursor.delete();
           deleteCount++;
           cursor.continue();
         } else {
-          logger.info(`Deleted ${deleteCount} expired items.`);
+          logger.info(`Cleaned up ${deleteCount} expired series mappings`);
           resolve();
         }
       };
+
       request.onerror = () => {
+        logger.error("Error cleaning up expired series mappings from IndexedDB");
         reject(request.error);
       };
+    });
+  }
+
+  // ====================== AniList Cache =====================
+  // key: string (e.g. "profile:<userId>", "list:<userId>:<status>")
+  public setAniListCache(key: string, value: any, ttl: number = ANILIST_CACHE_TTL): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const expires_at = Date.now() + ttl;
+      const request = store.put({ key, value, expires_at });
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        logger.error(`setAniListCache error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  public getAniListCache(key: string): Promise<any | undefined> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.expires_at > Date.now()) {
+          resolve(result.value);
+        } else {
+          resolve(undefined);
+        }
+      };
+      request.onerror = () => {
+        logger.error(`getAniListCache error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  // Get raw cache object for UI (value + expires_at)
+  public async getAniListCacheRaw(key: string): Promise<{ value: any; expires_at: number } | null> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve(null);
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.expires_at > Date.now()) {
+          resolve({ value: result.value, expires_at: result.expires_at });
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => {
+        logger.error(`getAniListCacheRaw error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  public requestPersistentStorage(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then((granted) => {
+          if (granted) {
+            logger.info("Storage will not be cleared except by explicit user action");
+            resolve(true);
+          } else {
+            logger.info("Storage may be cleared by the UA under storage pressure.");
+            resolve(false);
+          }
+        });
+      } else {
+        logger.info("Persistent storage API not supported");
+        resolve(false);
+      }
     });
   }
 }

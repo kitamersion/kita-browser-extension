@@ -3,12 +3,12 @@ import { convertToSeconds, filterVideos, formatDuration, formatTimestamp, genera
 
 describe("formatDuration function", () => {
   test.each([
-    [30, "0h 0m 30s"],
-    [1500, "0h 25m 0s"],
-    [3720, "1h 2m 0s"],
-    [3600, "1h 0m 0s"],
-    [86400, "24h 0m 0s"],
-    [93720, "26h 2m 0s"],
+    [30, "0h 0m"],
+    [1500, "0h 25m"],
+    [3720, "1h 2m"],
+    [3600, "1h 0m"],
+    [86400, "24h 0m"],
+    [93720, "26h 2m"],
   ])("formats %s seconds => %i", (seconds, expected) => {
     expect(formatDuration(seconds)).toEqual(expected);
   });
@@ -56,12 +56,12 @@ describe("generateUniqueCode function", () => {
 
 describe("formatDuration function", () => {
   test.each([
-    [30, "0h 0m 30s"],
-    [1500, "0h 25m 0s"],
-    [3720, "1h 2m 0s"],
-    [3600, "1h 0m 0s"],
-    [86400, "24h 0m 0s"],
-    [93720, "26h 2m 0s"],
+    [30, "0h 0m"],
+    [1500, "0h 25m"],
+    [3720, "1h 2m"],
+    [3600, "1h 0m"],
+    [86400, "24h 0m"],
+    [93720, "26h 2m"],
   ])("formats %s seconds => %i", (seconds, expected) => {
     expect(formatDuration(seconds)).toEqual(expected);
   });

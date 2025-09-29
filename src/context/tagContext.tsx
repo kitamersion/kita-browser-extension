@@ -6,7 +6,7 @@ import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
 import { useApplicationContext } from "./applicationContext";
-import logger from "@/config/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 type TagContextType = { tags: ITag[]; totalTagCount: number; isInitialized: boolean };
 
