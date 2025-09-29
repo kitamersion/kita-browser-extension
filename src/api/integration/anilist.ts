@@ -11,8 +11,6 @@ const ANILIST_AUTO_SYNC_MEDIA_KEY = SETTINGS.integrations.anilist.autoSync.key;
 
 // get anilist config
 const getAnilistConfig = async (callback: Callback<AnilistConfig | null>) => {
-  logger.info("fetching anilist config");
-
   chrome.storage.local.get(ANILIST_CONFIG_KEY, (data) => {
     const anilist = data?.[ANILIST_CONFIG_KEY] || null;
     callback(anilist);
@@ -21,8 +19,6 @@ const getAnilistConfig = async (callback: Callback<AnilistConfig | null>) => {
 
 // set anilist config
 const setAnilistConfig = async (anilist: AnilistConfig, callback: Callback<AnilistConfig>) => {
-  logger.info("setting anilist config");
-
   chrome.storage.local.set({ [ANILIST_CONFIG_KEY]: anilist }, () => {
     logger.info("setting anilist config");
     callback(anilist);
@@ -124,10 +120,7 @@ const deleteAnilistAuthStatus = async (callback: Callback<void>) => {
 
 // get ANILIST_AUTO_SYNC_MEDIA_KEY
 const getAnilistAutoSyncMedia = async (callback: Callback<boolean>) => {
-  logger.info("fetching anilist auto sync media");
-
   chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
-    logger.info("fetching anilist auto sync media");
     const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
     callback(state);
   });
@@ -135,8 +128,6 @@ const getAnilistAutoSyncMedia = async (callback: Callback<boolean>) => {
 
 // set ANILIST_AUTO_SYNC_MEDIA_KEY
 const setAnilistAutoSyncMedia = async (value: boolean, callback: Callback<boolean>) => {
-  logger.info(`setting anilist auto sync media to: ${value}`);
-
   chrome.storage.local.set({ [ANILIST_AUTO_SYNC_MEDIA_KEY]: value }, () => {
     logger.info(`setting anilist auto sync media to: ${value}`);
     callback(value);

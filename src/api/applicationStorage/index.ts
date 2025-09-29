@@ -1,7 +1,7 @@
 import { Callback } from "@/types/callback";
 import { TITLE_OFF, TITLE_ON } from "@/data/contants";
 import { settingsManager, SETTINGS } from "@/api/settings";
-import bufferedLogger from "@kitamersion/kita-logging/lib/logger";
+import { logger } from "@kitamersion/kita-logging";
 
 const getExtensionBaseUrl = () => {
   return chrome.identity.getRedirectURL("settings.html");
@@ -10,12 +10,12 @@ const getExtensionBaseUrl = () => {
 // SET
 const setApplicationEnabled = async (value: boolean, callback: Callback<boolean>) => {
   try {
-    bufferedLogger.info(`setting application enabled state to: ${value}`);
+    logger.info(`setting application enabled state to: ${value}`);
     await settingsManager.set(SETTINGS.application.enabled, value);
     setApplicationState(value);
     callback(value);
   } catch (error) {
-    await bufferedLogger.error(`Error setting application enabled state: ${error}`);
+    logger.error(`Error setting application enabled state: ${error}`, error);
     callback(value); // Still call callback even if there's an error
   }
 };
@@ -23,12 +23,12 @@ const setApplicationEnabled = async (value: boolean, callback: Callback<boolean>
 // GET
 const getApplicationEnabled = async (callback: Callback<boolean>) => {
   try {
-    bufferedLogger.info("fetching application enabled state");
+    logger.info("fetching application enabled state");
     const value = await settingsManager.get(SETTINGS.application.enabled);
     setApplicationState(value);
     callback(value);
   } catch (error) {
-    await bufferedLogger.error(`Error getting application enabled state: ${error}`);
+    logger.error(`Error getting application enabled state: ${error}`);
     callback(false); // Default to false on error
   }
 };
@@ -36,7 +36,7 @@ const getApplicationEnabled = async (callback: Callback<boolean>) => {
 // set CONTENT_SCRIPT_ENABLED_KEY
 const setContentScriptEnabled = async (value: boolean, callback: Callback<boolean>) => {
   try {
-    bufferedLogger.info(`setting content script enabled state to: ${value}`);
+    logger.info(`setting content script enabled state to: ${value}`);
     await settingsManager.set(SETTINGS.application.contentScriptEnabled, value);
     setApplicationState(value);
     callback(value);
@@ -48,7 +48,7 @@ const setContentScriptEnabled = async (value: boolean, callback: Callback<boolea
       }
     });
   } catch (error) {
-    bufferedLogger.error(`Error setting content script enabled state: ${error}`);
+    logger.error(`Error setting content script enabled state: ${error}`, error);
     callback(value);
   }
 };
@@ -56,12 +56,12 @@ const setContentScriptEnabled = async (value: boolean, callback: Callback<boolea
 // get CONTENT_SCRIPT_ENABLED_KEY
 const getContentScriptEnabled = async (callback: Callback<boolean>) => {
   try {
-    await bufferedLogger.info("fetching content script enabled state");
+    await logger.info("fetching content script enabled state");
     const value = await settingsManager.get(SETTINGS.application.contentScriptEnabled);
     setApplicationState(value);
     callback(value);
   } catch (error) {
-    await bufferedLogger.error(`Error getting content script enabled state: ${error}`);
+    logger.error(`Error getting content script enabled state: ${error}`, error);
     callback(true); // Default to true on error
   }
 };

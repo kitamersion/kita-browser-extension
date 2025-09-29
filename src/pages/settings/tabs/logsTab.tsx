@@ -272,7 +272,7 @@ const LogsTab: React.FC = () => {
           <Drawer isOpen={isOpen} onClose={onClose} size="md">
             <DrawerOverlay />
             <DrawerContent bg="bg.primary" color="text.primary">
-              <DrawerHeader>Logger Settings</DrawerHeader>
+              <DrawerHeader color="accent.primary">Logger Settings</DrawerHeader>
               <DrawerCloseButton />
               <DrawerBody>
                 <VStack align="stretch" spacing={6}>

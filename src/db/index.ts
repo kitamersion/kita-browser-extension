@@ -880,7 +880,10 @@ class IndexedDB {
       const expires_at = Date.now() + ttl;
       const request = store.put({ key, value, expires_at });
       request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        logger.error(`setAniListCache error: ${request.error}`);
+        reject(request.error);
+      };
     });
   }
 
@@ -898,7 +901,10 @@ class IndexedDB {
           resolve(undefined);
         }
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        logger.error(`getAniListCache error: ${request.error}`);
+        reject(request.error);
+      };
     });
   }
 
@@ -917,7 +923,10 @@ class IndexedDB {
           resolve(null);
         }
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        logger.error(`getAniListCacheRaw error: ${request.error}`);
+        reject(request.error);
+      };
     });
   }
 
