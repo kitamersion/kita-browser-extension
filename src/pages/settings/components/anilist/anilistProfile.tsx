@@ -9,7 +9,6 @@ import {
   Text,
   Button,
   Collapse,
-  useDisclosure,
   Grid,
   Image,
   Badge,
@@ -29,6 +28,7 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
+  useDisclosure,
 } from "@chakra-ui/react";
 import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { FaPlay, FaPause, FaCheck, FaRedo, FaTrash, FaCalendarPlus } from "react-icons/fa";
@@ -65,12 +65,14 @@ interface AnimeListEntry {
 }
 
 const AnilistProfile = ({ Viewer }: GetMeQuery) => {
-  const { isOpen: isWatchingOpen, onToggle: toggleWatching } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: openEditModal, onClose: closeEditModal } = useDisclosure();
   const [selectedEntry, setSelectedEntry] = useState<AnimeListEntry | null>(null);
   const [editProgress, setEditProgress] = useState<string>("");
   const [editStatus, setEditStatus] = useState<MediaListStatus>(MediaListStatus.Current);
   const [editScore, setEditScore] = useState<string>("");
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    [MediaListStatus.Current]: true, // Default open for Current
+  });
 
   const toast = useToast();
 
@@ -81,20 +83,16 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
     return Viewer?.statistics?.anime?.minutesWatched ? (Viewer?.statistics?.anime?.minutesWatched / 1440).toFixed(2) : "0.00";
   }, [Viewer?.statistics?.anime?.minutesWatched]);
 
-  const currentlyWatching = useMemo(() => {
-    return (
-      animeListData?.MediaListCollection?.lists
-        ?.find((list) => list?.status === MediaListStatus.Current)
-        ?.entries?.filter((entry) => entry?.media) || []
-    );
+  const allAnimeLists = useMemo(() => {
+    return animeListData?.MediaListCollection?.lists || [];
   }, [animeListData]);
 
   useEffect(() => {
     if (Viewer?.id) {
+      // Fetch all anime lists
       getAnimeList({
         variables: {
           userId: Viewer.id,
-          status: MediaListStatus.Current,
         },
       });
     }
@@ -145,7 +143,6 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
         getAnimeList({
           variables: {
             userId: Viewer.id,
-            status: MediaListStatus.Current,
           },
         });
       }
@@ -198,6 +195,13 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
       default:
         return "gray";
     }
+  };
+
+  const toggleSection = (status: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [status]: !prev[status],
+    }));
   };
 
   return (
@@ -265,110 +269,119 @@ const AnilistProfile = ({ Viewer }: GetMeQuery) => {
 
         <Divider borderColor="border.primary" />
 
-        {/* Currently Watching Section */}
-        <Box>
-          <Button
-            variant="ghost"
-            rightIcon={isWatchingOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-            onClick={toggleWatching}
-            size="sm"
-            color="text.primary"
-            _hover={{ bg: "bg.tertiary" }}
-          >
-            Currently Watching ({currentlyWatching.length}){animeListLoading && <Spinner size="sm" ml={2} />}
-          </Button>
-
-          <Collapse in={isWatchingOpen} animateOpacity>
-            <VStack spacing={3} mt={4} align="stretch">
-              {currentlyWatching.map((entry: any) => (
-                <Box
-                  key={entry.id}
-                  bg="bg.tertiary"
-                  borderRadius="md"
-                  p={3}
-                  border="1px solid"
-                  borderColor="border.primary"
-                  _hover={{
-                    borderColor: "border.accent",
-                    bg: "bg.secondary",
-                  }}
-                  transition="all 0.2s"
-                >
-                  <Flex gap={3}>
-                    <Image
-                      src={entry.media.coverImage.medium}
-                      alt={entry.media.title.userPreferred}
-                      boxSize="60px"
-                      objectFit="cover"
-                      borderRadius="md"
-                      fallbackSrc="/placeholder-anime.png"
-                    />
-                    <Box flex={1} minW={0}>
-                      <Link
-                        href={entry.media.siteUrl}
-                        isExternal
-                        color="text.primary"
-                        fontWeight="medium"
-                        fontSize="sm"
-                        noOfLines={2}
-                        _hover={{ color: "accent.primary" }}
-                      >
-                        {entry.media.title.userPreferred}
-                      </Link>
-
-                      <HStack spacing={2} mt={1}>
-                        <Badge colorScheme={getStatusColor(entry.status)} size="sm">
-                          <Flex alignItems="center" gap={1}>
-                            {getStatusIcon(entry.status)}
-                            <Text fontSize="xs">{entry.status}</Text>
-                          </Flex>
-                        </Badge>
-                        {entry.media.format && (
-                          <Badge variant="outline" size="sm" color="text.tertiary">
-                            {entry.media.format}
-                          </Badge>
-                        )}
-                      </HStack>
-
-                      <Box mt={2}>
-                        <Flex alignItems="center" gap={2} mb={1}>
-                          <Text fontSize="xs" color="text.secondary">
-                            Progress: {entry.progress}/{entry.media.episodes || "?"}
-                          </Text>
-                          {entry.media.nextAiringEpisode && (
-                            <Text fontSize="xs" color="accent.primary">
-                              EP {entry.media.nextAiringEpisode.episode} in{" "}
-                              {Math.floor(entry.media.nextAiringEpisode.timeUntilAiring / 3600)}h
-                            </Text>
-                          )}
-                        </Flex>
-                        <Progress
-                          value={entry.media.episodes ? (entry.progress / entry.media.episodes) * 100 : 0}
-                          size="sm"
-                          colorScheme="orange"
-                          bg="bg.primary"
-                        />
-                      </Box>
-                    </Box>
-                    <IconButton
-                      aria-label="Edit entry"
-                      icon={<MdEdit />}
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditEntry(entry)}
-                      _hover={{ bg: "bg.primary" }}
-                    />
-                  </Flex>
-                </Box>
-              ))}
-              {currentlyWatching.length === 0 && !animeListLoading && (
-                <Text color="text.tertiary" textAlign="center" py={4}>
-                  No anime currently watching
+        {/* Anime Lists */}
+        <VStack spacing={4} align="stretch">
+          {allAnimeLists.map((list) => (
+            <Box key={list?.status}>
+              <Button
+                variant="ghost"
+                rightIcon={openSections[list?.status || ""] ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                onClick={() => toggleSection(list?.status || "")}
+                size="sm"
+                color="text.primary"
+                _hover={{ bg: "bg.tertiary" }}
+                w="full"
+                justifyContent="space-between"
+              >
+                <Text fontWeight="medium">
+                  {list?.status} ({list?.entries?.length || 0})
                 </Text>
-              )}
-            </VStack>
-          </Collapse>
-        </Box>
+                {animeListLoading && <Spinner size="sm" />}
+              </Button>
+
+              <Collapse in={openSections[list?.status || ""]} animateOpacity>
+                <VStack spacing={3} mt={4} align="stretch">
+                  {list?.entries?.map((entry: any) => (
+                    <Box
+                      key={entry.id}
+                      bg="bg.tertiary"
+                      borderRadius="md"
+                      p={3}
+                      border="1px solid"
+                      borderColor="border.primary"
+                      _hover={{
+                        borderColor: "border.accent",
+                        bg: "bg.secondary",
+                      }}
+                      transition="all 0.2s"
+                    >
+                      <Flex gap={3}>
+                        <Image
+                          src={entry.media.coverImage.medium}
+                          alt={entry.media.title.userPreferred}
+                          boxSize="60px"
+                          objectFit="cover"
+                          borderRadius="md"
+                          fallbackSrc="/placeholder-anime.png"
+                        />
+                        <Box flex={1} minW={0}>
+                          <Link
+                            href={entry.media.siteUrl}
+                            isExternal
+                            color="text.primary"
+                            fontWeight="medium"
+                            fontSize="sm"
+                            noOfLines={2}
+                            _hover={{ color: "accent.primary" }}
+                          >
+                            {entry.media.title.userPreferred}
+                          </Link>
+
+                          <HStack spacing={2} mt={1}>
+                            <Badge colorScheme={getStatusColor(entry.status)} size="sm">
+                              <Flex alignItems="center" gap={1}>
+                                {getStatusIcon(entry.status)}
+                                <Text fontSize="xs">{entry.status}</Text>
+                              </Flex>
+                            </Badge>
+                            {entry.media.format && (
+                              <Badge variant="outline" size="sm" color="text.tertiary">
+                                {entry.media.format}
+                              </Badge>
+                            )}
+                          </HStack>
+
+                          <Box mt={2}>
+                            <Flex alignItems="center" gap={2} mb={1}>
+                              <Text fontSize="xs" color="text.secondary">
+                                Progress: {entry.progress}/{entry.media.episodes || "?"}
+                              </Text>
+                              {entry.media.nextAiringEpisode && (
+                                <Text fontSize="xs" color="accent.primary">
+                                  EP {entry.media.nextAiringEpisode.episode} in{" "}
+                                  {Math.floor(entry.media.nextAiringEpisode.timeUntilAiring / 3600)}h
+                                </Text>
+                              )}
+                            </Flex>
+                            <Progress
+                              value={entry.media.episodes ? (entry.progress / entry.media.episodes) * 100 : 0}
+                              size="sm"
+                              colorScheme="orange"
+                              bg="bg.primary"
+                            />
+                          </Box>
+                        </Box>
+                        <IconButton
+                          aria-label="Edit entry"
+                          icon={<MdEdit />}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditEntry(entry)}
+                          _hover={{ bg: "bg.primary" }}
+                        />
+                      </Flex>
+                    </Box>
+                  ))}
+                  {(!list?.entries || list.entries.length === 0) && !animeListLoading && (
+                    <Text color="text.tertiary" textAlign="center" py={4}>
+                      No anime in {list?.status}
+                    </Text>
+                  )}
+                </VStack>
+              </Collapse>
+            </Box>
+          ))}
+        </VStack>
 
         {/* Edit Modal */}
         <Modal isOpen={isEditModalOpen} onClose={closeEditModal} size="lg">
