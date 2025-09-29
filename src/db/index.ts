@@ -15,7 +15,6 @@ import {
   OBJECT_STORE_ANILIST_CACHE,
 } from "./schema";
 const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
-// ...existing code...
 import { setApplicationEnabled } from "@/api/applicationStorage";
 import { logger } from "@kitamersion/kita-logging";
 import { IAutoTag } from "@/types/autotag";
@@ -897,6 +896,25 @@ class IndexedDB {
           resolve(result.value);
         } else {
           resolve(undefined);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  // Get raw cache object for UI (value + expires_at)
+  public async getAniListCacheRaw(key: string): Promise<{ value: any; expires_at: number } | null> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve(null);
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.get(key);
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.expires_at > Date.now()) {
+          resolve({ value: result.value, expires_at: result.expires_at });
+        } else {
+          resolve(null);
         }
       };
       request.onerror = () => reject(request.error);
