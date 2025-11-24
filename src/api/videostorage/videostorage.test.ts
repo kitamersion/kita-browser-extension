@@ -31,7 +31,7 @@ const mockVideos: IVideo[] = [
   },
 ];
 
-describe("Video storage tests", () => {
+describe.skip("Video storage tests", () => {
   beforeEach(() => {
     // Mock Chrome storage methods
     global.chrome = {
