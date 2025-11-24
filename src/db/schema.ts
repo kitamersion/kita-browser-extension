@@ -15,12 +15,13 @@ type DBSchema = {
 };
 
 export const DB_NAME = "kitamersiondb";
-export const DB_VERSION = 6;
+export const DB_VERSION = 9; // bump version for new store
+export const OBJECT_STORE_ANILIST_CACHE = "anilist_cache";
 export const OBJECT_STORE_VIDEOS = "videos";
 export const OBJECT_STORE_TAGS = "tags";
 export const OBJECT_STORE_VIDEO_TAGS = "video_tags";
 export const OBJECT_STORE_AUTO_TAG = "auto_tags";
-export const OBJECT_STORE_CACHED_MEDIA_METADATA = "cache_media_metadata";
+export const OBJECT_STORE_SERIES_MAPPINGS = "series_mappings";
 
 export const DB_SCHEMAS: DBSchema[] = [
   {
@@ -102,7 +103,7 @@ export const DB_SCHEMAS: DBSchema[] = [
     version: 4,
     stores: [
       {
-        name: OBJECT_STORE_CACHED_MEDIA_METADATA,
+        name: "cache_media_metadata",
         options: { keyPath: "unique_code" },
         indexes: [
           {
@@ -113,6 +114,61 @@ export const DB_SCHEMAS: DBSchema[] = [
             name: "unique_code",
             options: { unique: true },
           },
+          {
+            name: "expires_at",
+            options: { unique: false },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: 7,
+    stores: [
+      {
+        name: OBJECT_STORE_SERIES_MAPPINGS,
+        options: { keyPath: "id" },
+        indexes: [
+          {
+            name: "normalized_title",
+            options: { unique: false },
+          },
+          {
+            name: "source_platform",
+            options: { unique: false },
+          },
+          {
+            name: "anilist_series_id",
+            options: { unique: false },
+          },
+          {
+            name: "season_year",
+            options: { unique: false },
+          },
+          {
+            name: "expires_at",
+            options: { unique: false },
+          },
+          {
+            name: "created_at",
+            options: { unique: false },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    version: 8,
+    // Migration to remove cache_media_metadata store - it's replaced by series_mappings
+    stores: [],
+  },
+  {
+    version: 9,
+    stores: [
+      {
+        name: OBJECT_STORE_ANILIST_CACHE,
+        options: { keyPath: "key" },
+        indexes: [
           {
             name: "expires_at",
             options: { unique: false },

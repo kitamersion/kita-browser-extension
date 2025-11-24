@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, useColorMode } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import useScreenSize from "@/hooks/useScreenSize";
 
 interface GlobalLayoutWrapperProps {
@@ -7,12 +7,10 @@ interface GlobalLayoutWrapperProps {
 }
 
 const GlobalLayoutWrapper: React.FC<GlobalLayoutWrapperProps> = ({ children }) => {
-  const { colorMode } = useColorMode();
   const { isMobile } = useScreenSize();
-  const bgColor = colorMode === "light" ? "white" : "gray.800";
 
   return (
-    <Box bg={bgColor} minWidth={isMobile ? "auto" : "full"}>
+    <Box bg="bg.primary" color="text.primary" minWidth={isMobile ? "auto" : "full"}>
       {children}
     </Box>
   );
