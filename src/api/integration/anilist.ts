@@ -166,9 +166,8 @@ const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
 };
 
 // get auth url
-const getAnilistAuthUrl = (anilistId: string, redirectUrl?: string): string => {
-  const finalRedirectUrl = redirectUrl || (chrome?.runtime?.id ? `https://${chrome.runtime.id}.chromiumapp.org/` : "");
-  return `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistId}&redirect_uri=${encodeURIComponent(finalRedirectUrl)}&response_type=code`;
+const getAnilistAuthUrl = (anilistId: string): string => {
+  return `https://anilist.co/api/v2/oauth/authorize?client_id=${anilistId}&response_type=token`;
 };
 
 export {

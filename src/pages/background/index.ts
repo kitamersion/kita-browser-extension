@@ -110,43 +110,20 @@ const launchWebAuthFlow = (authUrl: string): Promise<string | undefined> => {
 
 const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> => {
   try {
-    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId, anilistConfig.redirectUrl);
+    const authUrl = getAnilistAuthUrl(anilistConfig.anilistId);
     const redirectUrl = await launchWebAuthFlow(authUrl);
-
     const url = new URL(redirectUrl ?? "");
-    const code = url.searchParams.get("code"); // Authorization code is in query params, not hash
 
-    if (!code) {
-      logger.error("No authorization code found in redirect URL");
-      return false;
-    }
+    const params = new URLSearchParams(url.hash.substring(1)); // Remove leading '#'
 
-    // Exchange authorization code for access token
-    const tokenResponse = await fetch("https://anilist.co/api/v2/oauth/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        client_id: anilistConfig.anilistId,
-        client_secret: anilistConfig.secret,
-        redirect_uri: anilistConfig.redirectUrl,
-        code: code,
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      logger.error(`Failed to exchange code for token: ${tokenResponse.statusText}`);
-      return false;
-    }
-
-    const tokenData = await tokenResponse.json();
+    const accessToken = params.get("access_token");
+    const expires = params.get("expires_in");
+    const tokenType = params.get("token_type");
 
     const anilistAuth: AnilistAuth = {
-      access_token: tokenData.access_token ?? "",
-      token_type: tokenData.token_type ?? "Bearer",
-      expires_in: tokenData.expires_in ? parseInt(tokenData.expires_in) : 0,
+      access_token: accessToken ?? "",
+      token_type: tokenType ?? "",
+      expires_in: expires ? parseInt(expires) : 0,
       issued_at: Date.now(),
     };
 
@@ -155,6 +132,7 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
     return true;
   } catch (error) {
     logger.error(`Error authorizing anilist ${error}`);
+
     return false;
   }
 };
