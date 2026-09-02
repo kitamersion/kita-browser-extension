@@ -49,3 +49,15 @@ export interface ISeriesSearchResult {
   description?: string;
   idMal?: number;
 }
+
+// An AniList search that couldn't be auto-matched (e.g. multiple results with no
+// season year match) and is waiting for a human to pick the right one.
+export interface PendingAnilistSync {
+  id: string;
+  video_id: string;
+  series_title: string;
+  source_platform: SourcePlatform;
+  season_year?: number;
+  search_results: ISeriesSearchResult[];
+  created_at: number;
+}

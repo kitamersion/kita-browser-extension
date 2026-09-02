@@ -1,5 +1,7 @@
 import { SettingDefinition } from "./types";
 import { AuthStatus } from "@/types/kitaschema";
+import { SourceAutoSyncConfig, SourceAutoTrackConfig } from "@/types/integrations/sourceTracking";
+import { PendingAnilistSync } from "@/types/integrations/seriesMapping";
 
 // Validators
 const isBooleanValidator = (value: any): value is boolean => typeof value === "boolean";
@@ -7,6 +9,16 @@ const isNumberValidator = (value: any): value is number => typeof value === "num
 const isStringValidator = (value: any): value is string => typeof value === "string";
 const isAuthStatusValidator = (value: any): value is AuthStatus =>
   ["initial", "pending", "authorized", "unauthorized", "error"].includes(value);
+const isSourceAutoTrackConfigValidator = (value: any): value is SourceAutoTrackConfig =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof value.enabled === "boolean" &&
+  typeof value.watchPercentage === "number" &&
+  value.watchPercentage >= 1 &&
+  value.watchPercentage <= 100;
+const isSourceAutoSyncConfigValidator = (value: any): value is SourceAutoSyncConfig =>
+  typeof value === "object" && value !== null && typeof value.enabled === "boolean";
+const isPendingAnilistSyncArrayValidator = (value: any): value is PendingAnilistSync[] => Array.isArray(value);
 
 export const SETTINGS = {
   application: {
@@ -53,6 +65,37 @@ export const SETTINGS = {
         defaultValue: "",
         validator: isStringValidator,
       } as SettingDefinition<string>,
+      pendingSync: {
+        key: "kitamersion_anilist_pending_sync",
+        defaultValue: [],
+        validator: isPendingAnilistSyncArrayValidator,
+      } as SettingDefinition<PendingAnilistSync[]>,
+    },
+  },
+  sources: {
+    crunchyroll: {
+      autoTrack: {
+        key: "kitamersion_source_crunchyroll_autotrack",
+        defaultValue: { enabled: false, watchPercentage: 80 },
+        validator: isSourceAutoTrackConfigValidator,
+      } as SettingDefinition<SourceAutoTrackConfig>,
+      autoSync: {
+        key: "kitamersion_source_crunchyroll_autosync",
+        defaultValue: { enabled: false },
+        validator: isSourceAutoSyncConfigValidator,
+      } as SettingDefinition<SourceAutoSyncConfig>,
+    },
+    youtube: {
+      autoTrack: {
+        key: "kitamersion_source_youtube_autotrack",
+        defaultValue: { enabled: false, watchPercentage: 80 },
+        validator: isSourceAutoTrackConfigValidator,
+      } as SettingDefinition<SourceAutoTrackConfig>,
+      autoSync: {
+        key: "kitamersion_source_youtube_autosync",
+        defaultValue: { enabled: false },
+        validator: isSourceAutoSyncConfigValidator,
+      } as SettingDefinition<SourceAutoSyncConfig>,
     },
   },
   storage: {

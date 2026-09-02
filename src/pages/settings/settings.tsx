@@ -1,10 +1,12 @@
 import { Box, Tab, TabList, TabPanels, Tabs } from "@chakra-ui/react";
 import React from "react";
 import { useAnilistContext } from "@/context/anilistContext";
+import { getSettingsTabIndexFromSearch } from "@/utils";
 
 const TagTab = React.lazy(() => import("@/pages/settings/tabs/tagsTab"));
 const GeneralTab = React.lazy(() => import("@/pages/settings/tabs/generalTab"));
 const IntegrationTab = React.lazy(() => import("@/pages/settings/tabs/integrationTab"));
+const AutoTrackTab = React.lazy(() => import("@/pages/settings/tabs/autoTrackTab"));
 const SeriesMappingsTab = React.lazy(() => import("@/pages/settings/tabs/seriesMappingsTab"));
 const LogsTab = React.lazy(() => import("@/pages/settings/tabs/logsTab"));
 const AnilistTab = React.lazy(() => import("@/pages/settings/tabs/anilistTab"));
@@ -14,9 +16,10 @@ const Settings = () => {
 
   return (
     <Box as="main">
-      <Tabs variant="soft-rounded" colorScheme="green" defaultIndex={0}>
+      <Tabs variant="soft-rounded" colorScheme="green" defaultIndex={getSettingsTabIndexFromSearch(window.location.search)}>
         <TabList gap={1}>
           <Tab>Integration</Tab>
+          <Tab>Auto Track</Tab>
           <Tab>Tags</Tab>
           <Tab>Mappings</Tab>
           <Tab>Logs</Tab>
@@ -25,6 +28,7 @@ const Settings = () => {
         </TabList>
         <TabPanels>
           <IntegrationTab />
+          <AutoTrackTab />
           <TagTab />
           <SeriesMappingsTab />
           <LogsTab />

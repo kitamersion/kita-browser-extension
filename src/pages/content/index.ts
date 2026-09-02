@@ -1,13 +1,20 @@
 /* eslint-disable no-case-declarations */
 import { SiteKey, IVideo } from "../../types/video";
-import { VIDEO_ADD } from "@/data/events";
+import { OPEN_ANILIST_PENDING_REVIEW, VIDEO_ADD } from "@/data/events";
 import { logger } from "@kitamersion/kita-logging";
 import { CONTENT_SITE_CONFIG } from "@/data/contants";
 import { getContentScriptEnabled } from "@/api/applicationStorage";
+import { getSourceAutoTrackConfig } from "@/api/sourceTracking";
+import { getPendingAnilistSyncs } from "@/api/integration/anilistPendingSync";
+import { mapSiteKeyToSourcePlatform } from "@/utils";
+import { createWatchProgressWatcher, WatchProgressWatcher } from "./watchProgressWatcher";
+import { renderPendingReviewBadge } from "./pendingReviewBadge";
+import { SETTINGS } from "@/api/settings/definitions";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
 const CAPTURE_IMAGE_ID = "kitamersion-capture-img";
+const WATCH_PROGRESS_POLL_MS = 2000;
 
 class VideoTracker {
   private static instance: VideoTracker;
@@ -15,6 +22,11 @@ class VideoTracker {
   private timeoutId: NodeJS.Timeout | undefined;
   private lastCaptureTime = 0;
   private readonly CAPTURE_DEBOUNCE_MS = 2000; // Prevent captures within 2 seconds
+  private watchProgressPollId: ReturnType<typeof setInterval> | undefined;
+  private watchProgressWatcher: WatchProgressWatcher | undefined;
+  private trackedVideoElement: HTMLVideoElement | undefined;
+  private trackedVideoSrc: string | undefined;
+  private pendingReviewStorageListener: ((changes: { [key: string]: chrome.storage.StorageChange }) => void) | undefined;
 
   constructor() {
     this.keyboardShortcutHandler = undefined;
@@ -273,6 +285,8 @@ class VideoTracker {
   initialize() {
     this.setupKeyboardShortcut();
     this._kitamersionCaptureButton();
+    this._startWatchProgressPolling();
+    this._startPendingReviewBadge();
   }
 
   destroy() {
@@ -284,6 +298,99 @@ class VideoTracker {
     if (this.keyboardShortcutHandler) {
       document.removeEventListener("keydown", this.keyboardShortcutHandler);
     }
+    this._stopWatchProgressPolling();
+    this._stopPendingReviewBadge();
+  }
+
+  _refreshPendingReviewBadge() {
+    getPendingAnilistSyncs().then((pending) => {
+      renderPendingReviewBadge(pending.length, () => {
+        chrome.runtime.sendMessage({ type: OPEN_ANILIST_PENDING_REVIEW });
+      });
+    });
+  }
+
+  _startPendingReviewBadge() {
+    this._refreshPendingReviewBadge();
+
+    this.pendingReviewStorageListener = (changes) => {
+      if (SETTINGS.integrations.anilist.pendingSync.key in changes) {
+        this._refreshPendingReviewBadge();
+      }
+    };
+    chrome.storage.onChanged.addListener(this.pendingReviewStorageListener);
+  }
+
+  _stopPendingReviewBadge() {
+    if (this.pendingReviewStorageListener) {
+      chrome.storage.onChanged.removeListener(this.pendingReviewStorageListener);
+      this.pendingReviewStorageListener = undefined;
+    }
+    renderPendingReviewBadge(0, () => {});
+  }
+
+  _startWatchProgressPolling() {
+    if (this.watchProgressPollId) return;
+    this.watchProgressPollId = setInterval(() => {
+      this._refreshWatchProgressTracking();
+    }, WATCH_PROGRESS_POLL_MS);
+  }
+
+  _stopWatchProgressPolling() {
+    if (this.watchProgressPollId) {
+      clearInterval(this.watchProgressPollId);
+      this.watchProgressPollId = undefined;
+    }
+    this.watchProgressWatcher?.destroy();
+    this.watchProgressWatcher = undefined;
+    this.trackedVideoElement = undefined;
+    this.trackedVideoSrc = undefined;
+  }
+
+  // Auto-capture at a configurable % watched. Sites like Crunchyroll/YouTube are
+  // SPAs that can swap episodes without reloading this script - sometimes reusing
+  // the same <video> element - so a source change is detected by src, not just
+  // element identity, and re-checked on the settings response in case a newer
+  // navigation happened while that lookup was in flight.
+  async _refreshWatchProgressTracking() {
+    const video = document.querySelector("video");
+    if (!video) return;
+
+    const currentSrc = video.currentSrc || video.src;
+    if (video === this.trackedVideoElement && currentSrc === this.trackedVideoSrc) {
+      return;
+    }
+
+    logger.info(`[auto-track] new video detected (src=${currentSrc})`);
+
+    this.watchProgressWatcher?.destroy();
+    this.watchProgressWatcher = undefined;
+    this.trackedVideoElement = video;
+    this.trackedVideoSrc = currentSrc;
+
+    const platform = mapSiteKeyToSourcePlatform(this._getOrigin());
+    if (!platform) {
+      logger.debug(`[auto-track] origin ${this._getOrigin()} has no auto-track source mapping, skipping`);
+      return;
+    }
+
+    const config = await getSourceAutoTrackConfig(platform);
+    logger.info(`[auto-track] ${platform} config: enabled=${config.enabled}, watchPercentage=${config.watchPercentage}`);
+    if (!config.enabled) {
+      logger.debug(`[auto-track] auto-track disabled for ${platform}, skipping`);
+      return;
+    }
+
+    if (this.trackedVideoElement !== video || this.trackedVideoSrc !== currentSrc) {
+      logger.debug("[auto-track] video changed while loading config, aborting stale watcher setup");
+      return;
+    }
+
+    logger.info(`[auto-track] watching ${platform} video for ${config.watchPercentage}% watched`);
+    this.watchProgressWatcher = createWatchProgressWatcher(video, config.watchPercentage, () => {
+      logger.info(`[auto-track] ${config.watchPercentage}% threshold reached for ${platform}, auto-capturing video`);
+      this._handleVideoCapture();
+    });
   }
 }
 

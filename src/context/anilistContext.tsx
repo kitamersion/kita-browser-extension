@@ -8,7 +8,6 @@ import {
   getIsAuthorizedWithAnilist,
   deleteAnilistAuth,
   setAnilistConfig,
-  getAnilistAutoSyncMedia,
 } from "@/api/integration/anilist";
 import eventBus from "@/api/eventbus";
 import {
@@ -27,7 +26,6 @@ interface AnilistContextType {
   anilistAuth: AnilistAuth;
   anilistAuthStatus: AuthStatus;
   anilistIsAuthorized: boolean;
-  anilistAutoSyncMedia: boolean;
 }
 
 const initialAnilistAuthState: AnilistAuth = {
@@ -63,13 +61,6 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isPolling, setIsPolling] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("initial");
   const [alreadyAuthorized, setAlreadyAuthorized] = useState<boolean>(false);
-  const [anilistAutoSyncMedia, setAnilistAutoSyncMedia] = useState<boolean>(false);
-
-  const handleGetAnilistAutoSync = useCallback(() => {
-    getAnilistAutoSyncMedia((state) => {
-      setAnilistAutoSyncMedia(state);
-    });
-  }, []);
 
   const startPolling = useCallback(() => {
     setIsPolling(true);
@@ -195,19 +186,10 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
       handleGetAnilistConfig();
       handleGetAnilistAuth();
       handleGetAnilistAuthStatus();
-      handleGetAnilistAutoSync();
       setIsInitialized(true);
       return () => {};
     }
-  }, [
-    handleGetAnilistAuth,
-    handleGetAnilistAuthStatus,
-    handleGetAnilistAutoSync,
-    handleGetAnilistConfig,
-    isAppInitialized,
-    isApplicationEnabled,
-    isInitialized,
-  ]);
+  }, [handleGetAnilistAuth, handleGetAnilistAuthStatus, handleGetAnilistConfig, isAppInitialized, isApplicationEnabled, isInitialized]);
 
   // ================================================================================
   // ======================     EVENT HANDLERS      =================================
@@ -245,7 +227,6 @@ export const AnilistProvider = ({ children }: PropsWithChildren<unknown>) => {
         anilistAuth,
         anilistAuthStatus: authStatus,
         anilistIsAuthorized: alreadyAuthorized,
-        anilistAutoSyncMedia: anilistAutoSyncMedia,
       }}
     >
       {children}

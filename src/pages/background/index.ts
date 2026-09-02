@@ -1,12 +1,13 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { logger } from "@kitamersion/kita-logging";
-import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
+import { INTEGRATION_ANILIST_AUTH_CONNECT, OPEN_ANILIST_PENDING_REVIEW, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistConfig } from "@/types/integrations/anilist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateUniqueCode, parseAnilistAuthFromRedirectUrl } from "@/utils";
+import { attemptAnilistAutoSync } from "./anilistAutoSync";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -17,6 +18,10 @@ type RuntimeStatus = "error" | "success" | "unknown";
 
 // EVENT HANDLERS
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  if (request.type !== VIDEO_ADD && request.type !== INTEGRATION_ANILIST_AUTH_CONNECT) {
+    return;
+  }
+
   let parsedPayload;
   try {
     parsedPayload = JSON.parse(request.payload);
@@ -50,9 +55,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         parsedPayload.tags = autoTag.tags;
       }
 
-      await IndexedDB.addVideo({ ...parsedPayload, unique_code: uniqueCode });
+      const newVideo: IVideo = { ...parsedPayload, unique_code: uniqueCode };
+      await IndexedDB.addVideo(newVideo);
       incrementTotalVideos();
       incrementTotalVideoDuration(video_duration ?? 0);
+      attemptAnilistAutoSync(newVideo);
 
       if (autoTag) {
         const videoTagRelationship: IVideoTag[] = autoTag.tags.map((tag_id) => {
@@ -151,4 +158,12 @@ chrome.runtime.onInstalled.addListener(() => {
   (async () => {
     await IndexedDB.openDatabase();
   })();
+});
+
+// content scripts can't call chrome.tabs themselves, so they message the
+// background to open settings on the Auto Track tab's pending review list.
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.type === OPEN_ANILIST_PENDING_REVIEW) {
+    chrome.tabs.create({ url: chrome.runtime.getURL("settings.html?tab=autotrack") });
+  }
 });
