@@ -3,10 +3,10 @@ import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summary
 import { logger } from "@kitamersion/kita-logging";
 import { INTEGRATION_ANILIST_AUTH_CONNECT, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
-import { AnilistAuth, AnilistConfig } from "@/types/integrations/anilist";
+import { AnilistConfig } from "@/types/integrations/anilist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
-import { generateUniqueCode } from "@/utils";
+import { generateUniqueCode, parseAnilistAuthFromRedirectUrl } from "@/utils";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -112,20 +112,12 @@ const authorizeAnilist = async (anilistConfig: AnilistConfig): Promise<boolean> 
   try {
     const authUrl = getAnilistAuthUrl(anilistConfig.anilistId);
     const redirectUrl = await launchWebAuthFlow(authUrl);
-    const url = new URL(redirectUrl ?? "");
+    const anilistAuth = parseAnilistAuthFromRedirectUrl(redirectUrl ?? "");
 
-    const params = new URLSearchParams(url.hash.substring(1)); // Remove leading '#'
-
-    const accessToken = params.get("access_token");
-    const expires = params.get("expires_in");
-    const tokenType = params.get("token_type");
-
-    const anilistAuth: AnilistAuth = {
-      access_token: accessToken ?? "",
-      token_type: tokenType ?? "",
-      expires_in: expires ? parseInt(expires) : 0,
-      issued_at: Date.now(),
-    };
+    if (!anilistAuth) {
+      logger.error("No access token found in redirect URL");
+      return false;
+    }
 
     setAnilistAuth(anilistAuth, () => {});
 

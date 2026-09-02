@@ -23,7 +23,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "ext:manifest": "node builder/build-manifest.ts",
-    "ext:copy": "cp -r ./ext/*.json ./ext/icons dist",
+    "ext:copy": "mkdir -p dist && cp -r ./ext/*.json ./ext/icons dist",
     "graphql:codegen": "npx graphql-codegen",
     "graphql:codegen:watch": "npx graphql-codegen --watch"
   },
