@@ -6,6 +6,7 @@ export const kitaSchema: KitaSchema = {
     Tags: [],
     VideoTagRelationships: [],
     AutoTags: [],
+    SeriesMappings: [],
   },
   ApplicationSettings: {
     IsReady: false, // @todo: implement

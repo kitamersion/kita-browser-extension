@@ -1,4 +1,4 @@
-import React, { createContext, PropsWithChildren, useContext } from "react";
+import React, { createContext, PropsWithChildren, useContext, useMemo } from "react";
 import { useAnilistContext } from "@/context/anilistContext";
 import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
@@ -18,25 +18,28 @@ export const useGraphqlContext = () => {
 
 export const GraphqlProvider = ({ children }: PropsWithChildren<unknown>) => {
   const { anilistAuth } = useAnilistContext();
+  const accessToken = anilistAuth?.access_token;
 
-  const httpLink = createHttpLink({
-    uri: ANILIST_GRAPHQL_URI,
-  });
+  const client = useMemo(() => {
+    const httpLink = createHttpLink({
+      uri: ANILIST_GRAPHQL_URI,
+    });
 
-  const authLink = setContext((_, { headers }) => {
-    return {
-      headers: {
-        ...headers,
-        authorization: anilistAuth?.access_token ? `Bearer ${anilistAuth?.access_token}` : "",
-      },
-    };
-  });
+    const authLink = setContext((_, { headers }) => {
+      return {
+        headers: {
+          ...headers,
+          authorization: accessToken ? `Bearer ${accessToken}` : "",
+        },
+      };
+    });
 
-  const client = new ApolloClient({
-    link: authLink.concat(httpLink),
-    cache: new InMemoryCache(),
-    connectToDevTools: ENV === "dev" ? true : false,
-  });
+    return new ApolloClient({
+      link: authLink.concat(httpLink),
+      cache: new InMemoryCache(),
+      connectToDevTools: ENV === "dev" ? true : false,
+    });
+  }, [accessToken]);
 
   return (
     <GraphqlContext.Provider value={undefined}>
