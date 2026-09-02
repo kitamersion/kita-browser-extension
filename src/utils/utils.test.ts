@@ -1,5 +1,14 @@
 import { IVideo } from "@/types/video";
-import { convertToSeconds, filterVideos, formatDuration, formatTimestamp, generateUniqueCode, getDateFromNow, randomOffset } from ".";
+import {
+  convertToSeconds,
+  filterVideos,
+  formatDuration,
+  formatTimestamp,
+  generateUniqueCode,
+  getDateFromNow,
+  parseAnilistAuthFromRedirectUrl,
+  randomOffset,
+} from ".";
 
 describe("formatDuration function", () => {
   test.each([
@@ -149,6 +158,38 @@ describe("getDateFromNow function", () => {
     expect(result.getFullYear()).toBe(expectedDate.getFullYear());
     expect(result.getMonth()).toBe(expectedDate.getMonth());
     expect(result.getDate()).toBe(expectedDate.getDate());
+  });
+});
+
+describe("parseAnilistAuthFromRedirectUrl function", () => {
+  test("returns null when the redirect fragment has no access_token", () => {
+    const redirectUrl = "https://abc.chromiumapp.org/callback#error=access_denied";
+    expect(parseAnilistAuthFromRedirectUrl(redirectUrl)).toBeNull();
+  });
+
+  test("defaults expires_in to the 1 year token lifetime when AniList omits it from the fragment", () => {
+    // AniList's current implicit grant redirect only includes `access_token` in the fragment.
+    const redirectUrl = "https://abc.chromiumapp.org/callback#access_token=sometoken";
+
+    const auth = parseAnilistAuthFromRedirectUrl(redirectUrl);
+
+    expect(auth?.access_token).toBe("sometoken");
+    expect(auth?.expires_in).toBe(31536000);
+    // regression guard: a falsy/zero expires_in makes the token look expired the instant it's issued
+    expect(auth?.expires_in).toBeGreaterThan(0);
+  });
+
+  test("uses expires_in and token_type from the fragment when present", () => {
+    const redirectUrl = "https://abc.chromiumapp.org/callback#access_token=sometoken&expires_in=1234&token_type=Bearer";
+
+    const auth = parseAnilistAuthFromRedirectUrl(redirectUrl);
+
+    expect(auth).toEqual({
+      access_token: "sometoken",
+      token_type: "Bearer",
+      expires_in: 1234,
+      issued_at: expect.any(Number),
+    });
   });
 });
 

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { SHA256 } from "crypto-js";
 import { IVideo } from "@/types/video";
+import { AnilistAuth } from "@/types/integrations/anilist";
 
 const SETTINGS_PAGE_NAME = "settings.html";
 const STATISTICS_PAGE_NAME = "statistics.html";
@@ -131,6 +132,30 @@ export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
 };
 
 export const randomOffset = (min = 1000, max = 5000) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+// AniList access tokens are valid for 1 year with no refresh support, and their implicit
+// grant redirect only guarantees `access_token` in the fragment (no expires_in/token_type).
+const ANILIST_TOKEN_LIFETIME_SECONDS = 31536000;
+
+export const parseAnilistAuthFromRedirectUrl = (redirectUrl: string): AnilistAuth | null => {
+  const url = new URL(redirectUrl);
+  const params = new URLSearchParams(url.hash.substring(1)); // remove leading '#'
+
+  const accessToken = params.get("access_token");
+  if (!accessToken) {
+    return null;
+  }
+
+  const expiresIn = params.get("expires_in");
+  const tokenType = params.get("token_type");
+
+  return {
+    access_token: accessToken,
+    token_type: tokenType ?? "Bearer",
+    expires_in: expiresIn ? parseInt(expiresIn) : ANILIST_TOKEN_LIFETIME_SECONDS,
+    issued_at: Date.now(),
+  };
+};
 
 // @todo write tests
 export const generateRandomString = (length: number): string => {
