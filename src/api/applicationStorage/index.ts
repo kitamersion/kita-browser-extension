@@ -25,7 +25,6 @@ const getApplicationEnabled = async (callback: Callback<boolean>) => {
   try {
     logger.info("fetching application enabled state");
     const value = await settingsManager.get(SETTINGS.application.enabled);
-    setApplicationState(value);
     callback(value);
   } catch (error) {
     logger.error(`Error getting application enabled state: ${error}`);
@@ -58,7 +57,6 @@ const getContentScriptEnabled = async (callback: Callback<boolean>) => {
   try {
     await logger.info("fetching content script enabled state");
     const value = await settingsManager.get(SETTINGS.application.contentScriptEnabled);
-    setApplicationState(value);
     callback(value);
   } catch (error) {
     logger.error(`Error getting content script enabled state: ${error}`, error);
