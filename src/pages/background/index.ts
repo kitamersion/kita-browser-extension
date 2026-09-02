@@ -33,6 +33,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     const uniqueCode = generateUniqueCode(video_title, origin);
 
     try {
+      // MV3 service workers are torn down when idle; the message that wakes this one
+      // back up can arrive before the module-level openDatabase() IIFE has resolved,
+      // leaving this.db null. Awaiting it here guarantees the connection is ready.
+      await IndexedDB.openDatabase();
+
       const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
       if (hasExistingVideoItem) {
         logger.info("video already exists, skipping...");
