@@ -5,6 +5,7 @@ import {
   decideAnilistAutoSyncAction,
   filterVideos,
   formatDuration,
+  formatPendingSeriesSummary,
   formatTimestamp,
   generateUniqueCode,
   getDateFromNow,
@@ -336,6 +337,32 @@ describe("getSettingsTabIndexFromSearch function", () => {
 
   test("defaults to the first tab for an unknown tab name", () => {
     expect(getSettingsTabIndexFromSearch("?tab=doesnotexist")).toBe(0);
+  });
+});
+
+describe("formatPendingSeriesSummary function", () => {
+  test("returns an empty string for no titles", () => {
+    expect(formatPendingSeriesSummary([])).toBe("");
+  });
+
+  test("returns the single title as-is", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball"])).toBe("Dragon Ball");
+  });
+
+  test("joins two titles with 'and'", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece"])).toBe("Dragon Ball and One Piece");
+  });
+
+  test("joins up to the max shown with commas", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto"])).toBe("Dragon Ball, One Piece, and Naruto");
+  });
+
+  test("truncates beyond the max shown and appends a count of the rest", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto", "Bleach"])).toBe("Dragon Ball, One Piece, and 2 more");
+  });
+
+  test("respects a custom maxShown", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto"], 1)).toBe("Dragon Ball and 2 more");
   });
 });
 

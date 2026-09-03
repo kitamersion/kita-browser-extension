@@ -147,6 +147,23 @@ const SITE_KEY_TO_SOURCE_PLATFORM: Partial<Record<SiteKey, SourcePlatform>> = {
 
 export const mapSiteKeyToSourcePlatform = (siteKey: SiteKey): SourcePlatform | undefined => SITE_KEY_TO_SOURCE_PLATFORM[siteKey];
 
+// Shared by the on-page pending-review banner and the popup teaser so both
+// surfaces describe the same pending AniList series list identically.
+export const formatPendingSeriesSummary = (titles: string[], maxShown = 2): string => {
+  if (titles.length === 0) return "";
+  if (titles.length === 1) return titles[0];
+
+  if (titles.length <= maxShown + 1) {
+    const allButLast = titles.slice(0, -1);
+    const last = titles[titles.length - 1];
+    return allButLast.length === 1 ? `${allButLast[0]} and ${last}` : `${allButLast.join(", ")}, and ${last}`;
+  }
+
+  const shown = titles.slice(0, maxShown);
+  const remaining = titles.length - maxShown;
+  return shown.length === 1 ? `${shown[0]} and ${remaining} more` : `${shown.join(", ")}, and ${remaining} more`;
+};
+
 // AniList search results are only auto-applied when a season year lines up exactly;
 // anything else (including a single ambiguous result) needs a human to confirm.
 export const pickAutoMatch = (results: ISeriesSearchResult[], seasonYear?: number): ISeriesSearchResult | undefined => {

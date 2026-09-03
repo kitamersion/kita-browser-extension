@@ -8,7 +8,8 @@ import { getSourceAutoTrackConfig } from "@/api/sourceTracking";
 import { getPendingAnilistSyncs } from "@/api/integration/anilistPendingSync";
 import { mapSiteKeyToSourcePlatform } from "@/utils";
 import { createWatchProgressWatcher, WatchProgressWatcher } from "./watchProgressWatcher";
-import { renderPendingReviewBadge } from "./pendingReviewBadge";
+import { renderPendingReviewBanner } from "./pendingReviewBanner";
+import { getOrCreateDock } from "./dock";
 import { SETTINGS } from "@/api/settings/definitions";
 
 const BUTTON_RESET_DELAY_MS = 1500;
@@ -226,41 +227,41 @@ class VideoTracker {
   }
 
   _kitamersionCaptureButton() {
-    const parentDiv = document.body;
+    const dock = getOrCreateDock();
+    const newButton = document.createElement("button");
 
-    if (parentDiv) {
-      const newButton = document.createElement("button");
+    newButton.id = CAPTURE_BUTTON_ID;
+    newButton.title = "Capture Video (Shortcut: Shift+A)";
 
-      newButton.id = CAPTURE_BUTTON_ID;
-      newButton.title = "Capture Video (Shortcut: Shift+A)";
+    newButton.addEventListener("click", () => {
+      this._handleVideoCapture();
+      this._buttonCapturedIndication();
+    });
 
-      newButton.addEventListener("click", () => {
-        this._handleVideoCapture();
-        this._buttonCapturedIndication();
-      });
+    const baseUrl = this._extensionBaseUrl();
+    const newImg = document.createElement("img");
+    newImg.id = CAPTURE_IMAGE_ID;
+    newImg.src = `${baseUrl}icons/enabled/icon128.png`;
+    newImg.style.cssText = "width: 100%; display: block;";
 
-      const baseUrl = this._extensionBaseUrl();
-      const newImg = document.createElement("img");
-      newImg.id = CAPTURE_IMAGE_ID;
-      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "100%";
+    newButton.appendChild(newImg);
+    // The dock (a shared flex row) owns fixed positioning and vertical centering, so
+    // this only needs its own size - resizing it later never requires touching the
+    // pending-review pill's positioning to keep them lined up. Uses rem (root-relative)
+    // rather than em (inherited-relative) so its size stays constant even when the dock
+    // gets moved inside the banner, which sets its own smaller font-size on itself.
+    newButton.style.cssText =
+      "width: 2.2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
 
-      newButton.appendChild(newImg);
-      newButton.style.cssText =
-        "width: 3.5em; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; position: fixed; bottom: 1em; right: 1em; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
+    newButton.onmouseover = function () {
+      (this as HTMLButtonElement).style.opacity = "1";
+    };
 
-      newButton.onmouseover = function () {
-        (this as HTMLButtonElement).style.opacity = "1";
-      };
+    newButton.onmouseout = function () {
+      (this as HTMLButtonElement).style.opacity = "0.5";
+    };
 
-      newButton.onmouseout = function () {
-        (this as HTMLButtonElement).style.opacity = "0.5";
-      };
-
-      parentDiv.appendChild(newButton); // Changed to appendChild to add button at the end
-    } else {
-      logger.error("unable to find parent div");
-    }
+    dock.appendChild(newButton);
   }
 
   _buttonCapturedIndication() {
@@ -286,7 +287,7 @@ class VideoTracker {
     this.setupKeyboardShortcut();
     this._kitamersionCaptureButton();
     this._startWatchProgressPolling();
-    this._startPendingReviewBadge();
+    this._startPendingReviewBanner();
   }
 
   destroy() {
@@ -299,34 +300,38 @@ class VideoTracker {
       document.removeEventListener("keydown", this.keyboardShortcutHandler);
     }
     this._stopWatchProgressPolling();
-    this._stopPendingReviewBadge();
+    this._stopPendingReviewBanner();
   }
 
-  _refreshPendingReviewBadge() {
+  _refreshPendingReviewBanner() {
     getPendingAnilistSyncs().then((pending) => {
-      renderPendingReviewBadge(pending.length, () => {
-        chrome.runtime.sendMessage({ type: OPEN_ANILIST_PENDING_REVIEW });
-      });
+      renderPendingReviewBanner(
+        pending.length,
+        pending.map((entry) => entry.series_title),
+        () => {
+          chrome.runtime.sendMessage({ type: OPEN_ANILIST_PENDING_REVIEW });
+        }
+      );
     });
   }
 
-  _startPendingReviewBadge() {
-    this._refreshPendingReviewBadge();
+  _startPendingReviewBanner() {
+    this._refreshPendingReviewBanner();
 
     this.pendingReviewStorageListener = (changes) => {
       if (SETTINGS.integrations.anilist.pendingSync.key in changes) {
-        this._refreshPendingReviewBadge();
+        this._refreshPendingReviewBanner();
       }
     };
     chrome.storage.onChanged.addListener(this.pendingReviewStorageListener);
   }
 
-  _stopPendingReviewBadge() {
+  _stopPendingReviewBanner() {
     if (this.pendingReviewStorageListener) {
       chrome.storage.onChanged.removeListener(this.pendingReviewStorageListener);
       this.pendingReviewStorageListener = undefined;
     }
-    renderPendingReviewBadge(0, () => {});
+    renderPendingReviewBanner(0, [], () => {});
   }
 
   _startWatchProgressPolling() {
