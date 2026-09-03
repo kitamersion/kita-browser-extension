@@ -16,7 +16,13 @@ const Settings = () => {
 
   return (
     <Box as="main">
-      <Tabs variant="soft-rounded" colorScheme="green" defaultIndex={getSettingsTabIndexFromSearch(window.location.search)}>
+      <Tabs
+        variant="soft-rounded"
+        colorScheme="green"
+        defaultIndex={getSettingsTabIndexFromSearch(window.location.search)}
+        isLazy
+        lazyBehavior="keepMounted"
+      >
         <TabList gap={1}>
           <Tab>Integration</Tab>
           <Tab>Auto Track</Tab>
