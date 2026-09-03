@@ -8,11 +8,14 @@ const getExtensionBaseUrl = () => {
 };
 
 // SET
+// NOTE: this tracks whether the DB/app has finished initializing (see db/index.ts),
+// which is unrelated to the user-facing power toggle - it must never touch the icon,
+// or opening any page that reconnects to IndexedDB would stomp on a deliberately
+// disabled icon set by setContentScriptEnabled below.
 const setApplicationEnabled = async (value: boolean, callback: Callback<boolean>) => {
   try {
     logger.info(`setting application enabled state to: ${value}`);
     await settingsManager.set(SETTINGS.application.enabled, value);
-    setApplicationState(value);
     callback(value);
   } catch (error) {
     logger.error(`Error setting application enabled state: ${error}`, error);
