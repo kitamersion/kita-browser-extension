@@ -46,6 +46,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       const hasExistingVideoItem = await IndexedDB.getVideoByUniqueCode(uniqueCode);
       if (hasExistingVideoItem) {
         logger.info("video already exists, skipping...");
+        const response: RuntimeResponse = { status: "success", message: "video already exists" };
+        sendResponse(response);
         return;
       }
 
@@ -72,14 +74,21 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         if (videoTagRelationship.length === 0) {
           logger.warn("no video tag relationship to add");
+          const response: RuntimeResponse = { status: "success", message: "video added, no tags to attach" };
+          sendResponse(response);
           return;
         }
         videoTagRelationship.forEach(async (videoTagRelationship) => {
           await IndexedDB.addVideoTag(videoTagRelationship);
         });
       }
+
+      const response: RuntimeResponse = { status: "success", message: "video added" };
+      sendResponse(response);
     } catch (error) {
       logger.error(`error while adding video: ${error}`);
+      const response: RuntimeResponse = { status: "error", message: `error while adding video: ${error}` };
+      sendResponse(response);
     }
 
     return;
