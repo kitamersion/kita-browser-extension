@@ -139,3 +139,6 @@ src/graphql/index.tsx
 
 # git worktrees
 .worktrees/
+
+# superpowers plans/specs are working documents, never commit them
+docs/superpowers/
