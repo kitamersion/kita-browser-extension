@@ -29,6 +29,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
 
   const visibleItems = getVisibleItems(SETTINGS_GROUPS, navContext);
   const activeItem = visibleItems.find((item) => item.id === selectedId) ?? visibleItems[0];
+  if (!activeItem) return null;
   const SelectedComponent = activeItem.component;
 
   const handleSelect = (id: string) => {
