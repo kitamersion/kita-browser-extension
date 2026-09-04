@@ -136,3 +136,6 @@ _/*
 
 # graphql schema codegen
 src/graphql/index.tsx
+
+# git worktrees
+.worktrees/
