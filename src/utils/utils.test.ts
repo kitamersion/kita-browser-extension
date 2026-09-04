@@ -9,7 +9,7 @@ import {
   formatTimestamp,
   generateUniqueCode,
   getDateFromNow,
-  getSettingsTabIndexFromSearch,
+  getSettingsSectionFromSearch,
   hasReachedWatchThreshold,
   mapSiteKeyToSourcePlatform,
   parseAnilistAuthFromRedirectUrl,
@@ -326,17 +326,17 @@ describe("decideAnilistAutoSyncAction function", () => {
   });
 });
 
-describe("getSettingsTabIndexFromSearch function", () => {
-  test("defaults to the first tab when there's no tab query param", () => {
-    expect(getSettingsTabIndexFromSearch("")).toBe(0);
+describe("getSettingsSectionFromSearch function", () => {
+  test("defaults to integration when there's no tab query param", () => {
+    expect(getSettingsSectionFromSearch("")).toBe("integration");
   });
 
-  test("resolves a known tab name to its index", () => {
-    expect(getSettingsTabIndexFromSearch("?tab=autotrack")).toBe(1);
+  test("resolves a known tab name to its id", () => {
+    expect(getSettingsSectionFromSearch("?tab=autotrack")).toBe("autotrack");
   });
 
-  test("defaults to the first tab for an unknown tab name", () => {
-    expect(getSettingsTabIndexFromSearch("?tab=doesnotexist")).toBe(0);
+  test("defaults to integration for an unknown tab name", () => {
+    expect(getSettingsSectionFromSearch("?tab=doesnotexist")).toBe("integration");
   });
 });
 

@@ -171,19 +171,11 @@ export const pickAutoMatch = (results: ISeriesSearchResult[], seasonYear?: numbe
   return results.find((result) => result.seasonYear === seasonYear);
 };
 
-const SETTINGS_TAB_INDEX: Record<string, number> = {
-  integration: 0,
-  autotrack: 1,
-  tags: 2,
-  mappings: 3,
-  logs: 4,
-  general: 5,
-};
+const SETTINGS_SECTION_IDS = new Set(["integration", "autotrack", "tags", "mappings", "logs", "general", "anilist"]);
 
-export const getSettingsTabIndexFromSearch = (search: string): number => {
+export const getSettingsSectionFromSearch = (search: string): string => {
   const tab = new URLSearchParams(search).get("tab");
-  if (!tab) return 0;
-  return SETTINGS_TAB_INDEX[tab] ?? 0;
+  return tab && SETTINGS_SECTION_IDS.has(tab) ? tab : "integration";
 };
 
 export type AnilistAutoSyncDecision =
