@@ -1,4 +1,4 @@
-import { TabPanel } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import React from "react";
 import AnilistProfile from "../components/anilist/anilistProfile";
 import { useAnilistContext } from "@/context/anilistContext";
@@ -10,9 +10,9 @@ const AnilistTab = () => {
   if (!isInitialized) return <LoadingState />;
 
   return (
-    <TabPanel bg="bg.primary" color="text.primary">
+    <Box>
       <AnilistProfile />
-    </TabPanel>
+    </Box>
   );
 };
 

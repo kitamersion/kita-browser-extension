@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  TabPanel,
   Heading,
   Flex,
   Box,
@@ -198,7 +197,7 @@ const LogsTab: React.FC = () => {
   };
 
   return (
-    <TabPanel bg="bg.primary" color="text.primary">
+    <Box>
       {loading ? (
         <LoadingState />
       ) : (
@@ -392,7 +391,7 @@ const LogsTab: React.FC = () => {
           </Drawer>
         </VStack>
       )}
-    </TabPanel>
+    </Box>
   );
 };
 

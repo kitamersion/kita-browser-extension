@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  TabPanel,
   VStack,
   HStack,
   Heading,
@@ -185,7 +184,7 @@ const SeriesMappingsTab = () => {
   };
 
   return (
-    <TabPanel>
+    <Box>
       <VStack align="stretch" spacing={6}>
         {/* Header */}
         <VStack spacing={4} align="stretch">
@@ -467,7 +466,7 @@ const SeriesMappingsTab = () => {
           </VStack>
         )}
       </VStack>
-    </TabPanel>
+    </Box>
   );
 };
 

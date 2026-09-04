@@ -1,5 +1,5 @@
 import LoadingState from "@/components/states/LoadingState";
-import { Flex, Heading, TabPanel, VStack, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, VStack, Text } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import Exporter from "../components/exporter";
 import ManuallyCopySettingsAndData from "../components/manuallyCopySettingsAndData";
@@ -7,7 +7,7 @@ import Importer from "../components/importer";
 
 const GeneralTab = () => {
   return (
-    <TabPanel bg="bg.primary" color="text.primary">
+    <Box>
       <Suspense fallback={<LoadingState />}>
         <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
           <VStack spacing={4} align="stretch">
@@ -26,7 +26,7 @@ const GeneralTab = () => {
           <ManuallyCopySettingsAndData />
         </Flex>
       </Suspense>
-    </TabPanel>
+    </Box>
   );
 };
 
