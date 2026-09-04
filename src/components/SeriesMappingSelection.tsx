@@ -41,7 +41,7 @@ const SeriesMappingSelection: React.FC<SeriesMappingSelectionProps> = ({
   return (
     <Drawer onClose={onSkip} isOpen={isVisible} size={"full"} placement={"bottom"}>
       <DrawerOverlay bg="blackAlpha.600" />
-      <DrawerContent p="6" bg="bg.primary" color="text.primary">
+      <DrawerContent p="6" bg="black" color="text.primary">
         <DrawerCloseButton />
         <DrawerHeader color="accent.primary" fontSize="xl" fontWeight="bold" display="flex" alignItems="center" gap={2}>
           <BsPatchQuestionFill /> Multiple AniList matches

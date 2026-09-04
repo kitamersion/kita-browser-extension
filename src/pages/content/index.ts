@@ -1,13 +1,21 @@
 /* eslint-disable no-case-declarations */
 import { SiteKey, IVideo } from "../../types/video";
-import { VIDEO_ADD } from "@/data/events";
+import { OPEN_ANILIST_PENDING_REVIEW, VIDEO_ADD } from "@/data/events";
 import { logger } from "@kitamersion/kita-logging";
 import { CONTENT_SITE_CONFIG } from "@/data/contants";
 import { getContentScriptEnabled } from "@/api/applicationStorage";
+import { getSourceAutoTrackConfig } from "@/api/sourceTracking";
+import { getPendingAnilistSyncs } from "@/api/integration/anilistPendingSync";
+import { mapSiteKeyToSourcePlatform } from "@/utils";
+import { createWatchProgressWatcher, WatchProgressWatcher } from "./watchProgressWatcher";
+import { renderPendingReviewBanner } from "./pendingReviewBanner";
+import { getOrCreateDock } from "./dock";
+import { SETTINGS } from "@/api/settings/definitions";
 
 const BUTTON_RESET_DELAY_MS = 1500;
 const CAPTURE_BUTTON_ID = "kitamersion-capture-button";
 const CAPTURE_IMAGE_ID = "kitamersion-capture-img";
+const WATCH_PROGRESS_POLL_MS = 2000;
 
 class VideoTracker {
   private static instance: VideoTracker;
@@ -15,6 +23,11 @@ class VideoTracker {
   private timeoutId: NodeJS.Timeout | undefined;
   private lastCaptureTime = 0;
   private readonly CAPTURE_DEBOUNCE_MS = 2000; // Prevent captures within 2 seconds
+  private watchProgressPollId: ReturnType<typeof setInterval> | undefined;
+  private watchProgressWatcher: WatchProgressWatcher | undefined;
+  private trackedVideoElement: HTMLVideoElement | undefined;
+  private trackedVideoSrc: string | undefined;
+  private pendingReviewStorageListener: ((changes: { [key: string]: chrome.storage.StorageChange }) => void) | undefined;
 
   constructor() {
     this.keyboardShortcutHandler = undefined;
@@ -214,41 +227,41 @@ class VideoTracker {
   }
 
   _kitamersionCaptureButton() {
-    const parentDiv = document.body;
+    const dock = getOrCreateDock();
+    const newButton = document.createElement("button");
 
-    if (parentDiv) {
-      const newButton = document.createElement("button");
+    newButton.id = CAPTURE_BUTTON_ID;
+    newButton.title = "Capture Video (Shortcut: Shift+A)";
 
-      newButton.id = CAPTURE_BUTTON_ID;
-      newButton.title = "Capture Video (Shortcut: Shift+A)";
+    newButton.addEventListener("click", () => {
+      this._handleVideoCapture();
+      this._buttonCapturedIndication();
+    });
 
-      newButton.addEventListener("click", () => {
-        this._handleVideoCapture();
-        this._buttonCapturedIndication();
-      });
+    const baseUrl = this._extensionBaseUrl();
+    const newImg = document.createElement("img");
+    newImg.id = CAPTURE_IMAGE_ID;
+    newImg.src = `${baseUrl}icons/enabled/icon128.png`;
+    newImg.style.cssText = "width: 100%; display: block;";
 
-      const baseUrl = this._extensionBaseUrl();
-      const newImg = document.createElement("img");
-      newImg.id = CAPTURE_IMAGE_ID;
-      newImg.src = `${baseUrl}icons/enabled/icon128.png`;
-      newImg.style.width = "100%";
+    newButton.appendChild(newImg);
+    // The dock (a shared flex row) owns fixed positioning and vertical centering, so
+    // this only needs its own size - resizing it later never requires touching the
+    // pending-review pill's positioning to keep them lined up. Uses rem (root-relative)
+    // rather than em (inherited-relative) so its size stays constant even when the dock
+    // gets moved inside the banner, which sets its own smaller font-size on itself.
+    newButton.style.cssText =
+      "width: 2.2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
 
-      newButton.appendChild(newImg);
-      newButton.style.cssText =
-        "width: 3.5em; border: none; background-color: transparent; padding: 0; color: inherit; cursor: pointer; position: fixed; bottom: 1em; right: 1em; opacity: 0.5; transition: opacity 0.2s ease-in-out;";
+    newButton.onmouseover = function () {
+      (this as HTMLButtonElement).style.opacity = "1";
+    };
 
-      newButton.onmouseover = function () {
-        (this as HTMLButtonElement).style.opacity = "1";
-      };
+    newButton.onmouseout = function () {
+      (this as HTMLButtonElement).style.opacity = "0.5";
+    };
 
-      newButton.onmouseout = function () {
-        (this as HTMLButtonElement).style.opacity = "0.5";
-      };
-
-      parentDiv.appendChild(newButton); // Changed to appendChild to add button at the end
-    } else {
-      logger.error("unable to find parent div");
-    }
+    dock.appendChild(newButton);
   }
 
   _buttonCapturedIndication() {
@@ -273,6 +286,8 @@ class VideoTracker {
   initialize() {
     this.setupKeyboardShortcut();
     this._kitamersionCaptureButton();
+    this._startWatchProgressPolling();
+    this._startPendingReviewBanner();
   }
 
   destroy() {
@@ -284,6 +299,103 @@ class VideoTracker {
     if (this.keyboardShortcutHandler) {
       document.removeEventListener("keydown", this.keyboardShortcutHandler);
     }
+    this._stopWatchProgressPolling();
+    this._stopPendingReviewBanner();
+  }
+
+  _refreshPendingReviewBanner() {
+    getPendingAnilistSyncs().then((pending) => {
+      renderPendingReviewBanner(
+        pending.length,
+        pending.map((entry) => entry.series_title),
+        () => {
+          chrome.runtime.sendMessage({ type: OPEN_ANILIST_PENDING_REVIEW });
+        }
+      );
+    });
+  }
+
+  _startPendingReviewBanner() {
+    this._refreshPendingReviewBanner();
+
+    this.pendingReviewStorageListener = (changes) => {
+      if (SETTINGS.integrations.anilist.pendingSync.key in changes) {
+        this._refreshPendingReviewBanner();
+      }
+    };
+    chrome.storage.onChanged.addListener(this.pendingReviewStorageListener);
+  }
+
+  _stopPendingReviewBanner() {
+    if (this.pendingReviewStorageListener) {
+      chrome.storage.onChanged.removeListener(this.pendingReviewStorageListener);
+      this.pendingReviewStorageListener = undefined;
+    }
+    renderPendingReviewBanner(0, [], () => {});
+  }
+
+  _startWatchProgressPolling() {
+    if (this.watchProgressPollId) return;
+    this.watchProgressPollId = setInterval(() => {
+      this._refreshWatchProgressTracking();
+    }, WATCH_PROGRESS_POLL_MS);
+  }
+
+  _stopWatchProgressPolling() {
+    if (this.watchProgressPollId) {
+      clearInterval(this.watchProgressPollId);
+      this.watchProgressPollId = undefined;
+    }
+    this.watchProgressWatcher?.destroy();
+    this.watchProgressWatcher = undefined;
+    this.trackedVideoElement = undefined;
+    this.trackedVideoSrc = undefined;
+  }
+
+  // Auto-capture at a configurable % watched. Sites like Crunchyroll/YouTube are
+  // SPAs that can swap episodes without reloading this script - sometimes reusing
+  // the same <video> element - so a source change is detected by src, not just
+  // element identity, and re-checked on the settings response in case a newer
+  // navigation happened while that lookup was in flight.
+  async _refreshWatchProgressTracking() {
+    const video = document.querySelector("video");
+    if (!video) return;
+
+    const currentSrc = video.currentSrc || video.src;
+    if (video === this.trackedVideoElement && currentSrc === this.trackedVideoSrc) {
+      return;
+    }
+
+    logger.info(`[auto-track] new video detected (src=${currentSrc})`);
+
+    this.watchProgressWatcher?.destroy();
+    this.watchProgressWatcher = undefined;
+    this.trackedVideoElement = video;
+    this.trackedVideoSrc = currentSrc;
+
+    const platform = mapSiteKeyToSourcePlatform(this._getOrigin());
+    if (!platform) {
+      logger.debug(`[auto-track] origin ${this._getOrigin()} has no auto-track source mapping, skipping`);
+      return;
+    }
+
+    const config = await getSourceAutoTrackConfig(platform);
+    logger.info(`[auto-track] ${platform} config: enabled=${config.enabled}, watchPercentage=${config.watchPercentage}`);
+    if (!config.enabled) {
+      logger.debug(`[auto-track] auto-track disabled for ${platform}, skipping`);
+      return;
+    }
+
+    if (this.trackedVideoElement !== video || this.trackedVideoSrc !== currentSrc) {
+      logger.debug("[auto-track] video changed while loading config, aborting stale watcher setup");
+      return;
+    }
+
+    logger.info(`[auto-track] watching ${platform} video for ${config.watchPercentage}% watched`);
+    this.watchProgressWatcher = createWatchProgressWatcher(video, config.watchPercentage, () => {
+      logger.info(`[auto-track] ${config.watchPercentage}% threshold reached for ${platform}, auto-capturing video`);
+      this._handleVideoCapture();
+    });
   }
 }
 

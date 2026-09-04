@@ -9,6 +9,7 @@ import FetchVideos from "./components/fetchVideos";
 import DeleteAll from "./components/deleteAll";
 import { useVideoContext } from "@/context/videoContext";
 import AddVideoButton from "./components/addVideo";
+import PendingAnilistReviewBanner from "./components/pendingAnilistReviewBanner";
 import { statisticsNavigation } from "@/utils";
 
 const MAX_ITEMS_TO_SHOW = 20;
@@ -27,6 +28,7 @@ const PopUp = () => {
 
   return (
     <Box as="main" minHeight={"xl"}>
+      <PendingAnilistReviewBanner />
       <Flex justifyContent={"flex-end"}>
         <FetchVideos />
         <DeleteAll />

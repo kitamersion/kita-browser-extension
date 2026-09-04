@@ -21,7 +21,6 @@ import {
   Tag,
   TagLabel,
   useDisclosure,
-  useColorMode,
   Text,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
@@ -40,7 +39,6 @@ const AddVideoButton = () => {
     video_url: "",
     tags: [],
   };
-  const { colorMode } = useColorMode();
   const { tags: contextTags } = useTagContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [video, setVideo] = useState(initialState);
@@ -122,44 +120,110 @@ const AddVideoButton = () => {
           isRound={true}
           aria-label="Add video"
           title="Add video"
-          color={"white"}
+          bg="accent.primary"
+          color="white"
+          _hover={{ bg: "accent.primary", opacity: 0.9 }}
+          _active={{ bg: "accent.primary", opacity: 0.8 }}
           icon={<MdOutlineAdd />}
           onClick={onOpen}
         />
       </Box>
       <Drawer onClose={onClose} isOpen={isOpen} size={"full"} placement={"bottom"}>
-        <DrawerOverlay />
-        <DrawerContent p="6" background={colorMode === "dark" ? "gray.800" : "white"}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent p="6" bg="bg.primary" color="text.primary">
           <DrawerCloseButton />
-          <DrawerHeader>Add Video</DrawerHeader>
+          <DrawerHeader color="accent.primary" fontSize="xl">
+            Add Video
+          </DrawerHeader>
           <DrawerBody>
             <form onSubmit={handleSubmit}>
               <Flex flexDirection={"column"} gap={4}>
                 <FormControl id="video_title">
-                  <FormLabel>Video Title</FormLabel>
-                  <Input autoFocus name="video_title" value={video.video_title} onChange={handleChange} />
+                  <FormLabel color="text.secondary">Video Title</FormLabel>
+                  <Input
+                    autoFocus
+                    name="video_title"
+                    value={video.video_title}
+                    onChange={handleChange}
+                    bg="bg.secondary"
+                    borderColor="border.primary"
+                    color="text.primary"
+                    _hover={{ borderColor: "border.primary" }}
+                    _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                  />
                 </FormControl>
                 <FormControl id="video_url">
-                  <FormLabel>Video URL</FormLabel>
-                  <Input name="video_url" value={video.video_url} onChange={handleChange} />
+                  <FormLabel color="text.secondary">Video URL</FormLabel>
+                  <Input
+                    name="video_url"
+                    value={video.video_url}
+                    onChange={handleChange}
+                    bg="bg.secondary"
+                    borderColor="border.primary"
+                    color="text.primary"
+                    _hover={{ borderColor: "border.primary" }}
+                    _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                  />
                 </FormControl>
                 <Flex gap={1}>
                   <FormControl id="video_duration_h">
-                    <FormLabel>Hour</FormLabel>
-                    <Input name="video_duration_h" type="number" min={0} value={hour} onChange={handleHourChange} />
+                    <FormLabel color="text.secondary">Hour</FormLabel>
+                    <Input
+                      name="video_duration_h"
+                      type="number"
+                      min={0}
+                      value={hour}
+                      onChange={handleHourChange}
+                      bg="bg.secondary"
+                      borderColor="border.primary"
+                      color="text.primary"
+                      _hover={{ borderColor: "border.primary" }}
+                      _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                    />
                   </FormControl>
                   <FormControl id="video_duration_m">
-                    <FormLabel>Min</FormLabel>
-                    <Input name="video_duration_m" type="number" min={0} value={minute} onChange={handleMinuteChange} />
+                    <FormLabel color="text.secondary">Min</FormLabel>
+                    <Input
+                      name="video_duration_m"
+                      type="number"
+                      min={0}
+                      value={minute}
+                      onChange={handleMinuteChange}
+                      bg="bg.secondary"
+                      borderColor="border.primary"
+                      color="text.primary"
+                      _hover={{ borderColor: "border.primary" }}
+                      _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                    />
                   </FormControl>
                   <FormControl id="video_duration_s">
-                    <FormLabel>Sec</FormLabel>
-                    <Input name="video_duration_s" type="number" min={0} value={second} onChange={handleSecondChange} />
+                    <FormLabel color="text.secondary">Sec</FormLabel>
+                    <Input
+                      name="video_duration_s"
+                      type="number"
+                      min={0}
+                      value={second}
+                      onChange={handleSecondChange}
+                      bg="bg.secondary"
+                      borderColor="border.primary"
+                      color="text.primary"
+                      _hover={{ borderColor: "border.primary" }}
+                      _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                    />
                   </FormControl>
                 </Flex>
                 <FormControl id="origin">
-                  <FormLabel>Origin</FormLabel>
-                  <Select name="origin" value={video.origin} onChange={handleChange}>
+                  <FormLabel color="text.secondary">Origin</FormLabel>
+                  <Select
+                    name="origin"
+                    value={video.origin}
+                    onChange={handleChange}
+                    bg="bg.secondary"
+                    borderColor="border.primary"
+                    color="text.primary"
+                    _hover={{ borderColor: "border.primary" }}
+                    _focus={{ borderColor: "accent.primary", boxShadow: `0 0 0 1px var(--chakra-colors-accent-primary)` }}
+                  >
                     {Object.values(SiteKey).map((siteKey) => (
                       <option key={siteKey} value={siteKey}>
                         {siteKey}
@@ -168,11 +232,18 @@ const AddVideoButton = () => {
                   </Select>
                 </FormControl>
                 <FormControl id="tags">
-                  <FormLabel>Tags</FormLabel>
+                  <FormLabel color="text.secondary">Tags</FormLabel>
                   {contextTags.length === 0 && (
                     <Flex gap={1}>
-                      <Text>No tags found. You can create tags in</Text>
-                      <Button variant="link" onClick={settingsNavigation} aria-label="View settings page" title="View settings page">
+                      <Text color="text.secondary">No tags found. You can create tags in</Text>
+                      <Button
+                        variant="link"
+                        onClick={settingsNavigation}
+                        aria-label="View settings page"
+                        title="View settings page"
+                        color="accent.primary"
+                        _hover={{ color: "accent.primary", opacity: 0.8 }}
+                      >
                         settings page
                       </Button>
                     </Flex>
@@ -180,16 +251,39 @@ const AddVideoButton = () => {
                   {contextTags.length > 0 && (
                     <CheckboxGroup defaultValue={video.tags}>
                       {contextTags.map((tag) => (
-                        <Tag m={1} size={"lg"} key={tag.id} borderRadius="full" variant="solid" colorScheme="red">
-                          <Checkbox borderRadius={"10px"} name="tags" value={tag.id} onChange={handleTagChange}>
-                            <TagLabel> {tag.name}</TagLabel>
+                        <Tag m={1} size={"lg"} key={tag.id} borderRadius="full" variant="kita" colorScheme="red">
+                          <Checkbox
+                            borderRadius={"10px"}
+                            name="tags"
+                            value={tag.id}
+                            onChange={handleTagChange}
+                            colorScheme="orange"
+                            sx={{
+                              ".chakra-checkbox__control": {
+                                bg: "bg.tertiary",
+                                borderColor: "border.primary",
+                                _checked: {
+                                  bg: "accent.primary",
+                                  borderColor: "accent.primary",
+                                },
+                              },
+                            }}
+                          >
+                            <TagLabel color="text.primary"> {tag.name}</TagLabel>
                           </Checkbox>
                         </Tag>
                       ))}
                     </CheckboxGroup>
                   )}
                 </FormControl>
-                <Button mt={4} type="submit">
+                <Button
+                  mt={4}
+                  type="submit"
+                  bg="accent.primary"
+                  color="white"
+                  _hover={{ bg: "accent.primary", opacity: 0.9 }}
+                  _active={{ bg: "accent.primary", opacity: 0.8 }}
+                >
                   Save
                 </Button>
               </Flex>

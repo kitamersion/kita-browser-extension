@@ -1,12 +1,19 @@
-import { IVideo } from "@/types/video";
+import { IVideo, SiteKey } from "@/types/video";
+import { ISeriesMapping, ISeriesSearchResult } from "@/types/integrations/seriesMapping";
 import {
   convertToSeconds,
+  decideAnilistAutoSyncAction,
   filterVideos,
   formatDuration,
+  formatPendingSeriesSummary,
   formatTimestamp,
   generateUniqueCode,
   getDateFromNow,
+  getSettingsTabIndexFromSearch,
+  hasReachedWatchThreshold,
+  mapSiteKeyToSourcePlatform,
   parseAnilistAuthFromRedirectUrl,
+  pickAutoMatch,
   randomOffset,
 } from ".";
 
@@ -190,6 +197,172 @@ describe("parseAnilistAuthFromRedirectUrl function", () => {
       expires_in: 1234,
       issued_at: expect.any(Number),
     });
+  });
+});
+
+describe("hasReachedWatchThreshold function", () => {
+  test("returns false before the threshold is reached", () => {
+    expect(hasReachedWatchThreshold(40, 100, 80)).toBe(false);
+  });
+
+  test("returns true once the threshold is reached", () => {
+    expect(hasReachedWatchThreshold(80, 100, 80)).toBe(true);
+  });
+
+  test("returns true once the threshold is exceeded", () => {
+    expect(hasReachedWatchThreshold(95, 100, 80)).toBe(true);
+  });
+
+  test.each([0, NaN, -1])("returns false when duration is %p", (duration) => {
+    expect(hasReachedWatchThreshold(50, duration, 80)).toBe(false);
+  });
+});
+
+describe("mapSiteKeyToSourcePlatform function", () => {
+  test("maps CRUNCHYROLL to the crunchyroll source platform", () => {
+    expect(mapSiteKeyToSourcePlatform(SiteKey.CRUNCHYROLL)).toBe("crunchyroll");
+  });
+
+  test("maps YOUTUBE to the youtube source platform", () => {
+    expect(mapSiteKeyToSourcePlatform(SiteKey.YOUTUBE)).toBe("youtube");
+  });
+
+  test("maps YOUTUBE_MUSIC to the youtube source platform", () => {
+    expect(mapSiteKeyToSourcePlatform(SiteKey.YOUTUBE_MUSIC)).toBe("youtube");
+  });
+
+  test("returns undefined for an unknown site key", () => {
+    expect(mapSiteKeyToSourcePlatform("UNKNOWN" as SiteKey)).toBeUndefined();
+  });
+});
+
+describe("pickAutoMatch function", () => {
+  const result = (id: number, seasonYear?: number): ISeriesSearchResult => ({
+    id,
+    title: { english: `Result ${id}` },
+    seasonYear,
+  });
+
+  test("returns undefined when no season year is provided", () => {
+    expect(pickAutoMatch([result(1, 2020)], undefined)).toBeUndefined();
+  });
+
+  test("returns undefined when no result matches the season year", () => {
+    expect(pickAutoMatch([result(1, 2020), result(2, 2021)], 2022)).toBeUndefined();
+  });
+
+  test("returns the result matching the season year", () => {
+    const match = result(2, 2021);
+    expect(pickAutoMatch([result(1, 2020), match], 2021)).toBe(match);
+  });
+
+  test("returns undefined for an empty result list", () => {
+    expect(pickAutoMatch([], 2021)).toBeUndefined();
+  });
+});
+
+describe("decideAnilistAutoSyncAction function", () => {
+  const existingMapping = { id: "mapping-1", anilist_series_id: 42 } as ISeriesMapping;
+  const seasonMatch: ISeriesSearchResult = { id: 1, title: { english: "Dragon Ball Z" }, seasonYear: 1989 };
+  const otherResult: ISeriesSearchResult = { id: 2, title: { english: "Dragon Ball Super" }, seasonYear: 2015 };
+
+  const baseParams = {
+    autoSyncEnabled: true,
+    hasAuthToken: true,
+    existingMapping: null as ISeriesMapping | null,
+    hasPendingForSeries: false,
+    searchResults: null as ISeriesSearchResult[] | null,
+    seasonYear: 1989,
+  };
+
+  test("skips when auto-sync is disabled for the source", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, autoSyncEnabled: false })).toEqual({
+      action: "skip",
+      reason: "auto-sync disabled for this source",
+    });
+  });
+
+  test("skips when AniList isn't connected", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, hasAuthToken: false })).toEqual({
+      action: "skip",
+      reason: "anilist not connected",
+    });
+  });
+
+  test("syncs directly when a mapping already exists", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, existingMapping })).toEqual({
+      action: "sync",
+      mapping: existingMapping,
+    });
+  });
+
+  test("skips (without searching again) when this series already has a pending review", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, hasPendingForSeries: true })).toEqual({
+      action: "skip",
+      reason: "already queued for review",
+    });
+  });
+
+  test("skips when there's no mapping and no search results", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, searchResults: [] })).toEqual({
+      action: "skip",
+      reason: "no anilist search results",
+    });
+  });
+
+  test("creates a mapping and syncs when a season-year match is found", () => {
+    expect(decideAnilistAutoSyncAction({ ...baseParams, searchResults: [otherResult, seasonMatch] })).toEqual({
+      action: "createMappingAndSync",
+      match: seasonMatch,
+    });
+  });
+
+  test("queues for review when results are ambiguous", () => {
+    const results = [otherResult, { ...seasonMatch, seasonYear: 1990 }];
+    expect(decideAnilistAutoSyncAction({ ...baseParams, searchResults: results })).toEqual({
+      action: "queuePending",
+      results,
+    });
+  });
+});
+
+describe("getSettingsTabIndexFromSearch function", () => {
+  test("defaults to the first tab when there's no tab query param", () => {
+    expect(getSettingsTabIndexFromSearch("")).toBe(0);
+  });
+
+  test("resolves a known tab name to its index", () => {
+    expect(getSettingsTabIndexFromSearch("?tab=autotrack")).toBe(1);
+  });
+
+  test("defaults to the first tab for an unknown tab name", () => {
+    expect(getSettingsTabIndexFromSearch("?tab=doesnotexist")).toBe(0);
+  });
+});
+
+describe("formatPendingSeriesSummary function", () => {
+  test("returns an empty string for no titles", () => {
+    expect(formatPendingSeriesSummary([])).toBe("");
+  });
+
+  test("returns the single title as-is", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball"])).toBe("Dragon Ball");
+  });
+
+  test("joins two titles with 'and'", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece"])).toBe("Dragon Ball and One Piece");
+  });
+
+  test("joins up to the max shown with commas", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto"])).toBe("Dragon Ball, One Piece, and Naruto");
+  });
+
+  test("truncates beyond the max shown and appends a count of the rest", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto", "Bleach"])).toBe("Dragon Ball, One Piece, and 2 more");
+  });
+
+  test("respects a custom maxShown", () => {
+    expect(formatPendingSeriesSummary(["Dragon Ball", "One Piece", "Naruto"], 1)).toBe("Dragon Ball and 2 more");
   });
 });
 

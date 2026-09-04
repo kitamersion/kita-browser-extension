@@ -12,12 +12,13 @@ import { IVideoTag } from "@/types/relationship";
 import { logger } from "@kitamersion/kita-logging";
 import { useAnilistContext } from "@/context/anilistContext";
 import { seriesMappingStorage } from "@/api/seriesMapping";
+import { pickAutoMatch } from "@/utils";
 import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
 import SeriesMappingSelection from "@/components/SeriesMappingSelection";
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
-  const { isInitialized: isAnilistReady, anilistAutoSyncMedia } = useAnilistContext();
+  const { isInitialized: isAnilistReady } = useAnilistContext();
 
   const [getMediaBySearch, { data: searchData, loading: isSearching, error: searchError }] = useGetMediaBySearchLazyQuery();
   const [setMedia, { loading: isUpdatingList, error: updateError }] = useSetMediaListEntryByAnilistIdMutation();
@@ -26,25 +27,6 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const [showMappingSelection, setShowMappingSelection] = useState(false);
   const [syncStatus, setSyncStatus] = useState<"idle" | "searching" | "mapping" | "syncing" | "complete" | "error">("idle");
   const [searchResults, setSearchResults] = useState<ISeriesSearchResult[]>([]);
-
-  // Auto-sync effect
-  useEffect(() => {
-    if (isAnilistReady && anilistAutoSyncMedia && !isSynced && syncStatus === "idle") {
-      const timeout = setTimeout(() => {
-        startSync();
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isAnilistReady, anilistAutoSyncMedia, isSynced, syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Error handling
-  useEffect(() => {
-    if (updateError || searchError) {
-      const errorMessage = updateError?.message || searchError?.message || "Unknown error occurred";
-      showToast({ title: errorMessage, status: "error" });
-      setSyncStatus("error");
-    }
-  }, [updateError, searchError, showToast]);
 
   // Detect source platform from video origin or URL
   const getSourcePlatform = useCallback((): SourcePlatform => {
@@ -60,6 +42,15 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
     return "crunchyroll"; // Default fallback
   }, [video.origin, video.video_url]);
+
+  // Error handling
+  useEffect(() => {
+    if (updateError || searchError) {
+      const errorMessage = updateError?.message || searchError?.message || "Unknown error occurred";
+      showToast({ title: errorMessage, status: "error" });
+      setSyncStatus("error");
+    }
+  }, [updateError, searchError, showToast]);
 
   // Check for existing mapping
   const checkExistingMapping = useCallback(async (): Promise<ISeriesMapping | null> => {
@@ -259,7 +250,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       setSearchResults(results);
 
       // Try automatic matching first
-      const autoMatch = results.find((result) => result.seasonYear === video.watching_season_year);
+      const autoMatch = pickAutoMatch(results, video.watching_season_year);
 
       if (autoMatch) {
         // Auto-match found, create mapping and sync

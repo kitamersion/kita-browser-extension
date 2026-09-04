@@ -8,3 +8,4 @@ webpack.config.js
 package.json
 jest.config.js
 **/*.config.js
+src/graphql/index.tsx

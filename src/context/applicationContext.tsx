@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
-import { getApplicationEnabled, setContentScriptEnabled } from "@/api/applicationStorage";
+import { getApplicationEnabled, getContentScriptEnabled, setContentScriptEnabled } from "@/api/applicationStorage";
 import { CONTENT_SCRIPT_ENABLE } from "@/data/events";
 import eventBus from "@/api/eventbus";
 
@@ -32,12 +32,21 @@ export const ApplicationProvider = ({ children }: PropsWithChildren<unknown>) =>
     });
   }, []);
 
-  const handleContentScriptStatusChange = useCallback((eventData: any) => {
-    setContentScriptEnabled(eventData.value, (data) => {
-      setIsAppEnabled(data);
+  const handleGetContentScriptEnabledStatus = useCallback(() => {
+    getContentScriptEnabled((data) => {
       setIsContentScriptEnabled(data);
     });
   }, []);
+
+  const handleContentScriptStatusChange = useCallback((eventData: any) => {
+    setContentScriptEnabled(eventData.value, (data) => {
+      setIsContentScriptEnabled(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    handleGetContentScriptEnabledStatus();
+  }, [handleGetContentScriptEnabledStatus]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

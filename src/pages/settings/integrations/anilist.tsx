@@ -17,7 +17,6 @@ import {
 import React, { useEffect, useState } from "react";
 import eventBus from "@/api/eventbus";
 import LoadingState from "@/components/states/LoadingState";
-import AutoSyncMediaToggle from "../components/autoSyncMediaToggle";
 
 const Anilist = () => {
   const { isInitialized, anilistConfig, anilistAuthStatus } = useAnilistContext();
@@ -187,8 +186,6 @@ const Anilist = () => {
             )}
           </Flex>
         </form>
-
-        <AutoSyncMediaToggle />
       </Flex>
     </Box>
   );

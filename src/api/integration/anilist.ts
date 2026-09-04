@@ -7,7 +7,6 @@ import { AuthStatus } from "@/types/kitaschema";
 const ANILIST_CONFIG_KEY = SETTINGS.integrations.anilist.configKey.key;
 const ANILIST_AUTH_KEY = SETTINGS.integrations.anilist.authKey.key;
 const ANILIST_AUTH_STATE_KEY = SETTINGS.integrations.anilist.authStatus.key;
-const ANILIST_AUTO_SYNC_MEDIA_KEY = SETTINGS.integrations.anilist.autoSync.key;
 
 // get anilist config
 const getAnilistConfig = async (callback: Callback<AnilistConfig | null>) => {
@@ -118,22 +117,6 @@ const deleteAnilistAuthStatus = async (callback: Callback<void>) => {
   });
 };
 
-// get ANILIST_AUTO_SYNC_MEDIA_KEY
-const getAnilistAutoSyncMedia = async (callback: Callback<boolean>) => {
-  chrome.storage.local.get(ANILIST_AUTO_SYNC_MEDIA_KEY, (data) => {
-    const state = data?.[ANILIST_AUTO_SYNC_MEDIA_KEY] ?? false;
-    callback(state);
-  });
-};
-
-// set ANILIST_AUTO_SYNC_MEDIA_KEY
-const setAnilistAutoSyncMedia = async (value: boolean, callback: Callback<boolean>) => {
-  chrome.storage.local.set({ [ANILIST_AUTO_SYNC_MEDIA_KEY]: value }, () => {
-    logger.info(`setting anilist auto sync media to: ${value}`);
-    callback(value);
-  });
-};
-
 const getIsAuthorizedWithAnilist = (callback: Callback<AuthStatus>) => {
   getAnilistAuth((data) => {
     if (!data) {
@@ -182,6 +165,4 @@ export {
   setAnilistAuthStatus,
   deleteAnilistAuthStatus,
   getIsAuthorizedWithAnilist,
-  getAnilistAutoSyncMedia,
-  setAnilistAutoSyncMedia,
 };

@@ -1,7 +1,8 @@
 import { format } from "date-fns";
 import { SHA256 } from "crypto-js";
-import { IVideo } from "@/types/video";
+import { IVideo, SiteKey } from "@/types/video";
 import { AnilistAuth } from "@/types/integrations/anilist";
+import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
 
 const SETTINGS_PAGE_NAME = "settings.html";
 const STATISTICS_PAGE_NAME = "statistics.html";
@@ -132,6 +133,97 @@ export const getDateFromNow = (days: number, from: DateFromNow = "PAST") => {
 };
 
 export const randomOffset = (min = 1000, max = 5000) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+export const hasReachedWatchThreshold = (currentTime: number, duration: number, percentage: number): boolean => {
+  if (!Number.isFinite(duration) || duration <= 0) return false;
+  return (currentTime / duration) * 100 >= percentage;
+};
+
+const SITE_KEY_TO_SOURCE_PLATFORM: Partial<Record<SiteKey, SourcePlatform>> = {
+  [SiteKey.CRUNCHYROLL]: "crunchyroll",
+  [SiteKey.YOUTUBE]: "youtube",
+  [SiteKey.YOUTUBE_MUSIC]: "youtube",
+};
+
+export const mapSiteKeyToSourcePlatform = (siteKey: SiteKey): SourcePlatform | undefined => SITE_KEY_TO_SOURCE_PLATFORM[siteKey];
+
+// Shared by the on-page pending-review banner and the popup teaser so both
+// surfaces describe the same pending AniList series list identically.
+export const formatPendingSeriesSummary = (titles: string[], maxShown = 2): string => {
+  if (titles.length === 0) return "";
+  if (titles.length === 1) return titles[0];
+
+  if (titles.length <= maxShown + 1) {
+    const allButLast = titles.slice(0, -1);
+    const last = titles[titles.length - 1];
+    return allButLast.length === 1 ? `${allButLast[0]} and ${last}` : `${allButLast.join(", ")}, and ${last}`;
+  }
+
+  const shown = titles.slice(0, maxShown);
+  const remaining = titles.length - maxShown;
+  return shown.length === 1 ? `${shown[0]} and ${remaining} more` : `${shown.join(", ")}, and ${remaining} more`;
+};
+
+// AniList search results are only auto-applied when a season year lines up exactly;
+// anything else (including a single ambiguous result) needs a human to confirm.
+export const pickAutoMatch = (results: ISeriesSearchResult[], seasonYear?: number): ISeriesSearchResult | undefined => {
+  if (seasonYear === undefined) return undefined;
+  return results.find((result) => result.seasonYear === seasonYear);
+};
+
+const SETTINGS_TAB_INDEX: Record<string, number> = {
+  integration: 0,
+  autotrack: 1,
+  tags: 2,
+  mappings: 3,
+  logs: 4,
+  general: 5,
+};
+
+export const getSettingsTabIndexFromSearch = (search: string): number => {
+  const tab = new URLSearchParams(search).get("tab");
+  if (!tab) return 0;
+  return SETTINGS_TAB_INDEX[tab] ?? 0;
+};
+
+export type AnilistAutoSyncDecision =
+  | { action: "skip"; reason: string }
+  | { action: "sync"; mapping: ISeriesMapping }
+  | { action: "createMappingAndSync"; match: ISeriesSearchResult }
+  | { action: "queuePending"; results: ISeriesSearchResult[] };
+
+// Pure decision core for background auto-sync, kept separate from the actual
+// network/storage I/O so every branch (including the "don't pile up duplicate
+// pending reviews for the same series" case) can be tested without mocking fetch.
+export const decideAnilistAutoSyncAction = ({
+  autoSyncEnabled,
+  hasAuthToken,
+  existingMapping,
+  hasPendingForSeries,
+  searchResults,
+  seasonYear,
+}: {
+  autoSyncEnabled: boolean;
+  hasAuthToken: boolean;
+  existingMapping: ISeriesMapping | null;
+  hasPendingForSeries: boolean;
+  searchResults: ISeriesSearchResult[] | null;
+  seasonYear?: number;
+}): AnilistAutoSyncDecision => {
+  if (!autoSyncEnabled) return { action: "skip", reason: "auto-sync disabled for this source" };
+  if (!hasAuthToken) return { action: "skip", reason: "anilist not connected" };
+  if (existingMapping) return { action: "sync", mapping: existingMapping };
+  if (hasPendingForSeries) return { action: "skip", reason: "already queued for review" };
+
+  if (!searchResults || searchResults.length === 0) {
+    return { action: "skip", reason: "no anilist search results" };
+  }
+
+  const autoMatch = pickAutoMatch(searchResults, seasonYear);
+  if (autoMatch) return { action: "createMappingAndSync", match: autoMatch };
+
+  return { action: "queuePending", results: searchResults };
+};
 
 // AniList access tokens are valid for 1 year with no refresh support, and their implicit
 // grant redirect only guarantees `access_token` in the fragment (no expires_in/token_type).

@@ -2,7 +2,6 @@ import { UseToastOptions, useToast as useChakraToast } from "@chakra-ui/react";
 import React, { PropsWithChildren, createContext, useContext } from "react";
 
 const TOAST_RESET_DELAY_MS = 1800; // 1.8 seconds
-const ENV = process.env.NODE_ENV;
 
 type Status = "success" | "error" | "loading";
 
