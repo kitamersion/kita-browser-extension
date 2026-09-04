@@ -49,7 +49,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ groups, selectedId, o
               rightIcon={isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
             >
               <Box textAlign="left">
-                <Heading size="xs" color={group.id === "advanced" ? "text.secondary" : "text.primary"} textTransform="uppercase">
+                <Heading size="xs" color={group.collapsedByDefault ? "text.secondary" : "text.primary"} textTransform="uppercase">
                   {group.label}
                 </Heading>
                 <Text fontSize="xs" color="text.tertiary" fontWeight="normal" whiteSpace="normal">
