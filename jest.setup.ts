@@ -32,3 +32,11 @@ jest.mock("@zag-js/focus-visible", () => ({
   ...jest.requireActual("@zag-js/focus-visible"),
   trackFocusVisible: () => {},
 }));
+
+// jsdom doesn't implement Element.prototype.scrollTo, which Chakra UI v2's
+// Menu (use-menu.cjs) calls to scroll the active item into view when the
+// menu opens. Polyfill it as a no-op so Menu-based components don't crash
+// in tests — actual scroll behavior isn't meaningful in jsdom anyway.
+if (typeof Element.prototype.scrollTo !== "function") {
+  Element.prototype.scrollTo = function () {};
+}
