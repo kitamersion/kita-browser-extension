@@ -182,12 +182,7 @@ const AnilistSearch: React.FC = () => {
           <Text fontSize="sm" color="text.secondary">
             Page {pageInfo.currentPage} of {pageInfo.lastPage}
           </Text>
-          <Button
-            size="sm"
-            onClick={() => goToPage(page + 1)}
-            isDisabled={!pageInfo.hasNextPage}
-            data-testid="anilist-search-next-page"
-          >
+          <Button size="sm" onClick={() => goToPage(page + 1)} isDisabled={!pageInfo.hasNextPage} data-testid="anilist-search-next-page">
             Next
           </Button>
         </HStack>
