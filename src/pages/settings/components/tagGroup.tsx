@@ -1,5 +1,6 @@
 import { Box, Flex } from "@chakra-ui/react";
 import React from "react";
+import { IoIosPricetags } from "react-icons/io";
 import AddTag from "./addTag";
 import { useTagContext } from "@/context/tagContext";
 import LoadingState from "@/components/states/LoadingState";
@@ -30,7 +31,7 @@ const TagGroup = () => {
       transition="all 0.2s"
     >
       <Flex flexDirection={"column"} gap={8} alignItems={"flex-start"}>
-        <SummaryItem>
+        <SummaryItem icon={IoIosPricetags}>
           <SummaryItem.Value value={totalTagCount} />
           <SummaryItem.Title>Total Tags</SummaryItem.Title>
         </SummaryItem>

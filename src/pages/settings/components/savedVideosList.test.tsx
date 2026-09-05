@@ -7,8 +7,14 @@ import { useVideoPagination } from "@/hooks/useVideoPagination";
 import { SiteKey } from "@/types/video";
 
 jest.mock("@/hooks/useVideoPagination");
-jest.mock("@/pages/popup/components/updateVideo", () => () => <div>UpdateVideo</div>);
-jest.mock("@/pages/popup/components/deleteVideo", () => () => <div>DeleteVideo</div>);
+jest.mock("@/pages/popup/components/updateVideo", () => {
+  const MockUpdateVideo = () => <div>UpdateVideo</div>;
+  return MockUpdateVideo;
+});
+jest.mock("@/pages/popup/components/deleteVideo", () => {
+  const MockDeleteVideo = () => <div>DeleteVideo</div>;
+  return MockDeleteVideo;
+});
 
 const mockUseVideoPagination = useVideoPagination as jest.Mock;
 
@@ -90,5 +96,19 @@ describe("SavedVideosList", () => {
 
     await userEvent.click(screen.getByText("Next"));
     expect(handleNext).toHaveBeenCalledTimes(1);
+  });
+
+  test("shows an empty state instead of the table when there are no saved videos", () => {
+    mockUseVideoPagination.mockReturnValue({
+      page: 0,
+      paginatedResult: { page: 0, pageSize: 20, results: [], totalPages: 0 },
+      handleNext: jest.fn(),
+      handlePrevious: jest.fn(),
+    });
+
+    render(<SavedVideosList />);
+
+    expect(screen.getByText("No saved videos yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });
