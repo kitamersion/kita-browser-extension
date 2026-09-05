@@ -20,3 +20,11 @@ if (typeof (globalThis as any).crypto?.randomUUID !== "function") {
 // jsdom doesn't provide. Polyfill it so any test exercising code that logs
 // doesn't crash the worker with "indexedDB is not defined".
 import "fake-indexeddb/auto";
+
+// jsdom doesn't support the focus property setter on HTMLElement, which
+// Chakra UI v2's focus-visible tracking needs. Mock the module to prevent
+// focus tracking errors in tests.
+jest.mock("@zag-js/focus-visible", () => ({
+  trackFocusVisible: () => {},
+  observeFocusVisible: () => {},
+}));
