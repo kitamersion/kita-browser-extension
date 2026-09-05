@@ -6,9 +6,7 @@ import SettingsLayout from "./components/settingsLayout";
 const Settings = () => {
   const { anilistAuthStatus } = useAnilistContext();
 
-  return (
-    <SettingsLayout initialSelectedId={getSettingsSectionFromSearch(window.location.search)} navContext={{ anilistAuthStatus }} />
-  );
+  return <SettingsLayout initialSelectedId={getSettingsSectionFromSearch(window.location.search)} navContext={{ anilistAuthStatus }} />;
 };
 
 export default Settings;

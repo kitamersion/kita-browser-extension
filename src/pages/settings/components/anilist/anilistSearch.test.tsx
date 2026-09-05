@@ -323,9 +323,7 @@ describe("AnilistSearch", () => {
       pageInfo: { total: 1, perPage: 20, currentPage: 1, lastPage: 1, hasNextPage: false },
       media: [makeMedia(1, "Frieren")],
     };
-    mockGetAniListCache.mockImplementation((key: string) =>
-      Promise.resolve(key.startsWith("search:") ? cachedPage : undefined)
-    );
+    mockGetAniListCache.mockImplementation((key: string) => Promise.resolve(key.startsWith("search:") ? cachedPage : undefined));
 
     // No resultsMock provided: if the implementation skipped the cache and
     // hit the network anyway, Apollo would have no mock to satisfy the

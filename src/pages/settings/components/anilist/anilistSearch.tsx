@@ -71,10 +71,7 @@ const AnilistSearch: React.FC = () => {
   );
 
   const genreOptions = useMemo(
-    () =>
-      (genreData ?? [])
-        .filter((genre) => showAdult || genre !== "Hentai")
-        .map((genre) => ({ value: genre, label: genre })),
+    () => (genreData ?? []).filter((genre) => showAdult || genre !== "Hentai").map((genre) => ({ value: genre, label: genre })),
     [genreData, showAdult]
   );
   const tagOptions = useMemo(
@@ -99,14 +96,7 @@ const AnilistSearch: React.FC = () => {
   // memoized against the stale `page` for one extra render, firing a wasted
   // query with the wrong page before the reset commits. See:
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const filtersKey = JSON.stringify([
-    debouncedSearch,
-    selectedGenres,
-    selectedTags,
-    selectedFormats,
-    selectedYear,
-    showAdult,
-  ]);
+  const filtersKey = JSON.stringify([debouncedSearch, selectedGenres, selectedTags, selectedFormats, selectedYear, showAdult]);
   const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey);
   if (filtersKey !== prevFiltersKey) {
     setPrevFiltersKey(filtersKey);
@@ -161,12 +151,7 @@ const AnilistSearch: React.FC = () => {
   };
 
   const hasActiveFilters = Boolean(
-    debouncedSearch ||
-      selectedGenres.length ||
-      selectedTags.length ||
-      selectedFormats.length ||
-      selectedYear ||
-      showAdult
+    debouncedSearch || selectedGenres.length || selectedTags.length || selectedFormats.length || selectedYear || showAdult
   );
 
   const clearFilters = () => {
