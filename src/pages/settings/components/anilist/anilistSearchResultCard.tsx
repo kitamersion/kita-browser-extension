@@ -13,12 +13,22 @@ const AnilistSearchResultCard: React.FC<AnilistSearchResultCardProps> = ({ media
   const siteUrl = media.siteUrl ?? "#";
 
   return (
-    <Box variant="card" as="article" overflow="hidden" data-testid={`anilist-search-result-${media.id}`} {...({} as any)}>
-      <Link href={siteUrl} isExternal target="_blank">
+    <Box
+      as="article"
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      borderRadius="lg"
+      transition="all 0.2s"
+      _hover={{ borderColor: "kita.border.accent", boxShadow: "lg" }}
+      overflow="hidden"
+      data-testid={`anilist-search-result-${media.id}`}
+    >
+      <Link href={siteUrl} isExternal>
         <Image src={coverImage} alt={title} objectFit="cover" w="full" h="220px" />
       </Link>
       <VStack align="stretch" spacing={2} p={3}>
-        <Link href={siteUrl} isExternal target="_blank">
+        <Link href={siteUrl} isExternal>
           <Heading size="xs" noOfLines={2} color="text.primary">
             {title}
           </Heading>
