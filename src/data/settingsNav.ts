@@ -1,4 +1,8 @@
 import React from "react";
+import { SettingsIcon } from "@chakra-ui/icons";
+import { MdExtension, MdSync, MdCompareArrows, MdArticle } from "react-icons/md";
+import { IoIosPricetags } from "react-icons/io";
+import { SiAnilist } from "react-icons/si";
 import { AuthStatus } from "@/types/kitaschema";
 
 const IntegrationTab = React.lazy(() => import("@/pages/settings/tabs/integrationTab"));
@@ -16,6 +20,7 @@ export type SettingsNavContext = {
 export type SettingsNavItem = {
   id: string;
   label: string;
+  icon: React.ElementType;
   component: React.ComponentType;
   condition?: (ctx: SettingsNavContext) => boolean;
 };
@@ -31,11 +36,12 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     id: "track",
     label: "Track",
     items: [
-      { id: "integration", label: "Integrations", component: IntegrationTab },
-      { id: "autotrack", label: "Auto Track", component: AutoTrackTab },
+      { id: "integration", label: "Integrations", icon: MdExtension, component: IntegrationTab },
+      { id: "autotrack", label: "Auto Track", icon: MdSync, component: AutoTrackTab },
       {
         id: "anilist",
         label: "AniList Profile",
+        icon: SiAnilist,
         component: AnilistTab,
         condition: (ctx) => ctx.anilistAuthStatus === "authorized",
       },
@@ -45,19 +51,19 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     id: "organize",
     label: "Organize",
     items: [
-      { id: "tags", label: "Tags", component: TagTab },
-      { id: "mappings", label: "Series Mappings", component: SeriesMappingsTab },
+      { id: "tags", label: "Tags", icon: IoIosPricetags, component: TagTab },
+      { id: "mappings", label: "Series Mappings", icon: MdCompareArrows, component: SeriesMappingsTab },
     ],
   },
   {
     id: "data",
     label: "Data",
-    items: [{ id: "general", label: "General", component: GeneralTab }],
+    items: [{ id: "general", label: "General", icon: SettingsIcon, component: GeneralTab }],
   },
   {
     id: "advanced",
     label: "Advanced",
-    items: [{ id: "logs", label: "Logs", component: LogsTab }],
+    items: [{ id: "logs", label: "Logs", icon: MdArticle, component: LogsTab }],
   },
 ];
 

@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MdExtension, MdArticle } from "react-icons/md";
 import SettingsLayout from "./settingsLayout";
 import useScreenSize from "@/hooks/useScreenSize";
 
@@ -15,12 +16,12 @@ jest.mock("@/data/settingsNav", () => {
       {
         id: "track",
         label: "Track",
-        items: [{ id: "integration", label: "Integrations", component: () => <div>Track panel content</div> }],
+        items: [{ id: "integration", label: "Integrations", icon: MdExtension, component: () => <div>Track panel content</div> }],
       },
       {
         id: "advanced",
         label: "Advanced",
-        items: [{ id: "logs", label: "Logs", component: () => <div>Advanced panel content</div> }],
+        items: [{ id: "logs", label: "Logs", icon: MdArticle, component: () => <div>Advanced panel content</div> }],
       },
     ],
   };

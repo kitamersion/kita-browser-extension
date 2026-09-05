@@ -28,6 +28,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ groups, selectedId, o
                   key={item.id}
                   variant="ghost"
                   justifyContent="flex-start"
+                  leftIcon={<Box as={item.icon} boxSize={4} />}
                   borderLeft="3px solid"
                   borderRadius={0}
                   borderColor={item.id === selectedId ? "accent.primary" : "transparent"}

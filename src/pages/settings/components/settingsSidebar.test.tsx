@@ -1,6 +1,8 @@
 import "@testing-library/jest-dom";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MdExtension, MdArticle } from "react-icons/md";
+import { SiAnilist } from "react-icons/si";
 import SettingsSidebar from "./settingsSidebar";
 import { SettingsNavGroup } from "@/data/settingsNav";
 
@@ -9,10 +11,11 @@ const groups: SettingsNavGroup[] = [
     id: "track",
     label: "Track",
     items: [
-      { id: "integration", label: "Integrations", component: () => null },
+      { id: "integration", label: "Integrations", icon: MdExtension, component: () => null },
       {
         id: "anilist",
         label: "AniList Profile",
+        icon: SiAnilist,
         component: () => null,
         condition: (ctx) => ctx.anilistAuthStatus === "authorized",
       },
@@ -21,7 +24,7 @@ const groups: SettingsNavGroup[] = [
   {
     id: "advanced",
     label: "Advanced",
-    items: [{ id: "logs", label: "Logs", component: () => null }],
+    items: [{ id: "logs", label: "Logs", icon: MdArticle, component: () => null }],
   },
 ];
 
