@@ -367,12 +367,6 @@ const AnilistProfile = () => {
         transition="all 0.2s"
       >
         <VStack spacing={6} align="stretch">
-          {/* Cache Controls Drawer Trigger */}
-          <Flex justifyContent="flex-end" mb={2}>
-            <Button variant="kita-outline" size="sm" leftIcon={<SettingsIcon />} onClick={onOpen}>
-              Cache Controls
-            </Button>
-          </Flex>
           <Drawer isOpen={isOpen} onClose={onClose} size="md">
             <DrawerOverlay />
             <DrawerContent bg="bg.primary" color="text.primary">
@@ -420,30 +414,35 @@ const AnilistProfile = () => {
           </Drawer>
 
           {/* User Profile Section */}
-          {profileLoading ? (
-            <Flex justifyContent="center" alignItems="center" minH="120px">
-              <Spinner size="lg" color="accent.primary" thickness="4px" speed="0.7s" />
-            </Flex>
-          ) : (
-            <Flex gap={4} alignItems="center">
-              <Avatar name={profile?.name} src={profile?.avatar?.medium ?? ""} size="lg" />
-              <Box flex={1}>
-                <Heading size="md" color="text.primary" mb={1}>
-                  {profile?.name}
-                </Heading>
-                <Link
-                  href={profile?.siteUrl ?? "#"}
-                  isExternal
-                  target={"_blank"}
-                  color="accent.primary"
-                  fontSize="sm"
-                  _hover={{ opacity: 0.8 }}
-                >
-                  View AniList profile <ExternalLinkIcon mx="2px" />
-                </Link>
-              </Box>
-            </Flex>
-          )}
+          <Flex justifyContent="space-between" alignItems="center" gap={4}>
+            {profileLoading ? (
+              <Flex justifyContent="center" alignItems="center" minH="120px" flex={1}>
+                <Spinner size="lg" color="accent.primary" thickness="4px" speed="0.7s" />
+              </Flex>
+            ) : (
+              <Flex gap={4} alignItems="center" flex={1}>
+                <Avatar name={profile?.name} src={profile?.avatar?.medium ?? ""} size="lg" />
+                <Box flex={1}>
+                  <Heading size="md" color="text.primary" mb={1}>
+                    {profile?.name}
+                  </Heading>
+                  <Link
+                    href={profile?.siteUrl ?? "#"}
+                    isExternal
+                    target={"_blank"}
+                    color="accent.primary"
+                    fontSize="sm"
+                    _hover={{ opacity: 0.8 }}
+                  >
+                    View AniList profile <ExternalLinkIcon mx="2px" />
+                  </Link>
+                </Box>
+              </Flex>
+            )}
+            <Button variant="kita-outline" size="sm" leftIcon={<SettingsIcon />} onClick={onOpen}>
+              Cache Controls
+            </Button>
+          </Flex>
 
           {/* Stats Grid */}
           {!profileLoading && (
