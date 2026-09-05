@@ -6,7 +6,7 @@ import { formatDuration, formatTimestamp } from "@/utils";
 import UpdateVideo from "@/pages/popup/components/updateVideo";
 import DeleteVideo from "@/pages/popup/components/deleteVideo";
 
-function PaginatedVideoList() {
+function SavedVideosList() {
   const { page, paginatedResult, handleNext, handlePrevious } = useVideoPagination();
 
   return (
@@ -65,4 +65,4 @@ function PaginatedVideoList() {
   );
 }
 
-export default PaginatedVideoList;
+export default SavedVideosList;

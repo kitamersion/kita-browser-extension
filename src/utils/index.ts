@@ -171,7 +171,17 @@ export const pickAutoMatch = (results: ISeriesSearchResult[], seasonYear?: numbe
   return results.find((result) => result.seasonYear === seasonYear);
 };
 
-const SETTINGS_SECTION_IDS = new Set(["integration", "autotrack", "tags", "mappings", "logs", "general", "anilist", "anilist-search"]);
+const SETTINGS_SECTION_IDS = new Set([
+  "integration",
+  "autotrack",
+  "tags",
+  "mappings",
+  "logs",
+  "general",
+  "anilist",
+  "anilist-search",
+  "saved-videos",
+]);
 
 export const getSettingsSectionFromSearch = (search: string): string => {
   const tab = new URLSearchParams(search).get("tab");

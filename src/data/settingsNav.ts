@@ -1,6 +1,6 @@
 import React from "react";
 import { SearchIcon, SettingsIcon } from "@chakra-ui/icons";
-import { MdExtension, MdSync, MdCompareArrows, MdArticle } from "react-icons/md";
+import { MdExtension, MdSync, MdCompareArrows, MdArticle, MdVideoLibrary } from "react-icons/md";
 import { IoIosPricetags } from "react-icons/io";
 import { SiAnilist } from "react-icons/si";
 import { AuthStatus } from "@/types/kitaschema";
@@ -12,6 +12,7 @@ const AnilistSearchTab = React.lazy(() => import("@/pages/settings/tabs/anilistS
 const TagTab = React.lazy(() => import("@/pages/settings/tabs/tagsTab"));
 const SeriesMappingsTab = React.lazy(() => import("@/pages/settings/tabs/seriesMappingsTab"));
 const GeneralTab = React.lazy(() => import("@/pages/settings/tabs/generalTab"));
+const SavedVideosTab = React.lazy(() => import("@/pages/settings/tabs/savedVideosTab"));
 const LogsTab = React.lazy(() => import("@/pages/settings/tabs/logsTab"));
 
 export type SettingsNavContext = {
@@ -66,7 +67,10 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
   {
     id: "data",
     label: "Data",
-    items: [{ id: "general", label: "General", icon: SettingsIcon, component: GeneralTab }],
+    items: [
+      { id: "general", label: "General", icon: SettingsIcon, component: GeneralTab },
+      { id: "saved-videos", label: "Saved Videos", icon: MdVideoLibrary, component: SavedVideosTab },
+    ],
   },
   {
     id: "advanced",

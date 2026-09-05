@@ -15,9 +15,9 @@ describe("SETTINGS_GROUPS", () => {
     expect(organize.items.map((item) => item.id)).toEqual(["tags", "mappings"]);
   });
 
-  test("the data group contains general", () => {
+  test("the data group contains general and saved-videos", () => {
     const data = SETTINGS_GROUPS.find((group) => group.id === "data")!;
-    expect(data.items.map((item) => item.id)).toEqual(["general"]);
+    expect(data.items.map((item) => item.id)).toEqual(["general", "saved-videos"]);
   });
 
   test("the advanced group contains logs", () => {
@@ -29,7 +29,7 @@ describe("SETTINGS_GROUPS", () => {
 describe("getVisibleItems", () => {
   test("excludes the anilist and anilist-search items when unauthorized", () => {
     const ids = getVisibleItems(SETTINGS_GROUPS, { anilistAuthStatus: "unauthorized" }).map((item) => item.id);
-    expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "logs"]);
+    expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "saved-videos", "logs"]);
   });
 
   test("includes the anilist and anilist-search items when authorized", () => {
