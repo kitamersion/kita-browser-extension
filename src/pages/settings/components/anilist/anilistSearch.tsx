@@ -1,4 +1,17 @@
-import { Box, Button, Checkbox, Flex, HStack, Input, SimpleGrid, Skeleton, Text, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Checkbox,
+  Flex,
+  HStack,
+  Input,
+  NumberInput,
+  NumberInputField,
+  SimpleGrid,
+  Skeleton,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { useApolloClient } from "@apollo/client";
 import { SHA256 } from "crypto-js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -167,6 +180,24 @@ const AnilistSearch: React.FC = () => {
 
   const media = pageData?.media?.filter((item): item is NonNullable<typeof item> => !!item) ?? [];
   const pageInfo = pageData?.pageInfo;
+  const lastPage = pageInfo?.lastPage ?? page;
+
+  // Keep the manual page-jump field in sync with the current page whenever
+  // it changes via Prev/Next, a filter reset, etc.
+  const [pageInputValue, setPageInputValue] = useState(String(page));
+  useEffect(() => {
+    setPageInputValue(String(page));
+  }, [page]);
+
+  const commitPageInput = () => {
+    const parsed = Number(pageInputValue);
+    const target = Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), 1), lastPage) : page;
+    if (target === page) {
+      setPageInputValue(String(page));
+      return;
+    }
+    goToPage(target);
+  };
 
   return (
     <>
@@ -236,12 +267,37 @@ const AnilistSearch: React.FC = () => {
           </Box>
 
           {pageInfo && media.length > 0 && (
-            <HStack justify="center" spacing={4}>
+            <HStack justify="center" spacing={2}>
               <Button size="sm" onClick={() => goToPage(page - 1)} isDisabled={page <= 1} data-testid="anilist-search-prev-page">
                 Prev
               </Button>
               <Text fontSize="sm" color="text.secondary">
-                Page {pageInfo.currentPage} of {pageInfo.lastPage}
+                Page
+              </Text>
+              <NumberInput
+                size="sm"
+                width="70px"
+                min={1}
+                max={lastPage}
+                value={pageInputValue}
+                onChange={(valueString) => setPageInputValue(valueString)}
+                clampValueOnBlur={false}
+              >
+                <NumberInputField
+                  textAlign="center"
+                  bg="bg.tertiary"
+                  borderColor="border.primary"
+                  onBlur={commitPageInput}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  data-testid="anilist-search-page-input"
+                />
+              </NumberInput>
+              <Text fontSize="sm" color="text.secondary">
+                of {lastPage}
               </Text>
               <Button
                 size="sm"

@@ -359,4 +359,73 @@ describe("AnilistSearch", () => {
       )
     );
   });
+
+  test("typing a page number and pressing Enter jumps directly to that page", async () => {
+    const page4Variables = { ...defaultVariables, page: 4 };
+    const mocks = [
+      genreMock,
+      tagMock,
+      resultsMock(defaultVariables, [makeMedia(1, "Frieren")], { hasNextPage: true, lastPage: 5 }),
+      resultsMock(page4Variables, [makeMedia(2, "Page Four Show")], { hasNextPage: true, lastPage: 5 }),
+    ];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    const pageInput = screen.getByTestId("anilist-search-page-input");
+    await userEvent.clear(pageInput);
+    await userEvent.type(pageInput, "4{Enter}");
+
+    expect(await screen.findByText("Page Four Show")).toBeInTheDocument();
+  });
+
+  test("clamps a manually entered page above the last page down to the last page", async () => {
+    const page2Variables = { ...defaultVariables, page: 2 };
+    const mocks = [
+      genreMock,
+      tagMock,
+      resultsMock(defaultVariables, [makeMedia(1, "Frieren")], { hasNextPage: true, lastPage: 2 }),
+      resultsMock(page2Variables, [makeMedia(2, "Page Two Show")]),
+    ];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    const pageInput = screen.getByTestId("anilist-search-page-input");
+    await userEvent.clear(pageInput);
+    await userEvent.type(pageInput, "99{Enter}");
+
+    expect(await screen.findByText("Page Two Show")).toBeInTheDocument();
+  });
+
+  test("clamps a manually entered page below 1 up to 1 without refetching", async () => {
+    const mocks = [genreMock, tagMock, resultsMock(defaultVariables, [makeMedia(1, "Frieren")], { hasNextPage: true, lastPage: 2 })];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    const pageInput = screen.getByTestId("anilist-search-page-input");
+    await userEvent.clear(pageInput);
+    await userEvent.type(pageInput, "0{Enter}");
+
+    // No mock exists for page 0/negative pages: staying on Frieren (rather
+    // than erroring) proves the clamp kept the request on page 1.
+    await waitFor(() => expect(pageInput).toHaveValue("1"));
+    expect(screen.getByText("Frieren")).toBeInTheDocument();
+  });
 });
