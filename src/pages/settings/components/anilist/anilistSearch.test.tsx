@@ -3,18 +3,20 @@ import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MockedProvider, MockedResponse } from "@apollo/client/testing";
-import AnilistSearch from "./anilistSearch";
+import AnilistSearch, { SEARCH_RESULTS_TTL_MS } from "./anilistSearch";
 import { SEARCH_ANIME_MEDIA } from "@/graphql/queries/searchAnimeMedia";
 import { GET_GENRE_COLLECTION } from "@/graphql/queries/getGenreCollection";
 import { GET_MEDIA_TAG_COLLECTION } from "@/graphql/queries/getMediaTagCollection";
 import { MediaFormat, MediaListStatus, MediaSort } from "@/graphql";
 import { SET_MEDIA_LIST_ENTRY_BY_ANILIST_ID } from "@/graphql/mutation/setMediaListEntryByAnilistId";
+import IndexedDB from "@/db/index";
+import { SHA256 } from "crypto-js";
 
 jest.mock("@/db/index", () => ({
   __esModule: true,
   default: {
-    getAniListCache: jest.fn().mockResolvedValue(undefined),
-    setAniListCache: jest.fn().mockResolvedValue(undefined),
+    getAniListCache: jest.fn(),
+    setAniListCache: jest.fn(),
   },
 }));
 
@@ -22,14 +24,29 @@ jest.mock("@/context/toastNotificationContext", () => ({
   useToastContext: () => ({ showToast: jest.fn() }),
 }));
 
+const mockGetAniListCache = IndexedDB.getAniListCache as jest.Mock;
+const mockSetAniListCache = IndexedDB.setAniListCache as jest.Mock;
+
+beforeEach(() => {
+  mockGetAniListCache.mockReset().mockResolvedValue(undefined);
+  mockSetAniListCache.mockReset().mockResolvedValue(undefined);
+});
+
 const genreMock: MockedResponse = {
   request: { query: GET_GENRE_COLLECTION },
-  result: { data: { GenreCollection: ["Action", "Comedy"] } },
+  result: { data: { GenreCollection: ["Action", "Comedy", "Hentai"] } },
 };
 
 const tagMock: MockedResponse = {
   request: { query: GET_MEDIA_TAG_COLLECTION },
-  result: { data: { MediaTagCollection: [{ id: 1, name: "Isekai", category: "Setting", isAdult: false }] } },
+  result: {
+    data: {
+      MediaTagCollection: [
+        { id: 1, name: "Isekai", category: "Setting", isAdult: false },
+        { id: 2, name: "Ecchi", category: "Theme", isAdult: true },
+      ],
+    },
+  },
 };
 
 const makeMedia = (id: number, title: string) => ({
@@ -50,8 +67,10 @@ const defaultVariables = {
   search: undefined,
   genres: undefined,
   tags: undefined,
+  formats: undefined,
   seasonYear: undefined,
   sort: [MediaSort.PopularityDesc],
+  isAdult: false,
 };
 
 const resultsMock = (
@@ -223,5 +242,121 @@ describe("AnilistSearch", () => {
     await userEvent.click(await screen.findByTestId(`anilist-search-status-menu-option-${MediaListStatus.Planning}`));
 
     await waitFor(() => expect(screen.getByTestId("anilist-search-status-menu-button")).toHaveTextContent("Planning"));
+  });
+
+  test("Genres and Tags exclude adult options until Show adult is checked", async () => {
+    const mocks = [genreMock, tagMock, resultsMock(defaultVariables, [makeMedia(1, "Frieren")])];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("multiselect-Genres-trigger"));
+    expect(screen.queryByTestId("multiselect-Genres-option-Hentai")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("multiselect-Genres-trigger"));
+
+    await userEvent.click(screen.getByTestId("multiselect-Tags-trigger"));
+    expect(screen.queryByTestId("multiselect-Tags-option-Ecchi")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("multiselect-Tags-trigger"));
+
+    await userEvent.click(screen.getByTestId("anilist-search-adult-toggle"));
+
+    await userEvent.click(screen.getByTestId("multiselect-Genres-trigger"));
+    expect(await screen.findByTestId("multiselect-Genres-option-Hentai")).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("multiselect-Genres-trigger"));
+
+    await userEvent.click(screen.getByTestId("multiselect-Tags-trigger"));
+    expect(await screen.findByTestId("multiselect-Tags-option-Ecchi")).toBeInTheDocument();
+  });
+
+  test("selecting a Format option refires the query with the format filter applied", async () => {
+    const formatVariables = { ...defaultVariables, formats: [MediaFormat.Movie] };
+    const mocks = [
+      genreMock,
+      tagMock,
+      resultsMock(defaultVariables, [makeMedia(1, "Frieren")]),
+      resultsMock(formatVariables, [makeMedia(2, "A Silent Voice")]),
+    ];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("multiselect-Format-trigger"));
+    await userEvent.click(await screen.findByTestId(`multiselect-Format-option-${MediaFormat.Movie}`));
+
+    expect(await screen.findByText("A Silent Voice")).toBeInTheDocument();
+  });
+
+  test("checking Show adult resets to page 1 and refires the query with isAdult true", async () => {
+    const adultVariables = { ...defaultVariables, isAdult: true };
+    const mocks = [
+      genreMock,
+      tagMock,
+      resultsMock(defaultVariables, [makeMedia(1, "Frieren")]),
+      resultsMock(adultVariables, [makeMedia(2, "Redo of Healer")]),
+    ];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("anilist-search-adult-toggle"));
+
+    expect(await screen.findByText("Redo of Healer")).toBeInTheDocument();
+  });
+
+  test("renders a cached results page without calling the AniList API again", async () => {
+    const cachedPage = {
+      pageInfo: { total: 1, perPage: 20, currentPage: 1, lastPage: 1, hasNextPage: false },
+      media: [makeMedia(1, "Frieren")],
+    };
+    mockGetAniListCache.mockImplementation((key: string) =>
+      Promise.resolve(key.startsWith("search:") ? cachedPage : undefined)
+    );
+
+    // No resultsMock provided: if the implementation skipped the cache and
+    // hit the network anyway, Apollo would have no mock to satisfy the
+    // request and this would fail to find the cached title.
+    render(
+      <MockedProvider mocks={[genreMock, tagMock]}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+  });
+
+  test("caches a freshly fetched results page with a 5 minute TTL", async () => {
+    const media1 = makeMedia(1, "Frieren");
+    const mocks = [genreMock, tagMock, resultsMock(defaultVariables, [media1])];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(mockSetAniListCache).toHaveBeenCalledWith(
+        `search:${SHA256(JSON.stringify(defaultVariables)).toString()}`,
+        { pageInfo: { total: 1, perPage: 20, currentPage: 1, lastPage: 1, hasNextPage: false }, media: [media1] },
+        SEARCH_RESULTS_TTL_MS
+      )
+    );
   });
 });

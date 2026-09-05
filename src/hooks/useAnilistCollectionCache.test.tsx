@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { useAnilistCollectionCache } from "./useAnilistCollectionCache";
 import IndexedDB from "@/db/index";
 
@@ -55,5 +55,23 @@ describe("useAnilistCollectionCache", () => {
     expect(result.current.error).toEqual(new Error("network down"));
     expect(result.current.data).toBeUndefined();
     expect(mockSetAniListCache).not.toHaveBeenCalled();
+  });
+
+  test("refetch calls fetchFn again without a cacheKey change", async () => {
+    mockGetAniListCache.mockResolvedValue(undefined);
+    const fetchFn = jest.fn().mockResolvedValueOnce(["Action"]).mockResolvedValueOnce(["Action", "Comedy"]);
+
+    const { result } = renderHook(() => useAnilistCollectionCache("genreCollection", 1000, fetchFn));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.data).toEqual(["Action"]);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.refetch();
+    });
+
+    await waitFor(() => expect(fetchFn).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.data).toEqual(["Action", "Comedy"]));
   });
 });

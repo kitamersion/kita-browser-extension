@@ -41,7 +41,7 @@ const AnilistMultiSelectFilter: React.FC<AnilistMultiSelectFilterProps> = ({ lab
           {selectedValues.length > 0 ? ` (${selectedValues.length})` : ""}
         </Button>
       </PopoverTrigger>
-      <PopoverContent maxW="260px">
+      <PopoverContent maxW="260px" bg="bg.primary" borderColor="border.primary" color="text.primary">
         <PopoverBody>
           <Input
             size="sm"
@@ -49,6 +49,9 @@ const AnilistMultiSelectFilter: React.FC<AnilistMultiSelectFilterProps> = ({ lab
             placeholder={`Search ${label.toLowerCase()}...`}
             value={filterText}
             onChange={(event) => setFilterText(event.target.value)}
+            bg="bg.tertiary"
+            borderColor="border.primary"
+            focusBorderColor="accent.primary"
             data-testid={`multiselect-${label}-search`}
           />
           <Box maxH="200px" overflowY="auto">
@@ -60,7 +63,12 @@ const AnilistMultiSelectFilter: React.FC<AnilistMultiSelectFilterProps> = ({ lab
               <CheckboxGroup value={selectedValues} onChange={(values) => onChange(values as string[])}>
                 <VStack align="stretch" spacing={1}>
                   {filteredOptions.map((option) => (
-                    <Checkbox key={option.value} value={option.value} data-testid={`multiselect-${label}-option-${option.value}`}>
+                    <Checkbox
+                      key={option.value}
+                      value={option.value}
+                      colorScheme="red"
+                      data-testid={`multiselect-${label}-option-${option.value}`}
+                    >
                       {option.label}
                     </Checkbox>
                   ))}

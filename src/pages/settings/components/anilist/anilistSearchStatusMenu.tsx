@@ -72,9 +72,17 @@ const AnilistSearchStatusMenu: React.FC<AnilistSearchStatusMenuProps> = ({ media
       >
         {status ? STATUS_LABELS[status] : "Add to List"}
       </MenuButton>
-      <MenuList>
+      <MenuList bg="bg.primary" borderColor="border.primary">
         {STATUS_OPTIONS.map((option) => (
-          <MenuItem key={option} onClick={() => handleSelect(option)} data-testid={`anilist-search-status-menu-option-${option}`}>
+          <MenuItem
+            key={option}
+            onClick={() => handleSelect(option)}
+            bg="transparent"
+            color="text.primary"
+            _hover={{ bg: "kita.primaryAlpha.100" }}
+            _focus={{ bg: "kita.primaryAlpha.100" }}
+            data-testid={`anilist-search-status-menu-option-${option}`}
+          >
             {STATUS_LABELS[option]}
           </MenuItem>
         ))}

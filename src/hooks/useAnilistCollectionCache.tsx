@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import IndexedDB from "@/db/index";
 
 export function useAnilistCollectionCache<T>(cacheKey: string, ttlMs: number, fetchFn: () => Promise<T>) {
   const [data, setData] = useState<T | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +58,12 @@ export function useAnilistCollectionCache<T>(cacheKey: string, ttlMs: number, fe
     // fetchFn is intentionally omitted: this hook fetches once per
     // cacheKey/ttlMs pair, not on every render of a new inline fetchFn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheKey, ttlMs]);
+  }, [cacheKey, ttlMs, retryNonce]);
 
-  return { data, loading, error };
+  // Bumps retryNonce to force the effect above to run again for the same
+  // cacheKey (e.g. a "Retry" button after a failed fetch, which never wrote
+  // a cache entry in the first place, so this naturally re-fetches).
+  const refetch = useCallback(() => setRetryNonce((n) => n + 1), []);
+
+  return { data, loading, error, refetch };
 }
