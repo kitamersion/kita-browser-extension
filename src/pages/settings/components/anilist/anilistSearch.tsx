@@ -53,9 +53,18 @@ const AnilistSearch: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchText]);
 
-  useEffect(() => {
+  // Reset to page 1 during render (not in an effect) whenever the filters
+  // change, so `variables` below is computed with the corrected page in the
+  // same render pass. Resetting in a separate effect would leave `variables`
+  // memoized against the stale `page` for one extra render, firing a wasted
+  // query with the wrong page before the reset commits. See:
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const filtersKey = JSON.stringify([debouncedSearch, selectedGenres, selectedTags, selectedYear]);
+  const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey);
+  if (filtersKey !== prevFiltersKey) {
+    setPrevFiltersKey(filtersKey);
     setPage(1);
-  }, [debouncedSearch, selectedGenres, selectedTags, selectedYear]);
+  }
 
   const variables = useMemo(
     () => ({
