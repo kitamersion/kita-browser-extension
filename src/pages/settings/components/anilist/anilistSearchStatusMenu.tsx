@@ -14,7 +14,14 @@ const STATUS_LABELS: Record<MediaListStatus, string> = {
   [MediaListStatus.Repeating]: "Rewatching",
 };
 
-const STATUS_OPTIONS = Object.values(MediaListStatus);
+const STATUS_OPTIONS: MediaListStatus[] = [
+  MediaListStatus.Planning,
+  MediaListStatus.Current,
+  MediaListStatus.Completed,
+  MediaListStatus.Paused,
+  MediaListStatus.Dropped,
+  MediaListStatus.Repeating,
+];
 
 export type AnilistSearchStatusMenuProps = {
   mediaId: number;
@@ -28,7 +35,23 @@ const AnilistSearchStatusMenu: React.FC<AnilistSearchStatusMenuProps> = ({ media
 
   const handleSelect = async (nextStatus: MediaListStatus) => {
     try {
-      await setMediaListEntry({ variables: { mediaId, status: nextStatus } });
+      await setMediaListEntry({
+        variables: { mediaId, status: nextStatus },
+        update: (cache, result) => {
+          const entry = result.data?.SaveMediaListEntry;
+          if (!entry) return;
+          cache.modify({
+            id: cache.identify({ __typename: "Media", id: mediaId }),
+            fields: {
+              mediaListEntry: () => ({
+                __typename: "MediaList",
+                id: entry.id,
+                status: entry.status,
+              }),
+            },
+          });
+        },
+      });
       setStatus(nextStatus);
       showToast({ title: `Added to ${STATUS_LABELS[nextStatus]}`, status: "success" });
     } catch (error) {

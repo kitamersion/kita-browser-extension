@@ -1,4 +1,4 @@
-import { Box, Button, Flex, HStack, Input, Select, SimpleGrid, Skeleton, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Skeleton, Text, VStack } from "@chakra-ui/react";
 import { useApolloClient } from "@apollo/client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MediaSort, useSearchAnimeMediaLazyQuery } from "@/graphql";
@@ -22,7 +22,7 @@ const AnilistSearch: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
   const [page, setPage] = useState(1);
 
-  const [runSearch, { data, loading, error }] = useSearchAnimeMediaLazyQuery();
+  const [runSearch, { data, loading, error, called }] = useSearchAnimeMediaLazyQuery();
 
   const { data: genreData } = useAnilistCollectionCache<string[]>("genreCollection", COLLECTION_CACHE_TTL_MS, async () => {
     const res = await client.query({ query: GET_GENRE_COLLECTION, fetchPolicy: "network-only" });
@@ -39,8 +39,11 @@ const AnilistSearch: React.FC = () => {
     }
   );
 
-  const genreOptions = useMemo(() => (genreData ?? []).map((genre) => ({ value: genre, label: genre })), [genreData]);
-  const tagOptions = tagData ?? [];
+  const genreOptions = useMemo(
+    () => (genreData ?? []).filter((genre) => genre !== "Hentai").map((genre) => ({ value: genre, label: genre })),
+    [genreData]
+  );
+  const tagOptions = useMemo(() => tagData ?? [], [tagData]);
 
   const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(
@@ -111,83 +114,101 @@ const AnilistSearch: React.FC = () => {
   const pageInfo = data?.Page?.pageInfo;
 
   return (
-    <VStack align="stretch" spacing={4}>
-      <Input
-        placeholder="Search anime..."
-        value={searchText}
-        onChange={(event) => setSearchText(event.target.value)}
-        data-testid="anilist-search-input"
-      />
-      <Flex gap={2} wrap="wrap" align="center">
-        <AnilistMultiSelectFilter label="Genres" options={genreOptions} selectedValues={selectedGenres} onChange={setSelectedGenres} />
-        <AnilistMultiSelectFilter label="Tags" options={tagOptions} selectedValues={selectedTags} onChange={setSelectedTags} />
-        <Select
-          placeholder="Year"
-          maxW="120px"
-          size="sm"
-          value={selectedYear ?? ""}
-          onChange={(event) => setSelectedYear(event.target.value ? Number(event.target.value) : undefined)}
-          data-testid="anilist-search-year-select"
-        >
-          {yearOptions.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </Select>
-        {hasActiveFilters && (
-          <Button size="sm" variant="ghost" onClick={clearFilters} data-testid="anilist-search-clear-filters">
-            Clear filters
-          </Button>
-        )}
-      </Flex>
+    <>
+      <VStack spacing={4} align="stretch" mb={4}>
+        <Heading size="lg" color="accent.primary">
+          AniList Search
+        </Heading>
+        <Text color="text.secondary" fontSize="sm">
+          Search AniList&apos;s catalog and add titles to your list.
+        </Text>
+      </VStack>
 
-      <Box ref={resultsRef} data-testid="anilist-search-results">
-        {loading ? (
-          <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4}>
-            {Array.from({ length: RESULT_SKELETON_COUNT }).map((_, index) => (
-              <Skeleton key={index} height="280px" borderRadius="lg" />
-            ))}
-          </SimpleGrid>
-        ) : error ? (
-          <VStack spacing={3} py={8}>
-            <Text color="text.secondary">{error.message}</Text>
-            <Button onClick={() => runSearch({ variables })} data-testid="anilist-search-retry">
-              Retry
-            </Button>
-          </VStack>
-        ) : media.length === 0 ? (
-          <VStack spacing={3} py={8}>
-            <Text color="text.secondary">No results found.</Text>
+      <Box bg="bg.secondary" border="1px solid" borderColor="border.primary" borderRadius="xl" p={6}>
+        <VStack align="stretch" spacing={4}>
+          <Input
+            placeholder="Search anime..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            data-testid="anilist-search-input"
+          />
+          <Flex gap={2} wrap="wrap" align="center">
+            <AnilistMultiSelectFilter label="Genres" options={genreOptions} selectedValues={selectedGenres} onChange={setSelectedGenres} />
+            <AnilistMultiSelectFilter label="Tags" options={tagOptions} selectedValues={selectedTags} onChange={setSelectedTags} />
+            <Select
+              placeholder="Year"
+              maxW="120px"
+              size="sm"
+              value={selectedYear ?? ""}
+              onChange={(event) => setSelectedYear(event.target.value ? Number(event.target.value) : undefined)}
+              data-testid="anilist-search-year-select"
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </Select>
             {hasActiveFilters && (
-              <Button size="sm" variant="ghost" onClick={clearFilters}>
+              <Button size="sm" variant="ghost" onClick={clearFilters} data-testid="anilist-search-clear-filters">
                 Clear filters
               </Button>
             )}
-          </VStack>
-        ) : (
-          <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4}>
-            {media.map((item) => (
-              <AnilistSearchResultCard key={item.id} media={item} />
-            ))}
-          </SimpleGrid>
-        )}
-      </Box>
+          </Flex>
 
-      {pageInfo && media.length > 0 && (
-        <HStack justify="center" spacing={4}>
-          <Button size="sm" onClick={() => goToPage(page - 1)} isDisabled={page <= 1} data-testid="anilist-search-prev-page">
-            Prev
-          </Button>
-          <Text fontSize="sm" color="text.secondary">
-            Page {pageInfo.currentPage} of {pageInfo.lastPage}
-          </Text>
-          <Button size="sm" onClick={() => goToPage(page + 1)} isDisabled={!pageInfo.hasNextPage} data-testid="anilist-search-next-page">
-            Next
-          </Button>
-        </HStack>
-      )}
-    </VStack>
+          <Box ref={resultsRef} data-testid="anilist-search-results">
+            {!called || loading ? (
+              <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4}>
+                {Array.from({ length: RESULT_SKELETON_COUNT }).map((_, index) => (
+                  <Skeleton key={index} height="280px" borderRadius="lg" />
+                ))}
+              </SimpleGrid>
+            ) : error ? (
+              <VStack spacing={3} py={8}>
+                <Text color="text.secondary">{error.message}</Text>
+                <Button onClick={() => runSearch({ variables })} data-testid="anilist-search-retry">
+                  Retry
+                </Button>
+              </VStack>
+            ) : media.length === 0 ? (
+              <VStack spacing={3} py={8}>
+                <Text color="text.secondary">No results found.</Text>
+                {hasActiveFilters && (
+                  <Button size="sm" variant="ghost" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                )}
+              </VStack>
+            ) : (
+              <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4}>
+                {media.map((item) => (
+                  <AnilistSearchResultCard key={item.id} media={item} />
+                ))}
+              </SimpleGrid>
+            )}
+          </Box>
+
+          {pageInfo && media.length > 0 && (
+            <HStack justify="center" spacing={4}>
+              <Button size="sm" onClick={() => goToPage(page - 1)} isDisabled={page <= 1} data-testid="anilist-search-prev-page">
+                Prev
+              </Button>
+              <Text fontSize="sm" color="text.secondary">
+                Page {pageInfo.currentPage} of {pageInfo.lastPage}
+              </Text>
+              <Button
+                size="sm"
+                onClick={() => goToPage(page + 1)}
+                isDisabled={!pageInfo.hasNextPage}
+                data-testid="anilist-search-next-page"
+              >
+                Next
+              </Button>
+            </HStack>
+          )}
+        </VStack>
+      </Box>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { IVideo, SiteKey } from "@/types/video";
 import { ISeriesMapping, ISeriesSearchResult } from "@/types/integrations/seriesMapping";
+import { SETTINGS_GROUPS } from "@/data/settingsNav";
 import {
   convertToSeconds,
   decideAnilistAutoSyncAction,
@@ -337,6 +338,13 @@ describe("getSettingsSectionFromSearch function", () => {
 
   test("defaults to integration for an unknown tab name", () => {
     expect(getSettingsSectionFromSearch("?tab=doesnotexist")).toBe("integration");
+  });
+
+  test("resolves every settings nav id from the URL instead of falling back", () => {
+    const allIds = SETTINGS_GROUPS.flatMap((group) => group.items.map((item) => item.id));
+    allIds.forEach((id) => {
+      expect(getSettingsSectionFromSearch(`?tab=${id}`)).toBe(id);
+    });
   });
 });
 

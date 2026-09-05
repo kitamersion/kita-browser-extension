@@ -7,7 +7,8 @@ import AnilistSearch from "./anilistSearch";
 import { SEARCH_ANIME_MEDIA } from "@/graphql/queries/searchAnimeMedia";
 import { GET_GENRE_COLLECTION } from "@/graphql/queries/getGenreCollection";
 import { GET_MEDIA_TAG_COLLECTION } from "@/graphql/queries/getMediaTagCollection";
-import { MediaFormat, MediaSort } from "@/graphql";
+import { MediaFormat, MediaListStatus, MediaSort } from "@/graphql";
+import { SET_MEDIA_LIST_ENTRY_BY_ANILIST_ID } from "@/graphql/mutation/setMediaListEntryByAnilistId";
 
 jest.mock("@/db/index", () => ({
   __esModule: true,
@@ -184,5 +185,43 @@ describe("AnilistSearch", () => {
     expect(await screen.findByText("Frieren")).toBeInTheDocument();
     expect(screen.getByTestId("anilist-search-prev-page")).toBeDisabled();
     expect(screen.getByTestId("anilist-search-next-page")).toBeDisabled();
+  });
+
+  test("does not flash the empty state before the query resolves", () => {
+    const mocks = [genreMock, tagMock, resultsMock(defaultVariables, [makeMedia(1, "Frieren")])];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(screen.queryByText("No results found.")).not.toBeInTheDocument();
+  });
+
+  test("adding a status from a card in the results grid calls the mutation", async () => {
+    const media1 = makeMedia(1, "Frieren");
+    const mocks = [
+      genreMock,
+      tagMock,
+      resultsMock(defaultVariables, [media1]),
+      {
+        request: { query: SET_MEDIA_LIST_ENTRY_BY_ANILIST_ID, variables: { mediaId: 1, status: MediaListStatus.Planning } },
+        result: { data: { SaveMediaListEntry: { id: 1, progress: 0, userId: 1, status: MediaListStatus.Planning } } },
+      },
+    ];
+
+    render(
+      <MockedProvider mocks={mocks}>
+        <AnilistSearch />
+      </MockedProvider>
+    );
+
+    expect(await screen.findByText("Frieren")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("anilist-search-status-menu-button"));
+    await userEvent.click(await screen.findByTestId(`anilist-search-status-menu-option-${MediaListStatus.Planning}`));
+
+    await waitFor(() => expect(screen.getByTestId("anilist-search-status-menu-button")).toHaveTextContent("Planning"));
   });
 });

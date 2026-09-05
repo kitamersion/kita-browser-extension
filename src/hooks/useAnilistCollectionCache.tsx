@@ -13,21 +13,28 @@ export function useAnilistCollectionCache<T>(cacheKey: string, ttlMs: number, fe
       setLoading(true);
       setError(null);
 
-      const cached = await IndexedDB.getAniListCache(cacheKey);
-      if (cached !== undefined) {
-        if (!cancelled) {
-          setData(cached);
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
+        const cached = await IndexedDB.getAniListCache(cacheKey);
+        if (cached !== undefined) {
+          if (!cancelled) {
+            setData(cached);
+            setLoading(false);
+          }
+          return;
+        }
+
         const fetched = await fetchFn();
-        await IndexedDB.setAniListCache(cacheKey, fetched, ttlMs);
         if (!cancelled) {
           setData(fetched);
           setLoading(false);
+        }
+
+        try {
+          await IndexedDB.setAniListCache(cacheKey, fetched, ttlMs);
+        } catch {
+          // Non-fatal: the value was already fetched and delivered above.
+          // Losing the cache write just means this falls back to a fetch
+          // again next time, instead of silently discarding good data.
         }
       } catch (err) {
         if (!cancelled) {
@@ -37,7 +44,12 @@ export function useAnilistCollectionCache<T>(cacheKey: string, ttlMs: number, fe
       }
     };
 
-    load();
+    load().catch((err) => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setLoading(false);
+      }
+    });
 
     return () => {
       cancelled = true;
