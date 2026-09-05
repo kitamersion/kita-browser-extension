@@ -397,7 +397,7 @@ class IndexedDB {
   }
 
   // add tag
-  addTag({ id, name, code, created_at, owner }: ITag): Promise<void> {
+  addTag({ id, name, code, created_at, owner, color }: ITag): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -412,6 +412,7 @@ class IndexedDB {
         code: codeOrFromName,
         created_at: created_at ?? Date.now(),
         owner: owner ?? "USER",
+        color,
       };
       const request = tagStore.put(tagItem);
       request.onsuccess = () => {

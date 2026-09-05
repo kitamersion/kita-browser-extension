@@ -2,7 +2,8 @@ import { IAutoTag } from "./autotag";
 import { IVideoTag } from "./relationship";
 import { ITag } from "./tag";
 import { IVideo } from "./video";
-import { ISeriesMapping } from "./integrations/seriesMapping";
+import { ISeriesMapping, PendingAnilistSync } from "./integrations/seriesMapping";
+import { SourceAutoSyncConfig, SourceAutoTrackConfig } from "./integrations/sourceTracking";
 
 export type StorageKeys = {
   ApplicationEnabledKey: string;
@@ -21,6 +22,18 @@ export type ApplicationSettings = {
   IsContentScriptEnabled: boolean;
   StorageKeys: StorageKeys;
   AnilistSyncMedia: boolean;
+  Theme: string;
+  SourceAutoTrack: SourceAutoTrackSettings;
+};
+
+export type SourceAutoTrackSettings = {
+  Crunchyroll: SourceSettings;
+  Youtube: SourceSettings;
+};
+
+export type SourceSettings = {
+  AutoTrack: SourceAutoTrackConfig;
+  AutoSync: SourceAutoSyncConfig;
 };
 
 export type UserItems = {
@@ -29,6 +42,7 @@ export type UserItems = {
   VideoTagRelationships: IVideoTag[];
   AutoTags: IAutoTag[];
   SeriesMappings: ISeriesMapping[];
+  AnilistPendingSync: PendingAnilistSync[];
 };
 
 export type IntegrationKeys = {

@@ -6,7 +6,8 @@ import { generateUniqueCode } from "@/utils";
 import { logger } from "@kitamersion/kita-logging";
 import { settingsManager, SETTINGS } from "@/api/settings";
 import { seriesMappingStorage } from "@/api/seriesMapping";
-import { ISeriesMapping } from "@/types/integrations/seriesMapping";
+import { ISeriesMapping, PendingAnilistSync } from "@/types/integrations/seriesMapping";
+import { SourceAutoSyncConfig, SourceAutoTrackConfig } from "@/types/integrations/sourceTracking";
 
 const BATCH_SIZE = 50;
 
@@ -97,7 +98,7 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       await processBatchWithProgress(
         tagsToAdd,
         async (tag: ITag) => {
-          await IndexedDB.addTag({ id: tag.id, name: tag.name, created_at: tag.created_at });
+          await IndexedDB.addTag(tag);
         },
         "Importing tags",
         onProgress
@@ -246,6 +247,24 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       return true; // Default to true
     };
 
+    // Older export files won't have these fields at all, so fall back to
+    // each setting's own default rather than writing an invalid value
+    // (settingsManager.set validates and rejects, which would abort the
+    // whole Promise.all and drop the other, valid settings too).
+    const getTheme = (value: any): string => (typeof value === "string" ? value : SETTINGS.application.theme.defaultValue);
+
+    const getSourceAutoTrackConfig = (value: any, fallback: SourceAutoTrackConfig): SourceAutoTrackConfig =>
+      value && typeof value === "object" && typeof value.enabled === "boolean" && typeof value.watchPercentage === "number"
+        ? value
+        : fallback;
+
+    const getSourceAutoSyncConfig = (value: any, fallback: SourceAutoSyncConfig): SourceAutoSyncConfig =>
+      value && typeof value === "object" && typeof value.enabled === "boolean" ? value : fallback;
+
+    const getAnilistPendingSync = (value: any): PendingAnilistSync[] => (Array.isArray(value) ? value : []);
+
+    const sourceAutoTrack = data.ApplicationSettings.SourceAutoTrack;
+
     await Promise.all([
       settingsManager.set(SETTINGS.application.enabled, getApplicationEnabled(data.ApplicationSettings.IsApplicationEnabled)),
       settingsManager.set(
@@ -253,6 +272,24 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
         getContentScriptEnabled(data.ApplicationSettings.IsContentScriptEnabled)
       ),
       settingsManager.set(SETTINGS.integrations.anilist.autoSync, getAnilistSyncMedia(data.ApplicationSettings.AnilistSyncMedia)),
+      settingsManager.set(SETTINGS.application.theme, getTheme(data.ApplicationSettings.Theme)),
+      settingsManager.set(SETTINGS.integrations.anilist.pendingSync, getAnilistPendingSync(data.UserItems.AnilistPendingSync)),
+      settingsManager.set(
+        SETTINGS.sources.crunchyroll.autoTrack,
+        getSourceAutoTrackConfig(sourceAutoTrack?.Crunchyroll?.AutoTrack, SETTINGS.sources.crunchyroll.autoTrack.defaultValue)
+      ),
+      settingsManager.set(
+        SETTINGS.sources.crunchyroll.autoSync,
+        getSourceAutoSyncConfig(sourceAutoTrack?.Crunchyroll?.AutoSync, SETTINGS.sources.crunchyroll.autoSync.defaultValue)
+      ),
+      settingsManager.set(
+        SETTINGS.sources.youtube.autoTrack,
+        getSourceAutoTrackConfig(sourceAutoTrack?.Youtube?.AutoTrack, SETTINGS.sources.youtube.autoTrack.defaultValue)
+      ),
+      settingsManager.set(
+        SETTINGS.sources.youtube.autoSync,
+        getSourceAutoSyncConfig(sourceAutoTrack?.Youtube?.AutoSync, SETTINGS.sources.youtube.autoSync.defaultValue)
+      ),
     ]);
 
     onProgress?.({ phase: "Finalizing", current: totalItems, total: totalItems, percentage: 100 });
