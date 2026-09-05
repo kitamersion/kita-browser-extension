@@ -1,0 +1,51 @@
+import { useEffect, useState } from "react";
+import IndexedDB from "@/db/index";
+
+export function useAnilistCollectionCache<T>(cacheKey: string, ttlMs: number, fetchFn: () => Promise<T>) {
+  const [data, setData] = useState<T | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      const cached = await IndexedDB.getAniListCache(cacheKey);
+      if (cached !== undefined) {
+        if (!cancelled) {
+          setData(cached);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const fetched = await fetchFn();
+        await IndexedDB.setAniListCache(cacheKey, fetched, ttlMs);
+        if (!cancelled) {
+          setData(fetched);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+    // fetchFn is intentionally omitted: this hook fetches once per
+    // cacheKey/ttlMs pair, not on every render of a new inline fetchFn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheKey, ttlMs]);
+
+  return { data, loading, error };
+}
