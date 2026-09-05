@@ -68,7 +68,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     id: "data",
     label: "Data",
     items: [
-      { id: "general", label: "General", icon: SettingsIcon, component: GeneralTab },
+      { id: "general", label: "Backup & Restore", icon: SettingsIcon, component: GeneralTab },
       { id: "saved-videos", label: "Saved Videos", icon: MdVideoLibrary, component: SavedVideosTab },
     ],
   },
