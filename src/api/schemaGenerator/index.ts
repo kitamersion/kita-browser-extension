@@ -17,6 +17,12 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
     isApplicationEnabled: SETTINGS.application.enabled,
     isContentScriptEnabled: SETTINGS.application.contentScriptEnabled,
     anilistSyncMedia: SETTINGS.integrations.anilist.autoSync,
+    theme: SETTINGS.application.theme,
+    anilistPendingSync: SETTINGS.integrations.anilist.pendingSync,
+    crunchyrollAutoTrack: SETTINGS.sources.crunchyroll.autoTrack,
+    crunchyrollAutoSync: SETTINGS.sources.crunchyroll.autoSync,
+    youtubeAutoTrack: SETTINGS.sources.youtube.autoTrack,
+    youtubeAutoSync: SETTINGS.sources.youtube.autoSync,
   });
 
   // Get statistics (computed from actual data)
@@ -29,12 +35,24 @@ const getKitaSchema = async (): Promise<KitaSchema> => {
       VideoTagRelationships: videoTagRelationships ?? [],
       AutoTags: autoTags ?? [],
       SeriesMappings: seriesMappings ?? [],
+      AnilistPendingSync: applicationSettings.anilistPendingSync ?? [],
     },
     ApplicationSettings: {
       IsReady: false, // @todo: implement
       IsApplicationEnabled: applicationSettings.isApplicationEnabled,
       IsContentScriptEnabled: applicationSettings.isContentScriptEnabled,
       AnilistSyncMedia: applicationSettings.anilistSyncMedia,
+      Theme: applicationSettings.theme,
+      SourceAutoTrack: {
+        Crunchyroll: {
+          AutoTrack: applicationSettings.crunchyrollAutoTrack,
+          AutoSync: applicationSettings.crunchyrollAutoSync,
+        },
+        Youtube: {
+          AutoTrack: applicationSettings.youtubeAutoTrack,
+          AutoSync: applicationSettings.youtubeAutoSync,
+        },
+      },
       StorageKeys: {
         ApplicationEnabledKey: SETTINGS.application.enabled.key,
         ContentScriptEnabledKey: SETTINGS.application.contentScriptEnabled.key,

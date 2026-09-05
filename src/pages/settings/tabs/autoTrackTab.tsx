@@ -1,4 +1,4 @@
-import { Box, Grid, Heading, TabPanel, Text, VStack } from "@chakra-ui/react";
+import { Box, Grid, Heading, Text, VStack } from "@chakra-ui/react";
 import React from "react";
 import Crunchyroll from "../integrations/crunchyroll";
 import Youtube from "../integrations/youtube";
@@ -9,7 +9,7 @@ const AutoTrackTab = () => {
   const { columns } = useScreenSize();
 
   return (
-    <TabPanel bg="bg.primary" color="text.primary">
+    <Box>
       <VStack spacing={4} align="stretch">
         <Heading size="lg" color="accent.primary">
           Auto Track
@@ -27,7 +27,7 @@ const AutoTrackTab = () => {
         <Crunchyroll />
         <Youtube />
       </Grid>
-    </TabPanel>
+    </Box>
   );
 };
 

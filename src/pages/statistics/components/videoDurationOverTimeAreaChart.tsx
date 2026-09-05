@@ -2,17 +2,15 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { groupBy, map, sumBy, sortBy } from "lodash";
 import { useVideoContext } from "@/context/videoContext";
 import React, { useState, useEffect, useMemo } from "react";
-import { Box } from "@chakra-ui/react";
+import { Box, Heading } from "@chakra-ui/react";
 import LoadingState from "@/components/states/LoadingState";
+import ChartTooltipCard from "./chartTooltipCard";
+import { useChartColors } from "./chartTheme";
 
-const CustomTooltip = ({ active, payload }: TooltipProps<any, any>) => {
+const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
-    const days = (payload[0].value / 24).toFixed(2);
-    return (
-      <div className="custom-tooltip">
-        <p className="intro">{`Days : ${days}`}</p>
-      </div>
-    );
+    const days = (Number(payload[0].value) / 24).toFixed(2);
+    return <ChartTooltipCard lines={[`Days: ${days}`]} />;
   }
 
   return null;
@@ -20,6 +18,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps<any, any>) => {
 
 const VideoDurationOverTimeAreaChart = () => {
   const { isInitialized, totalVideos } = useVideoContext();
+  const { primary, secondary, grid } = useChartColors();
   const [data, setData] = useState<{ date: string; duration: number }[]>([]);
 
   useEffect(() => {
@@ -56,14 +55,34 @@ const VideoDurationOverTimeAreaChart = () => {
   }
 
   return (
-    <Box width={"full"} height={"500px"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
-      <ResponsiveContainer width="100%" height="100%">
+    <Box
+      width={"full"}
+      height={"500px"}
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      rounded={"2xl"}
+      boxShadow={"dark-lg"}
+      p={4}
+      transition="all 0.2s"
+      _hover={{ borderColor: "kita.border.accent" }}
+    >
+      <Heading size="sm" color="accent.primary" mb={2}>
+        Cumulative Watch Time
+      </Heading>
+      <ResponsiveContainer width="100%" height="90%">
         <AreaChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" ticks={[firstDate, lastDate]} />
-          <YAxis tickFormatter={(value) => (value / 24).toFixed(1) + " days"} />
-          <Tooltip content={<CustomTooltip />} />
-          <Area dataKey="duration" stroke="#8884d8" fill="#8884d8" name="Day" />
+          <defs>
+            <linearGradient id="watchTimeFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={primary} stopOpacity={0.5} />
+              <stop offset="95%" stopColor={primary} stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+          <XAxis dataKey="date" ticks={[firstDate, lastDate]} stroke={grid} tick={{ fill: secondary, fontSize: 12 }} />
+          <YAxis tickFormatter={(value) => (value / 24).toFixed(1) + " days"} stroke={grid} tick={{ fill: secondary, fontSize: 12 }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: grid }} />
+          <Area dataKey="duration" stroke={primary} strokeWidth={2} fill="url(#watchTimeFill)" name="Day" />
         </AreaChart>
       </ResponsiveContainer>
     </Box>

@@ -1,18 +1,15 @@
 import LoadingState from "@/components/states/LoadingState";
 import { useVideoContext } from "@/context/videoContext";
 import { IVideo } from "@/types/video";
-import { Box } from "@chakra-ui/react";
+import { Box, Heading } from "@chakra-ui/react";
 import React, { useMemo } from "react";
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from "recharts";
+import ChartTooltipCard from "./chartTooltipCard";
+import { useChartColors } from "./chartTheme";
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
-    return (
-      <div className="custom-tooltip">
-        <p className="label">{`Date : ${label}`}</p>
-        <p className="intro">{`Count : ${payload[0].value}`}</p>
-      </div>
-    );
+    return <ChartTooltipCard label={`Date: ${label}`} lines={[`Count: ${payload[0].value}`]} />;
   }
 
   return null;
@@ -20,10 +17,11 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<any, any>) => {
 
 const VideoBarChart = () => {
   const { isInitialized, totalVideos } = useVideoContext();
+  const { primary, secondary, grid } = useChartColors();
 
   // transform data to count number of videos per day
   const videosPerDay = useMemo(() => {
-    return totalVideos.reduce((acc: any, video: IVideo) => {
+    return totalVideos.reduce((acc: Record<string, number>, video: IVideo) => {
       const date = new Date(video.created_at).toISOString().split("T")[0];
       acc[date] = (acc[date] || 0) + 1; // increment count for this date
       return acc;
@@ -42,8 +40,22 @@ const VideoBarChart = () => {
   }
 
   return (
-    <Box width={"full"} height={"500px"} boxShadow={"dark-lg"} rounded={"2xl"} p={4}>
-      <ResponsiveContainer width="100%" height="100%">
+    <Box
+      width={"full"}
+      height={"500px"}
+      bg="bg.secondary"
+      border="1px solid"
+      borderColor="border.primary"
+      rounded={"2xl"}
+      boxShadow={"dark-lg"}
+      p={4}
+      transition="all 0.2s"
+      _hover={{ borderColor: "kita.border.accent" }}
+    >
+      <Heading size="sm" color="accent.primary" mb={2}>
+        Videos Per Day
+      </Heading>
+      <ResponsiveContainer width="100%" height="90%">
         <ComposedChart
           data={data}
           margin={{
@@ -53,12 +65,12 @@ const VideoBarChart = () => {
             bottom: 5,
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="count" fill="#8884d8" />
-          <Line type="monotone" dataKey="count" stroke="#ff7300" />
+          <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+          <XAxis dataKey="date" stroke={grid} tick={{ fill: secondary, fontSize: 12 }} />
+          <YAxis stroke={grid} tick={{ fill: secondary, fontSize: 12 }} allowDecimals={false} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: grid, opacity: 0.3 }} />
+          <Bar dataKey="count" fill={primary} radius={[4, 4, 0, 0]} />
+          <Line type="monotone" dataKey="count" stroke={secondary} strokeWidth={2} dot={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </Box>

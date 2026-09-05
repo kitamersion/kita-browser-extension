@@ -1,4 +1,4 @@
-import { Grid, Heading, TabPanel, VStack, Text } from "@chakra-ui/react";
+import { Box, Grid, Heading, VStack, Text } from "@chakra-ui/react";
 import React, { Suspense } from "react";
 import LoadingState from "@/components/states/LoadingState";
 import useScreenSize from "@/hooks/useScreenSize";
@@ -9,7 +9,7 @@ const TagTab = () => {
   const { columns } = useScreenSize();
 
   return (
-    <TabPanel bg="bg.primary" color="text.primary">
+    <Box>
       <Suspense fallback={<LoadingState />}>
         <VStack spacing={4} align="stretch">
           <Heading size="lg" color="accent.primary">
@@ -24,7 +24,7 @@ const TagTab = () => {
           <AutoTagGroup />
         </Grid>
       </Suspense>
-    </TabPanel>
+    </Box>
   );
 };
 
