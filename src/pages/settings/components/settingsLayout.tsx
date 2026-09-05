@@ -42,7 +42,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
       {!isMobile && (
         <Box
           as="aside"
-          width={isSmallerScreen ? "200px" : "240px"}
+          width={isSmallerScreen ? "204px" : "244px"}
           flexShrink={0}
           bg="bg.secondary"
           p={4}
