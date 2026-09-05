@@ -5,9 +5,9 @@ describe("SETTINGS_GROUPS", () => {
     expect(SETTINGS_GROUPS.map((group) => group.id)).toEqual(["track", "organize", "data", "advanced"]);
   });
 
-  test("the track group contains integration, autotrack, and anilist items in order", () => {
+  test("the track group contains integration, autotrack, anilist, and anilist-search items in order", () => {
     const track = SETTINGS_GROUPS.find((group) => group.id === "track")!;
-    expect(track.items.map((item) => item.id)).toEqual(["integration", "autotrack", "anilist"]);
+    expect(track.items.map((item) => item.id)).toEqual(["integration", "autotrack", "anilist", "anilist-search"]);
   });
 
   test("the organize group contains tags and mappings", () => {
@@ -27,13 +27,14 @@ describe("SETTINGS_GROUPS", () => {
 });
 
 describe("getVisibleItems", () => {
-  test("excludes the anilist item when unauthorized", () => {
+  test("excludes the anilist and anilist-search items when unauthorized", () => {
     const ids = getVisibleItems(SETTINGS_GROUPS, { anilistAuthStatus: "unauthorized" }).map((item) => item.id);
     expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "logs"]);
   });
 
-  test("includes the anilist item when authorized", () => {
+  test("includes the anilist and anilist-search items when authorized", () => {
     const ids = getVisibleItems(SETTINGS_GROUPS, { anilistAuthStatus: "authorized" }).map((item) => item.id);
     expect(ids).toContain("anilist");
+    expect(ids).toContain("anilist-search");
   });
 });

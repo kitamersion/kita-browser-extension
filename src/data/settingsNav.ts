@@ -1,5 +1,5 @@
 import React from "react";
-import { SettingsIcon } from "@chakra-ui/icons";
+import { SearchIcon, SettingsIcon } from "@chakra-ui/icons";
 import { MdExtension, MdSync, MdCompareArrows, MdArticle } from "react-icons/md";
 import { IoIosPricetags } from "react-icons/io";
 import { SiAnilist } from "react-icons/si";
@@ -8,6 +8,7 @@ import { AuthStatus } from "@/types/kitaschema";
 const IntegrationTab = React.lazy(() => import("@/pages/settings/tabs/integrationTab"));
 const AutoTrackTab = React.lazy(() => import("@/pages/settings/tabs/autoTrackTab"));
 const AnilistTab = React.lazy(() => import("@/pages/settings/tabs/anilistTab"));
+const AnilistSearchTab = React.lazy(() => import("@/pages/settings/tabs/anilistSearchTab"));
 const TagTab = React.lazy(() => import("@/pages/settings/tabs/tagsTab"));
 const SeriesMappingsTab = React.lazy(() => import("@/pages/settings/tabs/seriesMappingsTab"));
 const GeneralTab = React.lazy(() => import("@/pages/settings/tabs/generalTab"));
@@ -43,6 +44,13 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         label: "AniList Profile",
         icon: SiAnilist,
         component: AnilistTab,
+        condition: (ctx) => ctx.anilistAuthStatus === "authorized",
+      },
+      {
+        id: "anilist-search",
+        label: "AniList Search",
+        icon: SearchIcon,
+        component: AnilistSearchTab,
         condition: (ctx) => ctx.anilistAuthStatus === "authorized",
       },
     ],
