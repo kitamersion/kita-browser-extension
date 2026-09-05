@@ -38,7 +38,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
   };
 
   return (
-    <Flex as="main" align="stretch" minH="100vh">
+    <Flex as="main" direction={isMobile ? "column" : "row"} align="stretch" minH="100vh">
       {!isMobile && (
         <Box
           as="aside"
@@ -63,7 +63,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
 
       <Drawer isOpen={isMobile && isOpen} onClose={onClose} placement="left">
         <DrawerOverlay />
-        <DrawerContent bg="bg.secondary" color="text.primary">
+        <DrawerContent bg="bg.primary" color="text.primary">
           <DrawerCloseButton />
           <DrawerBody pt={10}>
             <SettingsSidebar groups={SETTINGS_GROUPS} selectedId={activeItem.id} onSelect={handleSelect} navContext={navContext} />
