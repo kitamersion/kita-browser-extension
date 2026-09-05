@@ -23,8 +23,6 @@ export type SettingsNavItem = {
 export type SettingsNavGroup = {
   id: string;
   label: string;
-  description: string;
-  collapsedByDefault?: boolean;
   items: SettingsNavItem[];
 };
 
@@ -32,7 +30,6 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
   {
     id: "track",
     label: "Track",
-    description: "Connect platforms and manage auto-tracking",
     items: [
       { id: "integration", label: "Integrations", component: IntegrationTab },
       { id: "autotrack", label: "Auto Track", component: AutoTrackTab },
@@ -47,7 +44,6 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
   {
     id: "organize",
     label: "Organize",
-    description: "Tags and series matching",
     items: [
       { id: "tags", label: "Tags", component: TagTab },
       { id: "mappings", label: "Series Mappings", component: SeriesMappingsTab },
@@ -56,14 +52,11 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
   {
     id: "data",
     label: "Data",
-    description: "Backup, import, export",
     items: [{ id: "general", label: "General", component: GeneralTab }],
   },
   {
     id: "advanced",
     label: "Advanced",
-    description: "Developer & diagnostic tools",
-    collapsedByDefault: true,
     items: [{ id: "logs", label: "Logs", component: LogsTab }],
   },
 ];

@@ -15,14 +15,11 @@ jest.mock("@/data/settingsNav", () => {
       {
         id: "track",
         label: "Track",
-        description: "Connect platforms and manage auto-tracking",
         items: [{ id: "integration", label: "Integrations", component: () => <div>Track panel content</div> }],
       },
       {
         id: "advanced",
         label: "Advanced",
-        description: "Developer & diagnostic tools",
-        collapsedByDefault: true,
         items: [{ id: "logs", label: "Logs", component: () => <div>Advanced panel content</div> }],
       },
     ],
@@ -58,7 +55,6 @@ describe("SettingsLayout", () => {
     expect(screen.queryByTestId("settings-nav-item-logs")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /open settings menu/i }));
-    fireEvent.click(screen.getByTestId("settings-nav-group-advanced-toggle"));
 
     await waitFor(() => expect(screen.getByTestId("settings-nav-item-logs")).toBeInTheDocument());
 

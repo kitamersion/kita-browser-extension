@@ -8,7 +8,6 @@ const groups: SettingsNavGroup[] = [
   {
     id: "track",
     label: "Track",
-    description: "Connect platforms and manage auto-tracking",
     items: [
       { id: "integration", label: "Integrations", component: () => null },
       {
@@ -22,8 +21,6 @@ const groups: SettingsNavGroup[] = [
   {
     id: "advanced",
     label: "Advanced",
-    description: "Developer & diagnostic tools",
-    collapsedByDefault: true,
     items: [{ id: "logs", label: "Logs", component: () => null }],
   },
 ];
@@ -52,24 +49,19 @@ describe("SettingsSidebar", () => {
     expect(screen.getByTestId("settings-nav-item-anilist")).toBeInTheDocument();
   });
 
-  test("the advanced group starts collapsed and expands on click", () => {
+  test("all group items are visible without needing to expand", () => {
     render(
       <SettingsSidebar groups={groups} selectedId="integration" onSelect={jest.fn()} navContext={{ anilistAuthStatus: "unauthorized" }} />
     );
 
-    expect(screen.queryByTestId("settings-nav-item-logs")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("settings-nav-group-advanced-toggle"));
-
     expect(screen.getByTestId("settings-nav-item-logs")).toBeInTheDocument();
   });
 
-  test("renders each group's label and description", () => {
+  test("renders each group's label", () => {
     render(
       <SettingsSidebar groups={groups} selectedId="integration" onSelect={jest.fn()} navContext={{ anilistAuthStatus: "unauthorized" }} />
     );
 
     expect(screen.getByText("Track")).toBeInTheDocument();
-    expect(screen.getByText("Connect platforms and manage auto-tracking")).toBeInTheDocument();
   });
 });

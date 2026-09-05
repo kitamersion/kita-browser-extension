@@ -20,15 +20,9 @@ describe("SETTINGS_GROUPS", () => {
     expect(data.items.map((item) => item.id)).toEqual(["general"]);
   });
 
-  test("the advanced group is collapsed by default and contains logs", () => {
+  test("the advanced group contains logs", () => {
     const advanced = SETTINGS_GROUPS.find((group) => group.id === "advanced")!;
-    expect(advanced.collapsedByDefault).toBe(true);
     expect(advanced.items.map((item) => item.id)).toEqual(["logs"]);
-  });
-
-  test("no other group is collapsed by default", () => {
-    const nonAdvanced = SETTINGS_GROUPS.filter((group) => group.id !== "advanced");
-    expect(nonAdvanced.every((group) => !group.collapsedByDefault)).toBe(true);
   });
 });
 
