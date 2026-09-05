@@ -21,10 +21,14 @@ if (typeof (globalThis as any).crypto?.randomUUID !== "function") {
 // doesn't crash the worker with "indexedDB is not defined".
 import "fake-indexeddb/auto";
 
-// jsdom doesn't support the focus property setter on HTMLElement, which
-// Chakra UI v2's focus-visible tracking needs. Mock the module to prevent
-// focus tracking errors in tests.
+// @testing-library/user-event v14 patches HTMLElement.prototype.focus as a
+// getter-only accessor (in patchFocus.js) for focus/blur simulation. Chakra UI
+// v2's Checkbox/Radio use @zag-js/focus-visible's trackFocusVisible, which
+// attempts to reassign that property, colliding with user-event's patch and
+// throwing "TypeError: Cannot set property focus of [object HTMLElement] which
+// has only a getter". Work around this by stubbing trackFocusVisible while
+// preserving the real implementations of other exports.
 jest.mock("@zag-js/focus-visible", () => ({
+  ...jest.requireActual("@zag-js/focus-visible"),
   trackFocusVisible: () => {},
-  observeFocusVisible: () => {},
 }));
