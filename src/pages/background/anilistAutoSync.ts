@@ -10,6 +10,12 @@ import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/int
 
 const ANILIST_GRAPHQL_URL = "https://graphql.anilist.co";
 
+// How long a fetched AniList progress value is trusted before we re-check.
+// Long enough to avoid hammering the AniList API on every episode-add event,
+// short enough to pick up manual edits made directly on AniList reasonably soon.
+const MEDIA_LIST_PROGRESS_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+const mediaListProgressCacheKey = (mediaId: number) => `mediaListEntryProgress:${mediaId}`;
+
 // Mirrors src/graphql/queries/getMediaBySearch.ts - the background has no Apollo
 // client (that only exists in popup/settings pages), so this calls AniList directly.
 const SEARCH_QUERY = `
@@ -33,6 +39,17 @@ const SYNC_MUTATION = `
   mutation SetMediaListEntryByAnilistId($mediaId: Int, $progress: Int, $status: MediaListStatus) {
     SaveMediaListEntry(mediaId: $mediaId, progress: $progress, status: $status) {
       id
+    }
+  }
+`;
+
+// Mirrors src/graphql/queries/getMediaById.ts, trimmed to the single field this needs.
+const MEDIA_LIST_ENTRY_PROGRESS_QUERY = `
+  query GetMediaListEntryProgress($mediaId: Int) {
+    Media(id: $mediaId) {
+      mediaListEntry {
+        progress
+      }
     }
   }
 `;
@@ -64,6 +81,34 @@ const saveMediaListEntry = async (accessToken: string, mediaId: number, progress
   await anilistRequest(accessToken, SYNC_MUTATION, { mediaId, progress, status });
 };
 
+const fetchAnilistProgress = async (accessToken: string, mediaId: number): Promise<number | null> => {
+  const data = await anilistRequest(accessToken, MEDIA_LIST_ENTRY_PROGRESS_QUERY, { mediaId });
+  const progress = data?.Media?.mediaListEntry?.progress;
+  return typeof progress === "number" ? progress : null;
+};
+
+// Resolves the episode progress AniList already knows about for this media, so a
+// manually-tracked entry (e.g. the user set themselves to episode 10 on AniList
+// before kita ever saw this series) isn't clobbered back down by a fresh local
+// count. Cached since the value can only change via AniList itself once kita is
+// the one keeping it in sync.
+const getKnownAnilistProgress = async (accessToken: string, mediaId: number): Promise<number | null> => {
+  const cacheKey = mediaListProgressCacheKey(mediaId);
+  const cached = await IndexedDB.getAniListCache(cacheKey);
+  if (typeof cached === "number") return cached;
+
+  try {
+    const progress = await fetchAnilistProgress(accessToken, mediaId);
+    if (progress !== null) {
+      await IndexedDB.setAniListCache(cacheKey, progress, MEDIA_LIST_PROGRESS_CACHE_TTL);
+    }
+    return progress;
+  } catch (error) {
+    logger.error(`[anilist-auto-sync] failed to fetch existing AniList progress for media ${mediaId}: ${error}`);
+    return null;
+  }
+};
+
 const findPendingForSeries = (
   pending: Awaited<ReturnType<typeof getPendingAnilistSyncs>>,
   seriesTitle: string,
@@ -80,12 +125,17 @@ const findPendingForSeries = (
 const finalizeSync = async (video: IVideo, mapping: ISeriesMapping, accessToken: string): Promise<void> => {
   if (!mapping.anilist_series_id || !video.watching_episode_number) return;
 
-  const status = video.watching_episode_number === mapping.total_episodes ? "COMPLETED" : "CURRENT";
-  await saveMediaListEntry(accessToken, mapping.anilist_series_id, video.watching_episode_number, status);
+  const knownAnilistProgress = await getKnownAnilistProgress(accessToken, mapping.anilist_series_id);
+  const progress = Math.max(video.watching_episode_number, knownAnilistProgress ?? 0);
+
+  const status = progress === mapping.total_episodes ? "COMPLETED" : "CURRENT";
+  await saveMediaListEntry(accessToken, mapping.anilist_series_id, progress, status);
+  await IndexedDB.setAniListCache(mediaListProgressCacheKey(mapping.anilist_series_id), progress, MEDIA_LIST_PROGRESS_CACHE_TTL);
 
   const tag = await IndexedDB.getTagByCode("ANILIST");
   await IndexedDB.updateVideoById({
     ...video,
+    watching_episode_number: progress,
     anilist_series_id: mapping.anilist_series_id,
     mal_series_id: mapping.mal_series_id,
     series_episode_number: mapping.total_episodes,
@@ -99,7 +149,7 @@ const finalizeSync = async (video: IVideo, mapping: ISeriesMapping, accessToken:
     await IndexedDB.addVideoTag({ id: self.crypto.randomUUID(), video_id: video.id, tag_id: tag.id, created_at: Date.now() });
   }
 
-  logger.info(`[anilist-auto-sync] synced "${video.series_title}" (episode ${video.watching_episode_number}) to AniList`);
+  logger.info(`[anilist-auto-sync] synced "${video.series_title}" (episode ${progress}) to AniList`);
 };
 
 export const attemptAnilistAutoSync = async (video: IVideo): Promise<void> => {
