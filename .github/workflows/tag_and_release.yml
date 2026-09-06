@@ -42,8 +42,8 @@ jobs:
 
           cp -r dist/* ${{ env.REPOSITORY_NAME }}-firefox/
 
-          tar -czvf ${{ env.REPOSITORY_NAME }}-firefox.tar.gz ${{ env.REPOSITORY_NAME }}-firefox/*
-          zip -r ${{ env.REPOSITORY_NAME }}-firefox.zip ${{ env.REPOSITORY_NAME }}-firefox/*
+          tar -czvf ${{ env.REPOSITORY_NAME }}-firefox.tar.gz -C ${{ env.REPOSITORY_NAME }}-firefox .
+          (cd ${{ env.REPOSITORY_NAME }}-firefox && zip -r ../${{ env.REPOSITORY_NAME }}-firefox.zip .)
 
           # chrome extension
           npm run build:chrome
@@ -53,8 +53,8 @@ jobs:
 
           cp -r dist/* ${{ env.REPOSITORY_NAME }}-chrome/
 
-          tar -czvf ${{ env.REPOSITORY_NAME }}-chrome.tar.gz ${{ env.REPOSITORY_NAME }}-chrome/*
-          zip -r ${{ env.REPOSITORY_NAME }}-chrome.zip ${{ env.REPOSITORY_NAME }}-chrome/*
+          tar -czvf ${{ env.REPOSITORY_NAME }}-chrome.tar.gz -C ${{ env.REPOSITORY_NAME }}-chrome .
+          (cd ${{ env.REPOSITORY_NAME }}-chrome && zip -r ../${{ env.REPOSITORY_NAME }}-chrome.zip .)
 
           # Calculate checksums
           CHECKSUM_TAR_FF=$(shasum -a 256 ${{ env.REPOSITORY_NAME }}-firefox.tar.gz | cut -d ' ' -f 1)
