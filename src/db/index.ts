@@ -170,7 +170,7 @@ class IndexedDB {
   }
 
   // get all videos
-  getAllVideos(includeDeleted: boolean = false): Promise<IVideo[]> {
+  getAllVideos(includeDeleted = false): Promise<IVideo[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -364,7 +364,7 @@ class IndexedDB {
   // ================================================================================
 
   // get all tags
-  getAllTags(includeDeleted: boolean = false): Promise<ITag[]> {
+  getAllTags(includeDeleted = false): Promise<ITag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
@@ -519,7 +519,7 @@ class IndexedDB {
   }
 
   // get all video tag relationships
-  getAllVideoTags(includeDeleted: boolean = false): Promise<IVideoTag[]> {
+  getAllVideoTags(includeDeleted = false): Promise<IVideoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readonly");
@@ -659,7 +659,7 @@ class IndexedDB {
   }
 
   // get all auto tag
-  getAllAutoTags(includeDeleted: boolean = false): Promise<IAutoTag[]> {
+  getAllAutoTags(includeDeleted = false): Promise<IAutoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");

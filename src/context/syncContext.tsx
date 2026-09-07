@@ -42,17 +42,23 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     refresh().finally(() => setIsInitialized(true));
   }, [refresh]);
 
-  const signUp = useCallback(async (signUpEmail: string, password: string) => {
-    const { error: signUpError } = await apiSignUp(signUpEmail, password);
-    setError(signUpError);
-    if (!signUpError) await refresh();
-  }, [refresh]);
+  const signUp = useCallback(
+    async (signUpEmail: string, password: string) => {
+      const { error: signUpError } = await apiSignUp(signUpEmail, password);
+      setError(signUpError);
+      if (!signUpError) await refresh();
+    },
+    [refresh]
+  );
 
-  const signIn = useCallback(async (signInEmail: string, password: string) => {
-    const { error: signInError } = await apiSignIn(signInEmail, password);
-    setError(signInError);
-    if (!signInError) await refresh();
-  }, [refresh]);
+  const signIn = useCallback(
+    async (signInEmail: string, password: string) => {
+      const { error: signInError } = await apiSignIn(signInEmail, password);
+      setError(signInError);
+      if (!signInError) await refresh();
+    },
+    [refresh]
+  );
 
   const signOut = useCallback(async () => {
     await apiSignOut();
@@ -61,9 +67,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   }, [refresh]);
 
   return (
-    <SyncContext.Provider
-      value={{ isInitialized, isSignedIn: !!email, email, quota, lastSyncedAt, error, signUp, signIn, signOut }}
-    >
+    <SyncContext.Provider value={{ isInitialized, isSignedIn: !!email, email, quota, lastSyncedAt, error, signUp, signIn, signOut }}>
       {children}
     </SyncContext.Provider>
   );

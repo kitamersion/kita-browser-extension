@@ -43,12 +43,7 @@ const SyncTab: React.FC = () => {
       </FormControl>
       <FormControl>
         <FormLabel>Password</FormLabel>
-        <Input
-          data-testid="sync-password-input"
-          type="password"
-          value={formPassword}
-          onChange={(e) => setFormPassword(e.target.value)}
-        />
+        <Input data-testid="sync-password-input" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
       </FormControl>
       <Button data-testid="sync-sign-in-button" onClick={() => signIn(formEmail, formPassword)}>
         Sign in

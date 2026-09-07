@@ -52,11 +52,7 @@ export const reconcileByNaturalKey = (
   return { rows: mergeById(deduplicatedLocal, remote), idRemap };
 };
 
-export const remapForeignKey = <T extends Record<string, unknown>>(
-  rows: T[],
-  field: string,
-  idRemap: Map<string, string>
-): T[] =>
+export const remapForeignKey = <T extends Record<string, unknown>>(rows: T[], field: string, idRemap: Map<string, string>): T[] =>
   rows.map((row) => {
     const current = row[field];
     if (typeof current !== "string" || !idRemap.has(current)) return row;
