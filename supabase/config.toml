@@ -35,6 +35,11 @@ enable_confirmations = true
 enable_signup = true
 enable_confirmations = true
 
+[auth.rate_limit]
+# Default is 30 per 5 minutes per IP - far more than a single legitimate user needs,
+# and enough for a script to burn through the (much smaller) hourly email budget in seconds.
+sign_in_sign_ups = 5
+
 [analytics]
 enabled = false
 port = 54327
