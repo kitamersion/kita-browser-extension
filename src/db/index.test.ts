@@ -152,3 +152,23 @@ describe("soft delete", () => {
     expect(rawTwo?.deleted_at).toBeDefined();
   });
 });
+
+describe("replaceAll* write-back", () => {
+  test("replaceAllTags replaces the full tags table with exactly the given rows", async () => {
+    await IndexedDB.addTag({ id: "old-tag", name: "Old" });
+
+    await IndexedDB.replaceAllTags([{ id: "new-tag", name: "New", updated_at: 1 }]);
+
+    const all = await IndexedDB.getAllTags();
+    expect(all.map((t) => t.id)).toEqual(["new-tag"]);
+  });
+
+  test("replaceAllVideoTags replaces the full video_tags table with exactly the given rows", async () => {
+    await IndexedDB.addVideoTag({ id: "old-vt", video_id: "v1", tag_id: "t1" });
+
+    await IndexedDB.replaceAllVideoTags([{ id: "new-vt", video_id: "v2", tag_id: "t2", updated_at: 1 }]);
+
+    const all = await IndexedDB.getAllVideoTags();
+    expect(all.map((vt) => vt.id)).toEqual(["new-vt"]);
+  });
+});

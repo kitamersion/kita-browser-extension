@@ -970,6 +970,32 @@ class IndexedDB {
     });
   }
 
+  // ====================== Sync write-back =====================
+  private replaceAllInStore<T>(storeName: string, rows: T[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(storeName, "readwrite");
+      const store = transaction.objectStore(storeName);
+      store.clear();
+      for (const row of rows) store.put(row);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  public replaceAllTags(rows: ITag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_TAGS, rows);
+  }
+  public replaceAllVideos(rows: IVideo[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_VIDEOS, rows);
+  }
+  public replaceAllVideoTags(rows: IVideoTag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_VIDEO_TAGS, rows);
+  }
+  public replaceAllAutoTags(rows: IAutoTag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_AUTO_TAG, rows);
+  }
+
   public requestPersistentStorage(): Promise<boolean> {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
