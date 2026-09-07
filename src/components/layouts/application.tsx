@@ -13,6 +13,7 @@ import { AnilistProvider } from "@/context/anilistContext";
 import { GraphqlProvider } from "@/context/apolloContext";
 import { AutoTagProvider } from "@/context/autoTagContext";
 import { LoggerProvider } from "@/context/loggingContext";
+import { SyncProvider } from "@/context/syncContext";
 
 const Application = ({ children }: PropsWithChildren<unknown>) => {
   return (
@@ -21,22 +22,24 @@ const Application = ({ children }: PropsWithChildren<unknown>) => {
       <LoggerProvider>
         <ToastProvider>
           <ApplicationProvider>
-            <AnilistProvider>
-              <GraphqlProvider>
-                <VideoTagRelationshipProvider>
-                  <VideoProvider>
-                    <TagProvider>
-                      <AutoTagProvider>
-                        <GlobalLayoutWrapper>
-                          <Navigation />
-                          <PageLayoutWrapper>{children}</PageLayoutWrapper>
-                        </GlobalLayoutWrapper>
-                      </AutoTagProvider>
-                    </TagProvider>
-                  </VideoProvider>
-                </VideoTagRelationshipProvider>
-              </GraphqlProvider>
-            </AnilistProvider>
+            <SyncProvider>
+              <AnilistProvider>
+                <GraphqlProvider>
+                  <VideoTagRelationshipProvider>
+                    <VideoProvider>
+                      <TagProvider>
+                        <AutoTagProvider>
+                          <GlobalLayoutWrapper>
+                            <Navigation />
+                            <PageLayoutWrapper>{children}</PageLayoutWrapper>
+                          </GlobalLayoutWrapper>
+                        </AutoTagProvider>
+                      </TagProvider>
+                    </VideoProvider>
+                  </VideoTagRelationshipProvider>
+                </GraphqlProvider>
+              </AnilistProvider>
+            </SyncProvider>
           </ApplicationProvider>
         </ToastProvider>
       </LoggerProvider>
