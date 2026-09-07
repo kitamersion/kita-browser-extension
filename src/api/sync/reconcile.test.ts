@@ -56,6 +56,20 @@ describe("reconcileByNaturalKey", () => {
     expect(rows).toEqual([{ id: "same-id", updated_at: 100, code: "ANIME" }]);
   });
 
+  test("does not treat a tombstoned remote row as canonical for its natural key", () => {
+    // The user deleted "ANIME" (tombstone already synced) and then created a new tag by the same
+    // name. Binding the new local row to the tombstone's id would let the remote deleted_at win on
+    // the next pull and silently delete the tag the user just re-created.
+    const local: SyncRow[] = [{ id: "local-uuid", updated_at: 100, code: "ANIME" }];
+    const remote: SyncRow[] = [{ id: "remote-tombstone", updated_at: 50, code: "ANIME", deleted_at: 50 }];
+
+    const { rows, idRemap } = reconcileByNaturalKey(local, remote, "code");
+
+    expect(idRemap.size).toBe(0);
+    // The tombstone still flows through the merge so id-based deletion propagation is unaffected.
+    expect(rows.map((r) => r.id).sort()).toEqual(["local-uuid", "remote-tombstone"]);
+  });
+
   test("deduplicates when two local rows collide on the same remote natural-key match, keeping the newer updated_at", () => {
     // Two local rows both coded "ANIME" (e.g., independently seeded defaults on two devices)
     // Both remap to the same canonical remote id

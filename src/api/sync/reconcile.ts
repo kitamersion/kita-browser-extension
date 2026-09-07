@@ -23,6 +23,12 @@ export const reconcileByNaturalKey = (
   const idRemap = new Map<string, string>();
   const remoteByNaturalKey = new Map<string, SyncRow>();
   for (const row of remote) {
+    // Tombstoned remote rows are never canonical for a natural key. Natural-key matching exists to
+    // unify a row's *first* contact between two devices; a deleted row has a stable shared id
+    // already and propagates its deletion by id (it still flows through mergeById below). Letting it
+    // claim the key would bind a freshly re-created local row to a remote tombstone, whose
+    // deleted_at then wins on the next pull and silently removes the row the user just created.
+    if (row.deleted_at) continue;
     const key = row[naturalKeyField];
     if (typeof key === "string" && key.length > 0) remoteByNaturalKey.set(key, row);
   }
