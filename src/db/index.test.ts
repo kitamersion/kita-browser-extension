@@ -1,5 +1,5 @@
 import IndexedDB from "./index";
-import { SiteKey } from "@/types/video";
+import { IVideo, SiteKey } from "@/types/video";
 import { IVideoTag } from "@/types/relationship";
 import { DB_NAME, OBJECT_STORE_VIDEO_TAGS } from "./schema";
 
@@ -175,6 +175,140 @@ describe("replaceAll* write-back", () => {
   test("replaceAllTags rejects instead of hanging when the database isn't initialized", async () => {
     const uninitialized = new (IndexedDB.constructor as any)();
     await expect(uninitialized.replaceAllTags([])).rejects.toThrow("Database not initialized");
+  });
+});
+
+describe("updated_at stamping", () => {
+  // The sync push filter is `row.updated_at > cursor`, and `undefined > n` is false — an unstamped
+  // row would never be pushed at all, so the DB layer stamps it rather than trusting callers.
+  test("addTag stamps a numeric updated_at", async () => {
+    const id = "stamped-tag";
+    await IndexedDB.addTag({ id, name: "StampedTag" });
+
+    const saved = await IndexedDB.getTagById(id);
+    expect(typeof saved?.updated_at).toBe("number");
+  });
+
+  test("addTag stamps updated_at even when the caller passes a stale one", async () => {
+    const id = "stale-stamped-tag";
+    await IndexedDB.addTag({ id, name: "StaleStampedTag", updated_at: 1 });
+
+    const saved = await IndexedDB.getTagById(id);
+    expect(saved?.updated_at).toBeGreaterThan(1);
+  });
+
+  test("addVideo stamps a numeric updated_at", async () => {
+    const id = "stamped-video";
+    await IndexedDB.addVideo({
+      id,
+      video_title: "Stamped",
+      video_duration: 100,
+      video_url: "https://example.com/stamped",
+      origin: SiteKey.YOUTUBE,
+      created_at: Date.now(),
+      unique_code: "STAMPED_VIDEO",
+    });
+
+    const saved = await IndexedDB.getVideoById(id);
+    expect(typeof saved?.updated_at).toBe("number");
+  });
+
+  test("addVideoTag stamps a numeric updated_at", async () => {
+    const id = "stamped-vt";
+    await IndexedDB.addVideoTag({ id, video_id: "v-stamped", tag_id: "t-stamped" });
+
+    const saved = await getRawVideoTag(id);
+    expect(typeof saved?.updated_at).toBe("number");
+  });
+
+  test("addAutoTag stamps a numeric updated_at", async () => {
+    const id = "stamped-autotag";
+    await IndexedDB.addAutoTag({ id, origin: SiteKey.YOUTUBE_MUSIC, tags: ["tag-1"] });
+
+    const all = await IndexedDB.getAllAutoTags();
+    expect(typeof all.find((a) => a.id === id)?.updated_at).toBe("number");
+  });
+
+  test("updateTagById refreshes updated_at", async () => {
+    const id = "updated-tag";
+    await IndexedDB.addTag({ id, name: "UpdatedTag" });
+    const created = await IndexedDB.getTagById(id);
+
+    await IndexedDB.updateTagById({ ...(created as any), name: "UpdatedTagRenamed", updated_at: 1 });
+
+    const saved = await IndexedDB.getTagById(id);
+    expect(saved?.name).toBe("UpdatedTagRenamed");
+    expect(saved?.updated_at).toBeGreaterThanOrEqual(created?.updated_at as number);
+    expect(saved?.updated_at).toBeGreaterThan(1);
+  });
+
+  test("updateVideoById refreshes updated_at", async () => {
+    const id = "updated-video";
+    await IndexedDB.addVideo({
+      id,
+      video_title: "BeforeUpdate",
+      video_duration: 100,
+      video_url: "https://example.com/updated",
+      origin: SiteKey.YOUTUBE,
+      created_at: Date.now(),
+      unique_code: "UPDATED_VIDEO",
+    });
+    const created = await IndexedDB.getVideoById(id);
+
+    await IndexedDB.updateVideoById({ ...(created as IVideo), video_title: "AfterUpdate", updated_at: 1 });
+
+    const saved = await IndexedDB.getVideoById(id);
+    expect(saved?.video_title).toBe("AfterUpdate");
+    expect(saved?.updated_at).toBeGreaterThanOrEqual(created?.updated_at as number);
+    expect(saved?.updated_at).toBeGreaterThan(1);
+  });
+});
+
+describe("soft delete frees the unique natural-key indexes", () => {
+  // tags.code and videos.unique_code are `unique: true` IndexedDB indexes. A tombstone that kept
+  // its natural key would make re-creating the same entity fail with a ConstraintError.
+  test("a tag can be re-created under the same name after the original was soft-deleted", async () => {
+    await IndexedDB.addTag({ id: "anime-tag-original", name: "Anime" });
+    await IndexedDB.deleteTagById("anime-tag-original");
+
+    await expect(IndexedDB.addTag({ id: "anime-tag-recreated", name: "Anime" })).resolves.toBeUndefined();
+
+    const recreated = await IndexedDB.getTagByCode("ANIME");
+    expect(recreated?.id).toBe("anime-tag-recreated");
+  });
+
+  test("a video can be re-created under the same unique_code after the original was soft-deleted", async () => {
+    const video = {
+      video_title: "Same Title",
+      video_duration: 100,
+      video_url: "https://example.com/same",
+      origin: SiteKey.YOUTUBE,
+      created_at: Date.now(),
+      unique_code: "SAME_UNIQUE_CODE",
+    };
+    await IndexedDB.addVideo({ ...video, id: "same-code-original" });
+    await IndexedDB.deleteVideoById("same-code-original");
+
+    await expect(IndexedDB.addVideo({ ...video, id: "same-code-recreated" })).resolves.toBeUndefined();
+
+    const recreated = await IndexedDB.getVideoByUniqueCode("SAME_UNIQUE_CODE");
+    expect(recreated?.id).toBe("same-code-recreated");
+  });
+});
+
+describe("tombstones never shadow a live row on an indexed lookup", () => {
+  test("getAutoTagByOrigin returns the live row even when a tombstone sorts ahead of it", async () => {
+    // `auto_tags.origin` is a non-unique index, so both rows coexist under the same key. Ids are
+    // chosen so the tombstone sorts first by primary key — which is exactly what index.get() would
+    // have returned, silently disabling auto-tagging for this origin.
+    const origin = SiteKey.CRUNCHYROLL;
+    await IndexedDB.addAutoTag({ id: "aaa-autotag-tombstone", origin, tags: ["old-tag"] });
+    await IndexedDB.addAutoTag({ id: "zzz-autotag-live", origin, tags: ["new-tag"] });
+    await IndexedDB.deleteAutoTagById("aaa-autotag-tombstone");
+
+    const found = await IndexedDB.getAutoTagByOrigin(origin);
+    expect(found?.id).toBe("zzz-autotag-live");
+    expect(found?.tags).toEqual(["new-tag"]);
   });
 });
 

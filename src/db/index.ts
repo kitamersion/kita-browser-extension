@@ -198,7 +198,10 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
 
-      const request = videoStore.put(video);
+      // updated_at is stamped here, in the DB layer, rather than trusted from callers: the sync push
+      // filter is `row.updated_at > cursor`, and `undefined > n` is false, so an unstamped row would
+      // silently never sync.
+      const request = videoStore.put({ ...video, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -216,7 +219,7 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
 
-      const request = videoStore.put(video);
+      const request = videoStore.put({ ...video, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -241,7 +244,13 @@ class IndexedDB {
           resolve();
           return;
         }
-        const putRequest = videoStore.put({ ...video, deleted_at: Date.now(), updated_at: Date.now() });
+        // unique_code is cleared on tombstone: it's a `unique: true` index, and a tombstoned row
+        // keeping its value would make IndexedDB throw ConstraintError when the user later
+        // re-creates the same video. A keyPath evaluating to undefined omits the record from the
+        // index entirely, freeing the slot without a schema change. Safe for sync: natural-key
+        // reconciliation only matters for a row's first-ever contact between two devices, before
+        // either has a stable shared id — a row being deleted has one already and merges by id.
+        const putRequest = videoStore.put({ ...video, unique_code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
         putRequest.onsuccess = () => resolve();
         putRequest.onerror = () => reject(putRequest.error);
       };
@@ -263,7 +272,8 @@ class IndexedDB {
         if (cursor) {
           const video = cursor.value as IVideo;
           if (!video.deleted_at) {
-            cursor.update({ ...video, deleted_at: Date.now(), updated_at: Date.now() });
+            // unique_code cleared for the same reason as in deleteVideoById.
+            cursor.update({ ...video, unique_code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
           }
           cursor.continue();
         } else {
@@ -284,11 +294,22 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
       const index = videoStore.index("unique_code");
-      const request = index.get(unique_code);
+      // Cursor rather than index.get(): get() returns an arbitrary match by primary-key order, so a
+      // tombstone sorting ahead of a live row would shadow it and make the live row unreachable.
+      const request = index.openCursor(IDBKeyRange.only(unique_code));
 
       request.onsuccess = () => {
-        const result = request.result as IVideo | undefined;
-        resolve(result?.deleted_at ? undefined : result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as IVideo;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
 
       request.onerror = () => {
@@ -383,10 +404,20 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const index = tagStore.index("code");
-      const request = index.get(code);
+      // Cursor rather than index.get() — see getVideoByUniqueCode for why.
+      const request = index.openCursor(IDBKeyRange.only(code));
       request.onsuccess = () => {
-        const result = request.result as ITag | undefined;
-        resolve(result?.deleted_at ? undefined : result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as ITag;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
       request.onerror = () => {
         reject(request.error);
@@ -409,6 +440,9 @@ class IndexedDB {
         name,
         code: codeOrFromName,
         created_at: created_at ?? Date.now(),
+        // Always a fresh stamp (not `??`-defaulted): every write is by definition a new update to
+        // this row's state, and the sync push filter (`updated_at > cursor`) skips unstamped rows.
+        updated_at: Date.now(),
         owner: owner ?? "USER",
         color,
       };
@@ -428,7 +462,7 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
-      const request = tagStore.put(tag);
+      const request = tagStore.put({ ...tag, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -453,7 +487,10 @@ class IndexedDB {
           resolve();
           return;
         }
-        const putRequest = tagStore.put({ ...tag, deleted_at: Date.now(), updated_at: Date.now() });
+        // code is cleared on tombstone — see the equivalent comment in deleteVideoById. `tags.code`
+        // is a `unique: true` index, so a tombstone that kept its code would block re-creating a
+        // tag with the same name with a ConstraintError.
+        const putRequest = tagStore.put({ ...tag, code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
         putRequest.onsuccess = () => resolve();
         putRequest.onerror = () => reject(putRequest.error);
       };
@@ -471,7 +508,7 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
-      const request = videoTagStore.put(videoTag);
+      const request = videoTagStore.put({ ...videoTag, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -581,7 +618,7 @@ class IndexedDB {
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
 
       const itemId = id ?? window.crypto.randomUUID();
-      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags });
+      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -598,10 +635,22 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
       const index = autoTagStore.index("origin");
-      const request = index.get(origin);
+      // Cursor rather than index.get() — see getVideoByUniqueCode. `origin` is a non-unique index
+      // and never had a unique constraint to protect it, so tombstone shadowing is a live risk here:
+      // the caller treats a falsy result as "auto-tagging disabled for this origin".
+      const request = index.openCursor(IDBKeyRange.only(origin));
       request.onsuccess = () => {
-        const result = request.result as IAutoTag | undefined;
-        resolve(result?.deleted_at ? undefined : result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as IAutoTag;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
       request.onerror = () => {
         reject(request.error);
