@@ -8,6 +8,7 @@ import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateUniqueCode, parseAnilistAuthFromRedirectUrl } from "@/utils";
 import { attemptAnilistAutoSync } from "./anilistAutoSync";
+import { initSyncAlarm } from "./syncAlarm";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -168,6 +169,8 @@ chrome.runtime.onInstalled.addListener(() => {
     await IndexedDB.openDatabase();
   })();
 });
+
+initSyncAlarm();
 
 // content scripts can't call chrome.tabs themselves, so they message the
 // background to open settings on the Auto Track tab's pending review list.
