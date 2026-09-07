@@ -1,0 +1,4 @@
+# Supabase configuration
+
+[api]
+schemas = ["public", "kitamersion"]
