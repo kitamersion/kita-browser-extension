@@ -140,5 +140,8 @@ src/graphql/index.tsx
 # git worktrees
 .worktrees/
 
+# Supabase CLI local state
+supabase/.temp/
+
 # superpowers plans/specs are working documents, never commit them
 docs/superpowers/

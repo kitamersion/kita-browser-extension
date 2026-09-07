@@ -1,17 +1,15 @@
-is_dev = true
 project_id = "kita-browser-extension"
 
 [api]
 enabled = true
-max_body_size = 20971520
+port = 54321
 schemas = ["public", "kitamersion"]
 extra_search_path = ["public"]
 max_rows = 1000
 
 [db]
-port = 54321
-dialect = "postgres"
-major_version = 15
+port = 54322
+major_version = 17
 
 [studio]
 enabled = true
@@ -28,10 +26,14 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
-external_email_enabled = true
-external_phone_enabled = true
-sms_autoconfirm = false
-email_autoconfirm = false
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
 
 [analytics]
 enabled = false
@@ -40,10 +42,3 @@ vector_port = 54328
 
 [realtime]
 enabled = true
-max_concurrent_users = 200
-max_event_channels = 128
-max_chained_subscriptions = 5
-max_joins_per_second = 500
-max_bytes_per_second = 40000
-log_level = "info"
-bind_addresses = ["127.0.0.1"]
