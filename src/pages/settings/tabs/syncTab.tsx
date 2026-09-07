@@ -5,8 +5,21 @@ import { useSyncContext } from "@/context/syncContext";
 const formatBytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
 const SyncTab: React.FC = () => {
-  const { isSignedIn, email, quota, lastSyncedAt, error, isSubmitting, pendingConfirmationEmail, signUp, signIn, signOut } =
-    useSyncContext();
+  const {
+    isSignedIn,
+    email,
+    quota,
+    lastSyncedAt,
+    nextSyncAt,
+    error,
+    isSubmitting,
+    isSyncing,
+    pendingConfirmationEmail,
+    signUp,
+    signIn,
+    signOut,
+    syncNow,
+  } = useSyncContext();
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
 
@@ -29,6 +42,7 @@ const SyncTab: React.FC = () => {
         <Heading size="md">Sync</Heading>
         <Text>Signed in as {email}</Text>
         <Text>Last synced: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "never"}</Text>
+        <Text data-testid="sync-next-sync-at">Next sync: {nextSyncAt ? new Date(nextSyncAt).toLocaleString() : "not scheduled"}</Text>
         {quota && (
           <Box>
             <Text mb={1}>
@@ -37,6 +51,9 @@ const SyncTab: React.FC = () => {
             <Progress value={(quota.currentBytes / quota.maxBytes) * 100} />
           </Box>
         )}
+        <Button data-testid="sync-now-button" variant="outline" isLoading={isSyncing} onClick={() => syncNow()}>
+          Sync now
+        </Button>
         <Button data-testid="sync-sign-out-button" onClick={() => signOut()}>
           Sign out
         </Button>

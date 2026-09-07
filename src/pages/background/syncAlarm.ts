@@ -4,6 +4,11 @@ import { runSync } from "@/api/sync/syncEngine";
 export const SYNC_ALARM_NAME = "kita-cross-device-sync";
 const SYNC_INTERVAL_MINUTES = 15;
 
+export const getNextSyncTime = (): Promise<number | null> =>
+  new Promise((resolve) => {
+    chrome.alarms.get(SYNC_ALARM_NAME, (alarm) => resolve(alarm?.scheduledTime ?? null));
+  });
+
 export const initSyncAlarm = (): void => {
   chrome.alarms.create(SYNC_ALARM_NAME, { periodInMinutes: SYNC_INTERVAL_MINUTES });
 

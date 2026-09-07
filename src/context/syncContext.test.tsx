@@ -11,6 +11,8 @@ jest.mock("@/api/sync/auth", () => ({
 }));
 jest.mock("@/api/sync/quota", () => ({ getQuotaUsage: jest.fn().mockResolvedValue(null) }));
 jest.mock("@/db/index", () => ({ __esModule: true, default: { getLastSyncedAt: jest.fn().mockResolvedValue(0) } }));
+jest.mock("@/pages/background/syncAlarm", () => ({ getNextSyncTime: jest.fn().mockResolvedValue(null) }));
+jest.mock("@/api/sync/syncEngine", () => ({ runSync: jest.fn().mockResolvedValue({ status: "ok" }) }));
 
 const showToast = jest.fn();
 jest.mock("@/context/toastNotificationContext", () => ({
@@ -18,6 +20,8 @@ jest.mock("@/context/toastNotificationContext", () => ({
 }));
 
 import { signIn, signUp, getSession } from "@/api/sync/auth";
+import { getNextSyncTime } from "@/pages/background/syncAlarm";
+import { runSync } from "@/api/sync/syncEngine";
 
 const Consumer = () => {
   const ctx = useSyncContext();
@@ -25,8 +29,11 @@ const Consumer = () => {
     <div>
       <span data-testid="signed-in">{String(ctx.isSignedIn)}</span>
       <span data-testid="pending-confirmation">{ctx.pendingConfirmationEmail ?? ""}</span>
+      <span data-testid="next-sync-at">{ctx.nextSyncAt ?? ""}</span>
+      <span data-testid="is-syncing">{String(ctx.isSyncing)}</span>
       <button onClick={() => ctx.signIn("a@b.com", "password123")}>sign in</button>
       <button onClick={() => ctx.signUp("a@b.com", "password123")}>sign up</button>
+      <button onClick={() => ctx.syncNow()}>sync now</button>
     </div>
   );
 };
@@ -34,6 +41,7 @@ const Consumer = () => {
 describe("SyncProvider", () => {
   beforeEach(() => {
     (getSession as jest.Mock).mockResolvedValue({ email: null, userId: null });
+    (getNextSyncTime as jest.Mock).mockResolvedValue(null);
   });
 
   test("starts signed out", async () => {
@@ -117,5 +125,64 @@ describe("SyncProvider", () => {
     expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Signed in", status: "success" }));
 
     jest.useRealTimers();
+  });
+
+  test("exposes the next scheduled sync time from the alarm", async () => {
+    (getNextSyncTime as jest.Mock).mockResolvedValue(1700000000000);
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("next-sync-at")).toHaveTextContent("1700000000000"));
+  });
+
+  test("syncNow runs a sync, refreshes lastSyncedAt, and shows a success toast", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" })));
+    expect(runSync).toHaveBeenCalled();
+    expect(screen.getByTestId("is-syncing")).toHaveTextContent("false");
+  });
+
+  test("syncNow shows an error toast when the sync fails", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "error", message: "network error" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Sync failed", status: "error", description: "network error" })
+      )
+    );
+  });
+
+  test("syncNow shows a distinct toast when the storage quota is exceeded", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "quota-exceeded" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Storage quota exceeded", status: "error" }))
+    );
   });
 });

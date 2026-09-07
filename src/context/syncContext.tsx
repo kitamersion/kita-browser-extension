@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useState, PropsWithChildren } from "react";
 import { getSession, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/api/sync/auth";
 import { getQuotaUsage } from "@/api/sync/quota";
+import { runSync } from "@/api/sync/syncEngine";
+import { getNextSyncTime } from "@/pages/background/syncAlarm";
 import { QuotaInfo } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { useToastContext } from "@/context/toastNotificationContext";
@@ -13,12 +15,15 @@ type SyncContextType = {
   email: string | null;
   quota: QuotaInfo | null;
   lastSyncedAt: number;
+  nextSyncAt: number | null;
   error: string | null;
   isSubmitting: boolean;
+  isSyncing: boolean;
   pendingConfirmationEmail: string | null;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  syncNow: () => Promise<void>;
 };
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -35,8 +40,10 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [email, setEmail] = useState<string | null>(null);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState(0);
+  const [nextSyncAt, setNextSyncAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -44,6 +51,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     setEmail(session.email);
     setQuota(session.userId ? await getQuotaUsage() : null);
     setLastSyncedAt(await IndexedDB.getLastSyncedAt());
+    setNextSyncAt(await getNextSyncTime());
   }, []);
 
   useEffect(() => {
@@ -118,6 +126,25 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     showToast({ title: "Signed out", status: "success" });
   }, [refresh, showToast]);
 
+  const syncNow = useCallback(async () => {
+    setIsSyncing(true);
+    const result = await runSync();
+    setIsSyncing(false);
+
+    if (result.status === "quota-exceeded") {
+      showToast({ title: "Storage quota exceeded", status: "error", description: "Free up space to resume syncing." });
+      return;
+    }
+
+    if (result.status === "error") {
+      showToast({ title: "Sync failed", status: "error", description: result.message });
+      return;
+    }
+
+    await refresh();
+    showToast({ title: "Sync complete", status: "success" });
+  }, [refresh, showToast]);
+
   return (
     <SyncContext.Provider
       value={{
@@ -126,12 +153,15 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         email,
         quota,
         lastSyncedAt,
+        nextSyncAt,
         error,
         isSubmitting,
+        isSyncing,
         pendingConfirmationEmail,
         signUp,
         signIn,
         signOut,
+        syncNow,
       }}
     >
       {children}

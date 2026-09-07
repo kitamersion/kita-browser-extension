@@ -57,10 +57,13 @@ describe("SyncTab", () => {
       email: "a@b.com",
       quota: { currentBytes: 1048576, maxBytes: 5242880 },
       lastSyncedAt: 1700000000000,
+      nextSyncAt: null,
+      isSyncing: false,
       error: null,
       signUp: jest.fn(),
       signIn: jest.fn(),
       signOut: jest.fn(),
+      syncNow: jest.fn(),
     });
 
     render(<SyncTab />);
@@ -68,6 +71,71 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-signed-in")).toHaveTextContent("a@b.com");
     expect(screen.getByTestId("sync-sign-out-button")).toBeInTheDocument();
     expect(screen.queryByTestId("sync-email-input")).not.toBeInTheDocument();
+  });
+
+  test("shows the next scheduled sync time when signed in", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: new Date("2024-01-01T00:15:00.000Z").getTime(),
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-next-sync-at")).toHaveTextContent(new Date("2024-01-01T00:15:00.000Z").toLocaleString());
+  });
+
+  test("sync now button calls syncNow when clicked", () => {
+    const syncNow = jest.fn();
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow,
+    });
+
+    render(<SyncTab />);
+    fireEvent.click(screen.getByTestId("sync-now-button"));
+
+    expect(syncNow).toHaveBeenCalled();
+  });
+
+  test("sync now button disables while a sync is in flight", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: true,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-now-button")).toBeDisabled();
   });
 
   test("shows an error message when auth fails", () => {
