@@ -15,13 +15,14 @@ type DBSchema = {
 };
 
 export const DB_NAME = "kitamersiondb";
-export const DB_VERSION = 9; // bump version for new store
+export const DB_VERSION = 10; // bump version for new store
 export const OBJECT_STORE_ANILIST_CACHE = "anilist_cache";
 export const OBJECT_STORE_VIDEOS = "videos";
 export const OBJECT_STORE_TAGS = "tags";
 export const OBJECT_STORE_VIDEO_TAGS = "video_tags";
 export const OBJECT_STORE_AUTO_TAG = "auto_tags";
 export const OBJECT_STORE_SERIES_MAPPINGS = "series_mappings";
+export const OBJECT_STORE_SYNC_META = "sync_meta";
 
 export const DB_SCHEMAS: DBSchema[] = [
   {
@@ -174,6 +175,15 @@ export const DB_SCHEMAS: DBSchema[] = [
             options: { unique: false },
           },
         ],
+      },
+    ],
+  },
+  {
+    version: 10,
+    stores: [
+      {
+        name: OBJECT_STORE_SYNC_META,
+        options: { keyPath: "key" },
       },
     ],
   },
