@@ -296,7 +296,7 @@ class IndexedDB {
     });
   }
 
-  // get videos by pagination
+  // get videos by pagination (excludes soft-deleted rows from both results and the total/page count)
   getVideosByPagination(page: number, pageSize: number): Promise<IPaginatedVideos> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -304,56 +304,35 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
       const createdAtIndex = videoStore.index("created_at");
-      const request = videoStore.count();
+      // deleted_at isn't indexed, so a store-wide count() can't distinguish soft-deleted rows.
+      // Walk the whole index once, skipping soft-deleted rows for both the page slice and the total count.
+      const cursorRequest = createdAtIndex.openCursor(null, "prev"); // iterate in desc order
+      const results: IVideo[] = [];
+      let totalRecords = 0;
 
-      request.onsuccess = () => {
-        const totalRecords = request.result;
-        const totalPages = Math.ceil(totalRecords / pageSize);
-        const cursorRequest = createdAtIndex.openCursor(null, "prev"); // open cursor to iterate in desc order
-        const results: IVideo[] = [];
-        let index = 0;
-
-        cursorRequest.onsuccess = () => {
-          const cursor = cursorRequest.result;
-          if (cursor) {
-            if (index >= page * pageSize && index < (page + 1) * pageSize) {
-              results.push(cursor.value);
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+          const video = cursor.value as IVideo;
+          if (!video.deleted_at) {
+            if (totalRecords >= page * pageSize && totalRecords < (page + 1) * pageSize) {
+              results.push(video);
             }
-            index++;
-            if (results.length < pageSize) {
-              cursor.continue();
-            } else {
-              resolve({
-                page,
-                pageSize,
-                results,
-                totalPages,
-              });
-            }
-          } else if (results.length > 0) {
-            resolve({
-              page,
-              pageSize,
-              results,
-              totalPages,
-            });
-          } else {
-            resolve({
-              page,
-              pageSize,
-              results: [],
-              totalPages,
-            });
+            totalRecords++;
           }
-        };
-
-        cursorRequest.onerror = () => {
-          reject(cursorRequest.error);
-        };
+          cursor.continue();
+        } else {
+          resolve({
+            page,
+            pageSize,
+            results,
+            totalPages: Math.ceil(totalRecords / pageSize),
+          });
+        }
       };
 
-      request.onerror = () => {
-        reject(request.error);
+      cursorRequest.onerror = () => {
+        reject(cursorRequest.error);
       };
     });
   }

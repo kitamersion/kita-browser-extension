@@ -1,4 +1,5 @@
 import IndexedDB from "./index";
+import { SiteKey } from "@/types/video";
 
 describe("IndexedDB.addTag", () => {
   beforeAll(async () => {
@@ -49,5 +50,41 @@ describe("soft delete", () => {
     expect(await IndexedDB.getLastSyncedAt()).toBe(0);
     await IndexedDB.setLastSyncedAt(1700000000000);
     expect(await IndexedDB.getLastSyncedAt()).toBe(1700000000000);
+  });
+
+  test("getVideosByPagination excludes soft-deleted videos and does not skew totalPages", async () => {
+    const baselineCount = (await IndexedDB.getAllVideos()).length;
+
+    const keepId = "pagination-keep-video";
+    const deleteId = "pagination-delete-video";
+    const now = Date.now();
+
+    await IndexedDB.addVideo({
+      id: keepId,
+      video_title: "Keep",
+      video_duration: 100,
+      video_url: "https://example.com/keep",
+      origin: SiteKey.YOUTUBE,
+      created_at: now,
+    });
+    await IndexedDB.addVideo({
+      id: deleteId,
+      video_title: "Delete",
+      video_duration: 100,
+      video_url: "https://example.com/delete",
+      origin: SiteKey.YOUTUBE,
+      created_at: now + 1,
+    });
+
+    await IndexedDB.deleteVideoById(deleteId);
+
+    // pageSize sized to hold exactly baseline + the one surviving video;
+    // if the soft-deleted row were still counted, totalPages would be 2 instead of 1.
+    const pageSize = baselineCount + 1;
+    const paginated = await IndexedDB.getVideosByPagination(0, pageSize);
+
+    expect(paginated.results.find((v) => v.id === deleteId)).toBeUndefined();
+    expect(paginated.results.find((v) => v.id === keepId)).toBeDefined();
+    expect(paginated.totalPages).toBe(1);
   });
 });
