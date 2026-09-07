@@ -73,4 +73,35 @@ describe("runSync", () => {
     expect(result.status).toBe("quota-exceeded");
     expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
   });
+
+  test("includes a locally tombstoned tag in the push payload so the deletion propagates remotely", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    const tombstonedTag = { id: "t1", name: "Anime", code: "ANIME", updated_at: 5, deleted_at: 5 };
+    // Mirrors real IndexedDB behavior: excluded by default, included when includeDeleted is true.
+    (IndexedDB.getAllTags as jest.Mock).mockImplementation((includeDeleted?: boolean) =>
+      Promise.resolve(includeDeleted ? [tombstonedTag] : [])
+    );
+
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+    (getSupabaseClient as jest.Mock).mockReturnValue({
+      from: (tableName: string) => (tableName === "tags" ? { ...emptyTable(), upsert } : emptyTable()),
+    });
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
+    expect(upsert).toHaveBeenCalledWith([expect.objectContaining({ id: "t1", deleted_at: 5 })]);
+  });
+
+  test("resolves with status error instead of rejecting when the write-back step throws", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (getSupabaseClient as jest.Mock).mockReturnValue({ from: () => emptyTable() });
+    (IndexedDB.replaceAllTags as jest.Mock).mockRejectedValue(new Error("Database not initialized"));
+
+    const result = await runSync();
+
+    expect(result.status).toBe("error");
+    expect(result.message).toEqual(expect.stringContaining("Database not initialized"));
+    expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
+  });
 });

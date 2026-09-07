@@ -171,4 +171,66 @@ describe("replaceAll* write-back", () => {
     const all = await IndexedDB.getAllVideoTags();
     expect(all.map((vt) => vt.id)).toEqual(["new-vt"]);
   });
+
+  test("replaceAllTags rejects instead of hanging when the database isn't initialized", async () => {
+    const uninitialized = new (IndexedDB.constructor as any)();
+    await expect(uninitialized.replaceAllTags([])).rejects.toThrow("Database not initialized");
+  });
+});
+
+describe("getAllX includeDeleted parameter", () => {
+  test("getAllTags excludes soft-deleted tags by default and includes them when includeDeleted is true", async () => {
+    const id = "include-deleted-tag";
+    await IndexedDB.addTag({ id, name: "IncludeDeletedTag" });
+    await IndexedDB.deleteTagById(id);
+
+    const defaultResult = await IndexedDB.getAllTags();
+    expect(defaultResult.find((t) => t.id === id)).toBeUndefined();
+
+    const withDeleted = await IndexedDB.getAllTags(true);
+    expect(withDeleted.find((t) => t.id === id)).toBeDefined();
+  });
+
+  test("getAllVideos excludes soft-deleted videos by default and includes them when includeDeleted is true", async () => {
+    const id = "include-deleted-video";
+    await IndexedDB.addVideo({
+      id,
+      video_title: "IncludeDeletedVideo",
+      video_duration: 100,
+      video_url: "https://example.com/include-deleted",
+      origin: SiteKey.YOUTUBE,
+      created_at: Date.now(),
+    });
+    await IndexedDB.deleteVideoById(id);
+
+    const defaultResult = await IndexedDB.getAllVideos();
+    expect(defaultResult.find((v) => v.id === id)).toBeUndefined();
+
+    const withDeleted = await IndexedDB.getAllVideos(true);
+    expect(withDeleted.find((v) => v.id === id)).toBeDefined();
+  });
+
+  test("getAllVideoTags excludes soft-deleted relationships by default and includes them when includeDeleted is true", async () => {
+    const id = "include-deleted-vt";
+    await IndexedDB.addVideoTag({ id, video_id: "v-idt", tag_id: "t-idt" });
+    await IndexedDB.deleteVideoTagByVideoId("v-idt");
+
+    const defaultResult = await IndexedDB.getAllVideoTags();
+    expect(defaultResult.find((vt) => vt.id === id)).toBeUndefined();
+
+    const withDeleted = await IndexedDB.getAllVideoTags(true);
+    expect(withDeleted.find((vt) => vt.id === id)).toBeDefined();
+  });
+
+  test("getAllAutoTags excludes soft-deleted auto tags by default and includes them when includeDeleted is true", async () => {
+    const id = "include-deleted-autotag";
+    await IndexedDB.addAutoTag({ id, origin: SiteKey.CRUNCHYROLL, tags: ["tag-1"] });
+    await IndexedDB.deleteAutoTagById(id);
+
+    const defaultResult = await IndexedDB.getAllAutoTags();
+    expect(defaultResult.find((a) => a.id === id)).toBeUndefined();
+
+    const withDeleted = await IndexedDB.getAllAutoTags(true);
+    expect(withDeleted.find((a) => a.id === id)).toBeDefined();
+  });
 });

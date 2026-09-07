@@ -34,59 +34,66 @@ export const runSync = async (): Promise<SyncResult> => {
   const { userId } = await getSession();
   if (!userId) return { status: "no-session" };
 
-  const cursor = await IndexedDB.getLastSyncedAt();
-  const syncStartedAt = Date.now();
+  try {
+    const cursor = await IndexedDB.getLastSyncedAt();
+    const syncStartedAt = Date.now();
 
-  const [localTags, localVideos, localVideoTags, localAutoTags] = await Promise.all([
-    IndexedDB.getAllTags(),
-    IndexedDB.getAllVideos(),
-    IndexedDB.getAllVideoTags(),
-    IndexedDB.getAllAutoTags(),
-  ]);
+    // includeDeleted: true — tombstoned rows must still reach the push logic below so local
+    // deletions propagate to remote/other devices. The write-back step further down filters
+    // tombstones back out before they're written to local storage.
+    const [localTags, localVideos, localVideoTags, localAutoTags] = await Promise.all([
+      IndexedDB.getAllTags(true),
+      IndexedDB.getAllVideos(true),
+      IndexedDB.getAllVideoTags(true),
+      IndexedDB.getAllAutoTags(true),
+    ]);
 
-  const tagsResult = await syncTable("tags", userId, cursor, localTags as SyncRow[]);
-  if (tagsResult.pushError) {
-    return isQuotaError(tagsResult.pushError) ? { status: "quota-exceeded" } : { status: "error", message: tagsResult.pushError };
+    const tagsResult = await syncTable("tags", userId, cursor, localTags as SyncRow[]);
+    if (tagsResult.pushError) {
+      return isQuotaError(tagsResult.pushError) ? { status: "quota-exceeded" } : { status: "error", message: tagsResult.pushError };
+    }
+    const tagsMerge = reconcileByNaturalKey(localTags as SyncRow[], tagsResult.mergedRemote, "code");
+
+    const videosResult = await syncTable("videos", userId, cursor, localVideos as SyncRow[]);
+    if (videosResult.pushError) {
+      return isQuotaError(videosResult.pushError) ? { status: "quota-exceeded" } : { status: "error", message: videosResult.pushError };
+    }
+    const videosMerge = reconcileByNaturalKey(localVideos as SyncRow[], videosResult.mergedRemote, "unique_code");
+
+    const autoTagsResult = await syncTable("auto_tags", userId, cursor, localAutoTags as SyncRow[]);
+    if (autoTagsResult.pushError) {
+      return isQuotaError(autoTagsResult.pushError)
+        ? { status: "quota-exceeded" }
+        : { status: "error", message: autoTagsResult.pushError };
+    }
+    const autoTagsMerge = reconcileByNaturalKey(localAutoTags as SyncRow[], autoTagsResult.mergedRemote, "origin");
+
+    const remappedLocalVideoTags = remapForeignKey(
+      remapForeignKey(localVideoTags as SyncRow[], "tag_id", tagsMerge.idRemap),
+      "video_id",
+      videosMerge.idRemap
+    );
+    const videoTagsResult = await syncTable("video_tags", userId, cursor, remappedLocalVideoTags);
+    if (videoTagsResult.pushError) {
+      return isQuotaError(videoTagsResult.pushError)
+        ? { status: "quota-exceeded" }
+        : { status: "error", message: videoTagsResult.pushError };
+    }
+    const mergedVideoTags = dedupeByCompositeKey(
+      mergeById(remappedLocalVideoTags, videoTagsResult.mergedRemote),
+      (row) => `${row.video_id}:${row.tag_id}`
+    );
+
+    await Promise.all([
+      IndexedDB.replaceAllTags(tagsMerge.rows.filter((r) => !r.deleted_at) as any),
+      IndexedDB.replaceAllVideos(videosMerge.rows.filter((r) => !r.deleted_at) as any),
+      IndexedDB.replaceAllAutoTags(autoTagsMerge.rows.filter((r) => !r.deleted_at) as any),
+      IndexedDB.replaceAllVideoTags(mergedVideoTags.filter((r) => !r.deleted_at) as any),
+    ]);
+
+    await IndexedDB.setLastSyncedAt(syncStartedAt - SAFETY_OVERLAP_MS);
+    return { status: "ok" };
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : String(error) };
   }
-  const tagsMerge = reconcileByNaturalKey(localTags as SyncRow[], tagsResult.mergedRemote, "code");
-
-  const videosResult = await syncTable("videos", userId, cursor, localVideos as SyncRow[]);
-  if (videosResult.pushError) {
-    return isQuotaError(videosResult.pushError) ? { status: "quota-exceeded" } : { status: "error", message: videosResult.pushError };
-  }
-  const videosMerge = reconcileByNaturalKey(localVideos as SyncRow[], videosResult.mergedRemote, "unique_code");
-
-  const autoTagsResult = await syncTable("auto_tags", userId, cursor, localAutoTags as SyncRow[]);
-  if (autoTagsResult.pushError) {
-    return isQuotaError(autoTagsResult.pushError)
-      ? { status: "quota-exceeded" }
-      : { status: "error", message: autoTagsResult.pushError };
-  }
-  const autoTagsMerge = reconcileByNaturalKey(localAutoTags as SyncRow[], autoTagsResult.mergedRemote, "origin");
-
-  const remappedLocalVideoTags = remapForeignKey(
-    remapForeignKey(localVideoTags as SyncRow[], "tag_id", tagsMerge.idRemap),
-    "video_id",
-    videosMerge.idRemap
-  );
-  const videoTagsResult = await syncTable("video_tags", userId, cursor, remappedLocalVideoTags);
-  if (videoTagsResult.pushError) {
-    return isQuotaError(videoTagsResult.pushError)
-      ? { status: "quota-exceeded" }
-      : { status: "error", message: videoTagsResult.pushError };
-  }
-  const mergedVideoTags = dedupeByCompositeKey(
-    mergeById(remappedLocalVideoTags, videoTagsResult.mergedRemote),
-    (row) => `${row.video_id}:${row.tag_id}`
-  );
-
-  await Promise.all([
-    IndexedDB.replaceAllTags(tagsMerge.rows.filter((r) => !r.deleted_at) as any),
-    IndexedDB.replaceAllVideos(videosMerge.rows.filter((r) => !r.deleted_at) as any),
-    IndexedDB.replaceAllAutoTags(autoTagsMerge.rows.filter((r) => !r.deleted_at) as any),
-    IndexedDB.replaceAllVideoTags(mergedVideoTags.filter((r) => !r.deleted_at) as any),
-  ]);
-
-  await IndexedDB.setLastSyncedAt(syncStartedAt - SAFETY_OVERLAP_MS);
-  return { status: "ok" };
 };

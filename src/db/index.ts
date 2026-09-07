@@ -170,7 +170,7 @@ class IndexedDB {
   }
 
   // get all videos
-  getAllVideos(): Promise<IVideo[]> {
+  getAllVideos(includeDeleted: boolean = false): Promise<IVideo[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -180,7 +180,8 @@ class IndexedDB {
       const request = videoStore.getAll();
 
       request.onsuccess = () => {
-        resolve((request.result as IVideo[]).filter((row) => !row.deleted_at));
+        const rows = request.result as IVideo[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
 
       request.onerror = () => {
@@ -342,14 +343,15 @@ class IndexedDB {
   // ================================================================================
 
   // get all tags
-  getAllTags(): Promise<ITag[]> {
+  getAllTags(includeDeleted: boolean = false): Promise<ITag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const request = tagStore.getAll();
       request.onsuccess = () => {
-        resolve((request.result as ITag[]).filter((row) => !row.deleted_at));
+        const rows = request.result as ITag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -480,14 +482,15 @@ class IndexedDB {
   }
 
   // get all video tag relationships
-  getAllVideoTags(): Promise<IVideoTag[]> {
+  getAllVideoTags(includeDeleted: boolean = false): Promise<IVideoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readonly");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
       const request = videoTagStore.getAll();
       request.onsuccess = () => {
-        resolve((request.result as IVideoTag[]).filter((row) => !row.deleted_at));
+        const rows = request.result as IVideoTag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -607,14 +610,15 @@ class IndexedDB {
   }
 
   // get all auto tag
-  getAllAutoTags(): Promise<IAutoTag[]> {
+  getAllAutoTags(includeDeleted: boolean = false): Promise<IAutoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
       const request = autoTagStore.getAll();
       request.onsuccess = () => {
-        resolve((request.result as IAutoTag[]).filter((row) => !row.deleted_at));
+        const rows = request.result as IAutoTag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -973,7 +977,7 @@ class IndexedDB {
   // ====================== Sync write-back =====================
   private replaceAllInStore<T>(storeName: string, rows: T[]): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
+      if (!this.db) return reject(new Error("Database not initialized"));
       const transaction = this.db.transaction(storeName, "readwrite");
       const store = transaction.objectStore(storeName);
       store.clear();
