@@ -1,6 +1,6 @@
 import React from "react";
 import { SearchIcon, SettingsIcon } from "@chakra-ui/icons";
-import { MdExtension, MdSync, MdCompareArrows, MdArticle, MdVideoLibrary } from "react-icons/md";
+import { MdExtension, MdSync, MdCompareArrows, MdArticle, MdVideoLibrary, MdCloudSync } from "react-icons/md";
 import { IoIosPricetags } from "react-icons/io";
 import { SiAnilist } from "react-icons/si";
 import { AuthStatus } from "@/types/kitaschema";
@@ -14,6 +14,7 @@ const SeriesMappingsTab = React.lazy(() => import("@/pages/settings/tabs/seriesM
 const GeneralTab = React.lazy(() => import("@/pages/settings/tabs/generalTab"));
 const SavedVideosTab = React.lazy(() => import("@/pages/settings/tabs/savedVideosTab"));
 const LogsTab = React.lazy(() => import("@/pages/settings/tabs/logsTab"));
+const SyncTab = React.lazy(() => import("@/pages/settings/tabs/syncTab"));
 
 export type SettingsNavContext = {
   anilistAuthStatus: AuthStatus;
@@ -76,6 +77,11 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     id: "advanced",
     label: "Advanced",
     items: [{ id: "logs", label: "Logs", icon: MdArticle, component: LogsTab }],
+  },
+  {
+    id: "account",
+    label: "Account",
+    items: [{ id: "sync", label: "Sync", icon: MdCloudSync, component: SyncTab }],
   },
 ];
 

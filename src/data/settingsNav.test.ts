@@ -10,7 +10,7 @@ const findGroup = (id: string) => {
 
 describe("SETTINGS_GROUPS", () => {
   test("groups appear in the expected order", () => {
-    expect(SETTINGS_GROUPS.map((group) => group.id)).toEqual(["track", "organize", "data", "advanced"]);
+    expect(SETTINGS_GROUPS.map((group) => group.id)).toEqual(["track", "organize", "data", "advanced", "account"]);
   });
 
   test("the track group contains integration, autotrack, anilist, and anilist-search items in order", () => {
@@ -37,7 +37,7 @@ describe("SETTINGS_GROUPS", () => {
 describe("getVisibleItems", () => {
   test("excludes the anilist and anilist-search items when unauthorized", () => {
     const ids = getVisibleItems(SETTINGS_GROUPS, { anilistAuthStatus: "unauthorized" }).map((item) => item.id);
-    expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "saved-videos", "logs"]);
+    expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "saved-videos", "logs", "sync"]);
   });
 
   test("includes the anilist and anilist-search items when authorized", () => {
