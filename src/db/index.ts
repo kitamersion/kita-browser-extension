@@ -13,6 +13,7 @@ import {
   OBJECT_STORE_AUTO_TAG,
   OBJECT_STORE_SERIES_MAPPINGS,
   OBJECT_STORE_ANILIST_CACHE,
+  OBJECT_STORE_SYNC_META,
 } from "./schema";
 const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 import { setApplicationEnabled } from "@/api/applicationStorage";
@@ -158,7 +159,8 @@ class IndexedDB {
       const request = videoStore.get(id);
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as IVideo | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
 
       request.onerror = () => {
@@ -178,7 +180,7 @@ class IndexedDB {
       const request = videoStore.getAll();
 
       request.onsuccess = () => {
-        resolve(request.result);
+        resolve((request.result as IVideo[]).filter((row) => !row.deleted_at));
       };
 
       request.onerror = () => {
@@ -223,37 +225,49 @@ class IndexedDB {
     });
   }
 
-  // delete video by id
+  // soft-delete video by id (tombstoned for sync; excluded from reads)
   deleteVideoById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const getRequest = videoStore.get(id);
 
-      videoStore.delete(id);
-
-      transaction.oncomplete = () => {
-        resolve();
+      getRequest.onsuccess = () => {
+        const video = getRequest.result as IVideo | undefined;
+        if (!video) {
+          resolve();
+          return;
+        }
+        const putRequest = videoStore.put({ ...video, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
-  // delete all videos
+  // soft-delete all videos (bulk/local-only convenience; infrequent, not a hot path)
   deleteAllVideos(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const request = videoStore.openCursor();
 
-      const request = videoStore.clear();
       request.onsuccess = () => {
-        resolve();
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const video = cursor.value as IVideo;
+          if (!video.deleted_at) {
+            cursor.update({ ...video, deleted_at: Date.now(), updated_at: Date.now() });
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
       };
       request.onerror = () => {
         reject(request.error);
@@ -272,7 +286,8 @@ class IndexedDB {
       const request = index.get(unique_code);
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as IVideo | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
 
       request.onerror = () => {
@@ -355,7 +370,7 @@ class IndexedDB {
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const request = tagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        resolve((request.result as ITag[]).filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -371,7 +386,8 @@ class IndexedDB {
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const request = tagStore.get(id);
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as ITag | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
       request.onerror = () => {
         reject(request.error);
@@ -440,22 +456,26 @@ class IndexedDB {
     });
   }
 
-  // delete tag by id
+  // soft-delete tag by id (tombstoned for sync; excluded from reads)
   deleteTagById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
+      const getRequest = tagStore.get(id);
 
-      tagStore.delete(id);
-
-      transaction.oncomplete = () => {
-        resolve();
+      getRequest.onsuccess = () => {
+        const tag = getRequest.result as ITag | undefined;
+        if (!tag) {
+          resolve();
+          return;
+        }
+        const putRequest = tagStore.put({ ...tag, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -487,7 +507,7 @@ class IndexedDB {
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
       const request = videoTagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        resolve((request.result as IVideoTag[]).filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -495,7 +515,7 @@ class IndexedDB {
     });
   }
 
-  // delete video tag relationship by video id
+  // soft-delete video tag relationships by video id (tombstoned for sync; excluded from reads)
   deleteVideoTagByVideoId(videoId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -506,7 +526,7 @@ class IndexedDB {
       request.onsuccess = () => {
         const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          cursor.delete();
+          cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
           cursor.continue();
         } else {
           resolve();
@@ -518,7 +538,7 @@ class IndexedDB {
     });
   }
 
-  // delete video tag relationship by tag id
+  // soft-delete video tag relationships by tag id (tombstoned for sync; excluded from reads)
   deleteVideoTagByTagId(tagId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -529,7 +549,7 @@ class IndexedDB {
       request.onsuccess = () => {
         const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          cursor.delete();
+          cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
           cursor.continue();
         } else {
           resolve();
@@ -604,7 +624,7 @@ class IndexedDB {
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
       const request = autoTagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        resolve((request.result as IAutoTag[]).filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -612,19 +632,25 @@ class IndexedDB {
     });
   }
 
-  // delete auto tag by id
+  // soft-delete auto tag by id (tombstoned for sync; excluded from reads)
   deleteAutoTagById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
-      autoTagStore.delete(id);
-      transaction.oncomplete = () => {
-        resolve();
+      const getRequest = autoTagStore.get(id);
+
+      getRequest.onsuccess = () => {
+        const autoTag = getRequest.result as IAutoTag | undefined;
+        if (!autoTag) {
+          resolve();
+          return;
+        }
+        const putRequest = autoTagStore.put({ ...autoTag, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -928,6 +954,29 @@ class IndexedDB {
         logger.error(`getAniListCacheRaw error: ${request.error}`);
         reject(request.error);
       };
+    });
+  }
+
+  // ====================== Sync cursor =====================
+  public getLastSyncedAt(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve(0);
+      const transaction = this.db.transaction(OBJECT_STORE_SYNC_META, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SYNC_META);
+      const request = store.get("last_synced_at");
+      request.onsuccess = () => resolve(request.result?.value ?? 0);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public setLastSyncedAt(value: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_SYNC_META, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SYNC_META);
+      const request = store.put({ key: "last_synced_at", value });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
     });
   }
 

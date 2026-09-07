@@ -31,3 +31,23 @@ describe("IndexedDB.addTag", () => {
     expect(saved?.code).toBe("SHOUNEN_CUSTOM");
   });
 });
+
+describe("soft delete", () => {
+  test("deleteTagById marks deleted_at instead of removing the row, and getAllTags excludes it", async () => {
+    const id = "soft-delete-tag";
+    await IndexedDB.addTag({ id, name: "ToDelete" });
+    await IndexedDB.deleteTagById(id);
+
+    const direct = await IndexedDB.getTagById(id);
+    expect(direct).toBeUndefined();
+
+    const all = await IndexedDB.getAllTags();
+    expect(all.find((t) => t.id === id)).toBeUndefined();
+  });
+
+  test("sync cursor defaults to 0 and round-trips through set/get", async () => {
+    expect(await IndexedDB.getLastSyncedAt()).toBe(0);
+    await IndexedDB.setLastSyncedAt(1700000000000);
+    expect(await IndexedDB.getLastSyncedAt()).toBe(1700000000000);
+  });
+});
