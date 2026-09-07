@@ -1,13 +1,27 @@
 import React, { useState } from "react";
-import { Box, Button, FormControl, FormLabel, Heading, Input, Progress, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, FormControl, FormLabel, Heading, Input, Progress, Spinner, Text, VStack } from "@chakra-ui/react";
 import { useSyncContext } from "@/context/syncContext";
 
 const formatBytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
 const SyncTab: React.FC = () => {
-  const { isSignedIn, email, quota, lastSyncedAt, error, signUp, signIn, signOut } = useSyncContext();
+  const { isSignedIn, email, quota, lastSyncedAt, error, isSubmitting, pendingConfirmationEmail, signUp, signIn, signOut } =
+    useSyncContext();
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
+
+  if (pendingConfirmationEmail) {
+    return (
+      <VStack align="stretch" spacing={4} maxW="sm" data-testid="sync-pending-confirmation">
+        <Heading size="md">Confirm your email</Heading>
+        <Text fontSize="sm" color="text.secondary">
+          We sent a confirmation link to {pendingConfirmationEmail}. Click it to finish signing up — this page will update automatically
+          once you do.
+        </Text>
+        <Spinner size="sm" />
+      </VStack>
+    );
+  }
 
   if (isSignedIn) {
     return (
@@ -45,10 +59,10 @@ const SyncTab: React.FC = () => {
         <FormLabel>Password</FormLabel>
         <Input data-testid="sync-password-input" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
       </FormControl>
-      <Button data-testid="sync-sign-in-button" onClick={() => signIn(formEmail, formPassword)}>
+      <Button data-testid="sync-sign-in-button" isLoading={isSubmitting} onClick={() => signIn(formEmail, formPassword)}>
         Sign in
       </Button>
-      <Button data-testid="sync-sign-up-button" variant="outline" onClick={() => signUp(formEmail, formPassword)}>
+      <Button data-testid="sync-sign-up-button" variant="outline" isLoading={isSubmitting} onClick={() => signUp(formEmail, formPassword)}>
         Create account
       </Button>
     </VStack>

@@ -23,8 +23,8 @@ pop3_port = 54326
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
+site_url = "https://www.kitamersion.com"
+additional_redirect_urls = ["https://www.kitamersion.com/auth/confirm/"]
 jwt_expiry = 3600
 
 [auth.email]

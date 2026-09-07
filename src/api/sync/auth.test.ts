@@ -3,21 +3,47 @@ jest.mock("./supabaseClient", () => ({
 }));
 
 import { getSupabaseClient } from "./supabaseClient";
-import { signUp, signIn, signOut, getSession } from "./auth";
+import { signUp, signIn, signOut, getSession, setSession, EMAIL_CONFIRM_REDIRECT_URL } from "./auth";
 
 const mockClient = (overrides: Record<string, jest.Mock>) => {
   (getSupabaseClient as jest.Mock).mockReturnValue({ auth: overrides });
 };
 
 describe("auth", () => {
-  test("signUp returns no error on success", async () => {
-    mockClient({ signUp: jest.fn().mockResolvedValue({ data: {}, error: null }) });
-    expect(await signUp("a@b.com", "password123")).toEqual({ error: null });
+  test("signUp reports no confirmation needed when a session is created", async () => {
+    mockClient({ signUp: jest.fn().mockResolvedValue({ data: { session: { access_token: "t" } }, error: null }) });
+    expect(await signUp("a@b.com", "password123")).toEqual({ error: null, needsEmailConfirmation: false });
+  });
+
+  test("signUp reports confirmation needed when no session is created", async () => {
+    mockClient({ signUp: jest.fn().mockResolvedValue({ data: { session: null }, error: null }) });
+    expect(await signUp("a@b.com", "password123")).toEqual({ error: null, needsEmailConfirmation: true });
   });
 
   test("signUp surfaces the Supabase error message", async () => {
     mockClient({ signUp: jest.fn().mockResolvedValue({ data: null, error: { message: "Email already registered" } }) });
-    expect(await signUp("a@b.com", "password123")).toEqual({ error: "Email already registered" });
+    expect(await signUp("a@b.com", "password123")).toEqual({ error: "Email already registered", needsEmailConfirmation: false });
+  });
+
+  test("signUp sends the confirmation email to the kita-blog bridge page", async () => {
+    const signUpMock = jest.fn().mockResolvedValue({ data: { session: null }, error: null });
+    mockClient({ signUp: signUpMock });
+    await signUp("a@b.com", "password123");
+    expect(signUpMock).toHaveBeenCalledWith({
+      email: "a@b.com",
+      password: "password123",
+      options: { emailRedirectTo: EMAIL_CONFIRM_REDIRECT_URL },
+    });
+  });
+
+  test("setSession returns no error on success", async () => {
+    mockClient({ setSession: jest.fn().mockResolvedValue({ data: {}, error: null }) });
+    expect(await setSession("access-token", "refresh-token")).toEqual({ error: null });
+  });
+
+  test("setSession surfaces the Supabase error message", async () => {
+    mockClient({ setSession: jest.fn().mockResolvedValue({ data: null, error: { message: "Invalid refresh token" } }) });
+    expect(await setSession("access-token", "bad-refresh-token")).toEqual({ error: "Invalid refresh token" });
   });
 
   test("signIn returns no error on success", async () => {

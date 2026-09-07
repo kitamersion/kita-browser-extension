@@ -40,6 +40,14 @@
             "js": [
                 "content.js"
             ]
+        },
+        {
+            "matches": [
+                "https://www.kitamersion.com/auth/confirm/*"
+            ],
+            "js": [
+                "confirmBridge.js"
+            ]
         }
     ],
     "web_accessible_resources": [

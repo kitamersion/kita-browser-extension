@@ -18,6 +18,7 @@ module.exports = {
   entry: {
     background: path.join(__dirname, "/src/pages/background/index.ts"),
     content: path.join(__dirname, "/src/pages/content/index.ts"),
+    confirmBridge: path.join(__dirname, "/src/pages/content/confirmBridge.ts"),
     popup: path.join(__dirname, "/src/pages/popup/index.ts"),
     settings: path.join(__dirname, "/src/pages/settings/index.ts"),
     statistics: path.join(__dirname, "/src/pages/statistics/index.ts"),

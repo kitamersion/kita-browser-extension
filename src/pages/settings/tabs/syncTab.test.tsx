@@ -86,4 +86,46 @@ describe("SyncTab", () => {
     render(<SyncTab />);
     expect(screen.getByText("Invalid login credentials")).toBeInTheDocument();
   });
+
+  test("disables sign in and sign up buttons while a request is in flight", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: false,
+      email: null,
+      quota: null,
+      lastSyncedAt: 0,
+      error: null,
+      isSubmitting: true,
+      pendingConfirmationEmail: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-sign-in-button")).toBeDisabled();
+    expect(screen.getByTestId("sync-sign-up-button")).toBeDisabled();
+  });
+
+  test("shows a waiting message when a signup is pending email confirmation", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: false,
+      email: null,
+      quota: null,
+      lastSyncedAt: 0,
+      error: null,
+      isSubmitting: false,
+      pendingConfirmationEmail: "a@b.com",
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-pending-confirmation")).toHaveTextContent("a@b.com");
+    expect(screen.queryByTestId("sync-email-input")).not.toBeInTheDocument();
+  });
 });
