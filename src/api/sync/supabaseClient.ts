@@ -1,12 +1,12 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { chromeStorageAdapter } from "./chromeStorageAdapter";
 
-let client: SupabaseClient | null = null;
+let client: ReturnType<typeof createClient<any, "kitamersion">> | null = null;
 
-export const getSupabaseClient = (): SupabaseClient => {
+export const getSupabaseClient = () => {
   if (client) return client;
 
-  client = createClient(process.env.SUPABASE_URL as string, process.env.SUPABASE_ANON_KEY as string, {
+  client = createClient<any, "kitamersion">(process.env.SUPABASE_URL as string, process.env.SUPABASE_ANON_KEY as string, {
     db: {
       schema: "kitamersion", // every .from() call on this client targets kitamersion, not public
     },
