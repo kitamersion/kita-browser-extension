@@ -1,5 +1,30 @@
 import IndexedDB from "./index";
 import { SiteKey } from "@/types/video";
+import { IVideoTag } from "@/types/relationship";
+import { DB_NAME, OBJECT_STORE_VIDEO_TAGS } from "./schema";
+
+// Reads a row directly from the underlying store, bypassing the deleted_at read-filter,
+// so tests can assert a row was tombstoned (soft-deleted) rather than physically removed.
+function getRawVideoTag(id: string): Promise<IVideoTag | undefined> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(OBJECT_STORE_VIDEO_TAGS, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
+      const getRequest = store.get(id);
+      getRequest.onsuccess = () => {
+        db.close();
+        resolve(getRequest.result);
+      };
+      getRequest.onerror = () => {
+        db.close();
+        reject(getRequest.error);
+      };
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
 
 describe("IndexedDB.addTag", () => {
   beforeAll(async () => {
@@ -86,5 +111,44 @@ describe("soft delete", () => {
     expect(paginated.results.find((v) => v.id === deleteId)).toBeUndefined();
     expect(paginated.results.find((v) => v.id === keepId)).toBeDefined();
     expect(paginated.totalPages).toBe(1);
+  });
+
+  test("getTagByCode excludes a soft-deleted tag", async () => {
+    const id = "soft-delete-tag-by-code";
+    await IndexedDB.addTag({ id, name: "ByCode", code: "BY_CODE_TAG" });
+    await IndexedDB.deleteTagById(id);
+
+    const found = await IndexedDB.getTagByCode("BY_CODE_TAG");
+    expect(found).toBeUndefined();
+  });
+
+  test("getAutoTagByOrigin excludes a soft-deleted auto tag config", async () => {
+    const id = "soft-delete-autotag";
+    await IndexedDB.addAutoTag({ id, origin: SiteKey.CRUNCHYROLL, tags: ["tag-1"] });
+    await IndexedDB.deleteAutoTagById(id);
+
+    const found = await IndexedDB.getAutoTagByOrigin(SiteKey.CRUNCHYROLL);
+    expect(found).toBeUndefined();
+  });
+
+  test("deleteAllVideoTags soft-deletes every relationship row instead of clearing the store", async () => {
+    const videoTagOne: IVideoTag = { id: "vt-soft-delete-1", video_id: "v-soft-delete-1", tag_id: "t-soft-delete-1" };
+    const videoTagTwo: IVideoTag = { id: "vt-soft-delete-2", video_id: "v-soft-delete-2", tag_id: "t-soft-delete-2" };
+    await IndexedDB.addVideoTag(videoTagOne);
+    await IndexedDB.addVideoTag(videoTagTwo);
+
+    await IndexedDB.deleteAllVideoTags();
+
+    const all = await IndexedDB.getAllVideoTags();
+    expect(all.find((vt) => vt.id === videoTagOne.id)).toBeUndefined();
+    expect(all.find((vt) => vt.id === videoTagTwo.id)).toBeUndefined();
+
+    // Rows must still physically exist (tombstoned), not be wiped by .clear(), so sync can see the deletion.
+    const rawOne = await getRawVideoTag(videoTagOne.id);
+    const rawTwo = await getRawVideoTag(videoTagTwo.id);
+    expect(rawOne).toBeDefined();
+    expect(rawOne?.deleted_at).toBeDefined();
+    expect(rawTwo).toBeDefined();
+    expect(rawTwo?.deleted_at).toBeDefined();
   });
 });

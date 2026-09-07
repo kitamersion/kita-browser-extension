@@ -383,7 +383,8 @@ class IndexedDB {
       const index = tagStore.index("code");
       const request = index.get(code);
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as ITag | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
       request.onerror = () => {
         reject(request.error);
@@ -540,15 +541,24 @@ class IndexedDB {
     });
   }
 
-  // delete all video tag relationships
+  // soft-delete all video tag relationships (tombstoned for sync; excluded from reads)
   deleteAllVideoTags(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
-      const request = videoTagStore.clear();
+      const request = videoTagStore.openCursor();
       request.onsuccess = () => {
-        resolve();
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const videoTag = cursor.value as IVideoTag;
+          if (!videoTag.deleted_at) {
+            cursor.update({ ...videoTag, deleted_at: Date.now(), updated_at: Date.now() });
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
       };
       request.onerror = () => {
         reject(request.error);
@@ -587,7 +597,8 @@ class IndexedDB {
       const index = autoTagStore.index("origin");
       const request = index.get(origin);
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as IAutoTag | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
       request.onerror = () => {
         reject(request.error);
@@ -950,7 +961,7 @@ class IndexedDB {
 
   public setLastSyncedAt(value: number): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!this.db) return;
+      if (!this.db) return reject(new Error("Database not initialized"));
       const transaction = this.db.transaction(OBJECT_STORE_SYNC_META, "readwrite");
       const store = transaction.objectStore(OBJECT_STORE_SYNC_META);
       const request = store.put({ key: "last_synced_at", value });
