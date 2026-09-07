@@ -28,7 +28,8 @@
     "permissions": [
         "storage",
         "unlimitedStorage",
-        "identity"
+        "identity",
+        "alarms"
     ],
     "content_scripts": [
         {
