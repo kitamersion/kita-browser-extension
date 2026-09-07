@@ -7,6 +7,7 @@ export type IVideo = {
   created_at: number;
   unique_code?: string;
   updated_at?: number;
+  deleted_at?: number;
   tags?: string[];
   watching_episode_number?: number;
   watching_season_year?: number;
