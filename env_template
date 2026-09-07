@@ -7,3 +7,7 @@ APPLICATION_ENVIRONMENT=prod
 # You can get this from AniList GraphQL playground or by doing OAuth once
 
 ANILIST_ACCESS_TOKEN=
+
+# Supabase project (cross-device sync) - paste your project's URL and anon public key
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
