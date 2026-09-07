@@ -55,6 +55,28 @@ describe("reconcileByNaturalKey", () => {
     expect(idRemap.size).toBe(0);
     expect(rows).toEqual([{ id: "same-id", updated_at: 100, code: "ANIME" }]);
   });
+
+  test("deduplicates when two local rows collide on the same remote natural-key match, keeping the newer updated_at", () => {
+    // Two local rows both coded "ANIME" (e.g., independently seeded defaults on two devices)
+    // Both remap to the same canonical remote id
+    // The newer local edit (300) should win over the stale one (100)
+    const local: SyncRow[] = [
+      { id: "L1", updated_at: 300, code: "ANIME" }, // newest edit
+      { id: "L2", updated_at: 100, code: "ANIME" }, // stale duplicate
+    ];
+    const remote: SyncRow[] = [{ id: "R1", updated_at: 50, code: "ANIME" }];
+
+    const { rows, idRemap } = reconcileByNaturalKey(local, remote, "code");
+
+    // Both local ids should map to the canonical remote id
+    expect(idRemap.get("L1")).toBe("R1");
+    expect(idRemap.get("L2")).toBe("R1");
+    // Result should have exactly one row with the canonical id
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("R1");
+    // The newer updated_at (300) should win, not the stale one (100)
+    expect(rows[0].updated_at).toBe(300);
+  });
 });
 
 describe("remapForeignKey", () => {

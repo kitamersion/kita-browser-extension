@@ -1,5 +1,10 @@
 import { SyncRow } from "@/types/integrations/sync";
 
+// Merge two arrays via last-write-wins (LWW) by id.
+// Invariant: the `local` array must not contain duplicate ids (or if it does, they must already be
+// deduplicated by updated_at). This is because the first loop unconditionally sets entries by id
+// from the local array before applying LWW comparisons with remote. If `local` contains duplicate
+// ids, whichever appears last in the array will win by position, not timestamp.
 export const mergeById = (local: SyncRow[], remote: SyncRow[]): SyncRow[] => {
   const byId = new Map<string, SyncRow>();
   for (const row of local) byId.set(row.id, row);
@@ -33,7 +38,12 @@ export const reconcileByNaturalKey = (
     return { ...row, id: canonical.id };
   });
 
-  return { rows: mergeById(remappedLocal, remote), idRemap };
+  // Deduplicate remappedLocal by id in case multiple local rows remapped to the same canonical id.
+  // This ensures the mergeById invariant: no duplicate ids within the local array.
+  // When duplicates exist, keep the one with the newest updated_at.
+  const deduplicatedLocal = dedupeByCompositeKey(remappedLocal, (row) => row.id);
+
+  return { rows: mergeById(deduplicatedLocal, remote), idRemap };
 };
 
 export const remapForeignKey = <T extends Record<string, unknown>>(
