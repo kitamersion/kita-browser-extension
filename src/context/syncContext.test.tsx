@@ -222,6 +222,29 @@ describe("SyncProvider", () => {
     );
   });
 
+  test("syncNow shows an account-switch toast in addition to the normal result toast when data was rekeyed", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "ok", rekeyed: true });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Signed in as a different account",
+          status: "warning",
+          description: "Your local data will sync as new to this account.",
+        })
+      )
+    );
+    expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" }));
+  });
+
   test("deleteAllData wipes data, pauses Kita Sync, and shows a success toast", async () => {
     render(
       <SyncProvider>

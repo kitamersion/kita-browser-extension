@@ -141,6 +141,14 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     const result = await runSync();
     setIsSyncing(false);
 
+    if (result.rekeyed) {
+      showToast({
+        title: "Signed in as a different account",
+        status: "warning",
+        description: "Your local data will sync as new to this account.",
+      });
+    }
+
     if (result.status === "quota-exceeded") {
       showToast({ title: "Storage quota exceeded", status: "error", description: "Free up space to resume syncing." });
       return;
