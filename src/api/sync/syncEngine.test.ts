@@ -1,6 +1,7 @@
 jest.mock("./supabaseClient", () => ({ getSupabaseClient: jest.fn() }));
 jest.mock("./auth", () => ({ getSession: jest.fn() }));
-jest.mock("@/api/settings/manager", () => ({ settingsManager: { get: jest.fn() } }));
+jest.mock("@/api/settings/manager", () => ({ settingsManager: { get: jest.fn(), set: jest.fn().mockResolvedValue(undefined) } }));
+jest.mock("./rekeyLocalData", () => ({ rekeyLocalDataForNewAccount: jest.fn().mockResolvedValue(undefined) }));
 jest.mock("@/db/index", () => ({
   __esModule: true,
   default: {
@@ -20,6 +21,8 @@ jest.mock("@/db/index", () => ({
 import { getSupabaseClient } from "./supabaseClient";
 import { getSession } from "./auth";
 import { settingsManager } from "@/api/settings/manager";
+import { SETTINGS } from "@/api/settings/definitions";
+import { rekeyLocalDataForNewAccount } from "./rekeyLocalData";
 import IndexedDB from "@/db/index";
 import { runSync } from "./syncEngine";
 
@@ -79,7 +82,10 @@ describe("runSync", () => {
     (IndexedDB.replaceAllVideos as jest.Mock).mockResolvedValue(undefined);
     (IndexedDB.replaceAllVideoTags as jest.Mock).mockResolvedValue(undefined);
     (IndexedDB.replaceAllAutoTags as jest.Mock).mockResolvedValue(undefined);
-    (settingsManager.get as jest.Mock).mockResolvedValue(false);
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve(null);
+      return Promise.resolve(false);
+    });
   });
 
   test("returns no-session and touches nothing when the user isn't signed in", async () => {
@@ -94,7 +100,11 @@ describe("runSync", () => {
 
   test("returns paused and touches nothing when Kita Sync is paused", async () => {
     (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
-    (settingsManager.get as jest.Mock).mockResolvedValue(true);
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.paused) return Promise.resolve(true);
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve(null);
+      return Promise.resolve(false);
+    });
 
     const result = await runSync();
 
@@ -105,7 +115,15 @@ describe("runSync", () => {
 
   test("returns paused and does not push when Kita Sync is paused mid-flight, after the top-of-function check passed", async () => {
     (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
-    (settingsManager.get as jest.Mock).mockResolvedValueOnce(false).mockResolvedValue(true);
+    let pausedCallCount = 0;
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve(null);
+      if (setting === SETTINGS.kitaSync.paused) {
+        pausedCallCount += 1;
+        return Promise.resolve(pausedCallCount > 1);
+      }
+      return Promise.resolve(false);
+    });
     (IndexedDB.getAllTags as jest.Mock).mockResolvedValue([{ id: "t1", name: "Anime", updated_at: 1 }]);
     const upsert = jest.fn().mockResolvedValue({ error: null });
     (getSupabaseClient as jest.Mock).mockReturnValue(clientWithTables({ tags: tableMock({ upsert }) }));
@@ -115,6 +133,52 @@ describe("runSync", () => {
     expect(result.status).toBe("paused");
     expect(upsert).not.toHaveBeenCalled();
     expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
+  });
+
+  test("rekeys local data and records the new account when the signed-in account differs from the last synced one", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-2", email: "b@b.com" });
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve("user-1");
+      return Promise.resolve(false);
+    });
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+
+    const result = await runSync();
+
+    expect(rekeyLocalDataForNewAccount).toHaveBeenCalled();
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.lastSyncedAccountId, "user-2");
+    expect(result.rekeyed).toBe(true);
+    expect(result.status).toBe("ok");
+  });
+
+  test("does not rekey when the signed-in account matches the last synced account", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve("user-1");
+      return Promise.resolve(false);
+    });
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+
+    const result = await runSync();
+
+    expect(rekeyLocalDataForNewAccount).not.toHaveBeenCalled();
+    expect(settingsManager.set).not.toHaveBeenCalledWith(SETTINGS.kitaSync.lastSyncedAccountId, expect.anything());
+    expect(result.rekeyed).toBeFalsy();
+  });
+
+  test("does not rekey on the very first sync for a device, but still records the account", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve(null);
+      return Promise.resolve(false);
+    });
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+
+    const result = await runSync();
+
+    expect(rekeyLocalDataForNewAccount).not.toHaveBeenCalled();
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.lastSyncedAccountId, "user-1");
+    expect(result.rekeyed).toBeFalsy();
   });
 
   test("advances the cursor on a clean sync with no data on either side", async () => {

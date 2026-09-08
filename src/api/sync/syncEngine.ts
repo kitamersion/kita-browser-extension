@@ -5,6 +5,7 @@ import { SyncRow } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { settingsManager } from "@/api/settings/manager";
 import { SETTINGS } from "@/api/settings/definitions";
+import { rekeyLocalDataForNewAccount } from "./rekeyLocalData";
 
 const SAFETY_OVERLAP_MS = 5000;
 
@@ -13,12 +14,12 @@ const SAFETY_OVERLAP_MS = 5000;
 // once the cursor advanced past it.
 const PAGE_SIZE = 1000;
 
-type SyncResult = { status: "ok" | "no-session" | "paused" | "quota-exceeded" | "error"; message?: string };
+type SyncResult = { status: "ok" | "no-session" | "paused" | "quota-exceeded" | "error"; message?: string; rekeyed?: boolean };
 
 const isQuotaError = (message: string | undefined) => !!message && message.toLowerCase().includes("quota");
 
-const failureResult = (message: string): SyncResult =>
-  isQuotaError(message) ? { status: "quota-exceeded" } : { status: "error", message };
+const failureResult = (message: string, rekeyed: boolean): SyncResult =>
+  isQuotaError(message) ? { status: "quota-exceeded", rekeyed } : { status: "error", message, rekeyed };
 
 // Pull every remote row changed since the cursor, paging until a short page proves we've reached
 // the end. Ordered by updated_at so `range()` walks a stable sequence across requests.
@@ -67,7 +68,17 @@ const canonicalizeIds = (rows: SyncRow[], idRemap: Map<string, string>): SyncRow
 export const runSync = async (): Promise<SyncResult> => {
   const { userId } = await getSession();
   if (!userId) return { status: "no-session" };
-  if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused" };
+
+  const lastSyncedAccountId = await settingsManager.get(SETTINGS.kitaSync.lastSyncedAccountId);
+  const rekeyed = lastSyncedAccountId !== null && lastSyncedAccountId !== userId;
+  if (rekeyed) {
+    await rekeyLocalDataForNewAccount();
+  }
+  if (lastSyncedAccountId !== userId) {
+    await settingsManager.set(SETTINGS.kitaSync.lastSyncedAccountId, userId);
+  }
+
+  if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused", rekeyed };
 
   try {
     const cursor = await IndexedDB.getLastSyncedAt();
@@ -90,32 +101,32 @@ export const runSync = async (): Promise<SyncResult> => {
 
     // ---- tags (natural key: code) ----
     const tagsPull = await pullTable("tags", cursor);
-    if (tagsPull.error) return failureResult(tagsPull.error);
+    if (tagsPull.error) return failureResult(tagsPull.error, rekeyed);
     const tagsMerge = reconcileByNaturalKey(localTags as SyncRow[], tagsPull.rows, "code");
-    if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused" };
+    if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused", rekeyed };
     const tagsPush = await pushTable("tags", userId, cursor, canonicalizeIds(localTags as SyncRow[], tagsMerge.idRemap));
-    if (tagsPush.error) return failureResult(tagsPush.error);
+    if (tagsPush.error) return failureResult(tagsPush.error, rekeyed);
 
     // ---- videos (natural key: unique_code) ----
     const videosPull = await pullTable("videos", cursor);
-    if (videosPull.error) return failureResult(videosPull.error);
+    if (videosPull.error) return failureResult(videosPull.error, rekeyed);
     const videosMerge = reconcileByNaturalKey(localVideos as SyncRow[], videosPull.rows, "unique_code");
     const videosPush = await pushTable("videos", userId, cursor, canonicalizeIds(localVideos as SyncRow[], videosMerge.idRemap));
-    if (videosPush.error) return failureResult(videosPush.error);
+    if (videosPush.error) return failureResult(videosPush.error, rekeyed);
 
     // ---- auto_tags (natural key: origin) ----
     const autoTagsPull = await pullTable("auto_tags", cursor);
-    if (autoTagsPull.error) return failureResult(autoTagsPull.error);
+    if (autoTagsPull.error) return failureResult(autoTagsPull.error, rekeyed);
     const autoTagsMerge = reconcileByNaturalKey(localAutoTags as SyncRow[], autoTagsPull.rows, "origin");
     const autoTagsPush = await pushTable("auto_tags", userId, cursor, canonicalizeIds(localAutoTags as SyncRow[], autoTagsMerge.idRemap));
-    if (autoTagsPush.error) return failureResult(autoTagsPush.error);
+    if (autoTagsPush.error) return failureResult(autoTagsPush.error, rekeyed);
 
     // ---- video_tags (no natural key of its own; identity is the (video_id, tag_id) pair) ----
     // FKs are remapped with the tag/video remaps above before anything is pushed, so links always
     // reference canonical ids. The pair dedupe runs on the push payload too (not only on the final
     // merge), so two local rows describing the same link can't become two remote rows.
     const videoTagsPull = await pullTable("video_tags", cursor);
-    if (videoTagsPull.error) return failureResult(videoTagsPull.error);
+    if (videoTagsPull.error) return failureResult(videoTagsPull.error, rekeyed);
     const remappedLocalVideoTags = remapForeignKey(
       remapForeignKey(localVideoTags as SyncRow[], "tag_id", tagsMerge.idRemap),
       "video_id",
@@ -127,7 +138,7 @@ export const runSync = async (): Promise<SyncResult> => {
       cursor,
       dedupeByCompositeKey(remappedLocalVideoTags, (row) => `${row.video_id}:${row.tag_id}`)
     );
-    if (videoTagsPush.error) return failureResult(videoTagsPush.error);
+    if (videoTagsPush.error) return failureResult(videoTagsPush.error, rekeyed);
 
     const mergedVideoTags = dedupeByCompositeKey(
       mergeById(remappedLocalVideoTags, videoTagsPull.rows),
@@ -142,8 +153,8 @@ export const runSync = async (): Promise<SyncResult> => {
     ]);
 
     await IndexedDB.setLastSyncedAt(syncStartedAt - SAFETY_OVERLAP_MS);
-    return { status: "ok" };
+    return { status: "ok", rekeyed };
   } catch (error) {
-    return { status: "error", message: error instanceof Error ? error.message : String(error) };
+    return { status: "error", message: error instanceof Error ? error.message : String(error), rekeyed };
   }
 };
