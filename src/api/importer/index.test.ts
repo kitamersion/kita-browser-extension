@@ -1,5 +1,6 @@
 import { KitaSchema } from "@/types/kitaschema";
 import { SiteKey } from "@/types/video";
+import { ITag } from "@/types/tag";
 import { SETTINGS, settingsManager } from "@/api/settings";
 import IndexedDB from "@/db/index";
 import { importFromJSON } from "./index";
@@ -13,6 +14,8 @@ jest.mock("@/db/index", () => ({
     addAutoTag: jest.fn().mockResolvedValue(undefined),
     getVideoByUniqueCode: jest.fn().mockResolvedValue(undefined),
     deleteVideoById: jest.fn().mockResolvedValue(undefined),
+    getTagByCode: jest.fn().mockResolvedValue(undefined),
+    deleteTagById: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -20,6 +23,8 @@ const mockAddTag = IndexedDB.addTag as jest.Mock;
 const mockAddVideo = IndexedDB.addVideo as jest.Mock;
 const mockGetVideoByUniqueCode = IndexedDB.getVideoByUniqueCode as jest.Mock;
 const mockDeleteVideoById = IndexedDB.deleteVideoById as jest.Mock;
+const mockGetTagByCode = IndexedDB.getTagByCode as jest.Mock;
+const mockDeleteTagById = IndexedDB.deleteTagById as jest.Mock;
 
 const createChromeStorageStub = () => {
   const store: Record<string, any> = {};
@@ -55,6 +60,8 @@ beforeEach(() => {
   mockAddVideo.mockClear();
   mockGetVideoByUniqueCode.mockClear().mockResolvedValue(undefined);
   mockDeleteVideoById.mockClear();
+  mockGetTagByCode.mockClear().mockResolvedValue(undefined);
+  mockDeleteTagById.mockClear();
 });
 
 const buildFile = (data: unknown): File => ({ text: async () => JSON.stringify(data) }) as unknown as File;
@@ -113,6 +120,57 @@ describe("importFromJSON", () => {
         color: "#FF6347",
       })
     );
+  });
+
+  test("tombstones a conflicting local tag before importing one that shares its code under a different id", async () => {
+    mockGetTagByCode.mockResolvedValue({ id: "local-test-tag", code: "SHARED_CODE" });
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Tags: [{ id: "imported-tag", name: "Isekai", code: "SHARED_CODE", created_at: 1700000000000 }],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockGetTagByCode).toHaveBeenCalledWith("SHARED_CODE");
+    expect(mockDeleteTagById).toHaveBeenCalledWith("local-test-tag");
+    expect(mockAddTag).toHaveBeenCalledWith(expect.objectContaining({ id: "imported-tag", code: "SHARED_CODE" }));
+    const deleteOrder = mockDeleteTagById.mock.invocationCallOrder[0];
+    const addOrder = mockAddTag.mock.invocationCallOrder[0];
+    expect(deleteOrder).toBeLessThan(addOrder);
+  });
+
+  test("does not delete anything when no local tag shares the imported one's code", async () => {
+    mockGetTagByCode.mockResolvedValue(undefined);
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Tags: [{ id: "imported-tag", name: "Isekai", code: "UNIQUE_CODE", created_at: 1700000000000 }],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockDeleteTagById).not.toHaveBeenCalled();
+    expect(mockAddTag).toHaveBeenCalledWith(expect.objectContaining({ id: "imported-tag", code: "UNIQUE_CODE" }));
+  });
+
+  test("derives the fallback code from the tag name before checking for a conflict when code is absent", async () => {
+    mockGetTagByCode.mockResolvedValue(undefined);
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Tags: [{ id: "imported-tag", name: "Slice of Life", created_at: 1700000000000 } as ITag],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockGetTagByCode).toHaveBeenCalledWith("SLICE_OF_LIFE");
   });
 
   test("tombstones a conflicting local video before importing one that shares its unique_code under a different id", async () => {

@@ -105,6 +105,16 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       await processBatchWithProgress(
         tagsToAdd,
         async (tag: ITag) => {
+          // Same collision as videos' unique_code (see the import-videos step above): a different
+          // local tag can already own this code under its own id. addTag derives the same fallback
+          // (name, uppercased/underscored) when code is absent, so that's what has to be checked
+          // here to match what will actually be written.
+          const code = tag.code ?? tag.name.toUpperCase().replace(/ /g, "_");
+          const existing = await IndexedDB.getTagByCode(code);
+          if (existing?.id && existing.id !== tag.id) {
+            await IndexedDB.deleteTagById(existing.id);
+          }
+
           await IndexedDB.addTag(tag);
         },
         "Importing tags",
