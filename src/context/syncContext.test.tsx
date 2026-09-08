@@ -45,6 +45,7 @@ const Consumer = () => {
       <button onClick={() => ctx.signUp("a@b.com", "password123")}>sign up</button>
       <button onClick={() => ctx.syncNow()}>sync now</button>
       <span data-testid="kita-sync-paused">{String(ctx.isKitaSyncPaused)}</span>
+      <button onClick={() => ctx.pauseKitaSync()}>pause kita sync</button>
       <button onClick={() => ctx.resumeKitaSync()}>resume kita sync</button>
       <button onClick={() => ctx.deleteAllData()}>delete all data</button>
       <button onClick={() => ctx.deleteAccount()}>delete account</button>
@@ -288,6 +289,20 @@ describe("SyncProvider", () => {
       )
     );
     expect(signOut).not.toHaveBeenCalled();
+  });
+
+  test("pauseKitaSync sets the paused flag", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("kita-sync-paused")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("pause kita sync"));
+
+    await waitFor(() => expect(screen.getByTestId("kita-sync-paused")).toHaveTextContent("true"));
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.paused, true);
   });
 
   test("resumeKitaSync clears the paused flag", async () => {

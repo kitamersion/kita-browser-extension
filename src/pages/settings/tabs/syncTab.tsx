@@ -21,7 +21,6 @@ import {
 import { CheckCircleIcon, EmailIcon, LockIcon, RepeatClockIcon, TimeIcon } from "@chakra-ui/icons";
 import { useSyncContext } from "@/context/syncContext";
 import SummaryItem from "@/components/summaryItem";
-import KitaSyncPausedAlert from "@/components/kitaSyncPausedAlert";
 
 const formatBytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
@@ -46,6 +45,7 @@ const SyncTab: React.FC = () => {
     isSyncing,
     pendingConfirmationEmail,
     isKitaSyncPaused,
+    pauseKitaSync,
     resumeKitaSync,
     signUp,
     signIn,
@@ -108,6 +108,13 @@ const SyncTab: React.FC = () => {
                 Sync now
               </Button>
               <Button
+                data-testid="sync-toggle-kita-sync-button"
+                variant="kita-outline"
+                onClick={() => (isKitaSyncPaused ? resumeKitaSync() : pauseKitaSync())}
+              >
+                {isKitaSyncPaused ? "Resume Kita Sync" : "Pause Kita Sync"}
+              </Button>
+              <Button
                 data-testid="sync-sign-out-button"
                 variant="kita-outline"
                 onClick={() => {
@@ -120,8 +127,6 @@ const SyncTab: React.FC = () => {
               </Button>
             </HStack>
           </Flex>
-
-          {isKitaSyncPaused && <KitaSyncPausedAlert onResume={() => resumeKitaSync()} />}
 
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>

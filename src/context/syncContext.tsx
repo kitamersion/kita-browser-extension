@@ -28,6 +28,7 @@ type SyncContextType = {
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
   isKitaSyncPaused: boolean;
+  pauseKitaSync: () => Promise<void>;
   resumeKitaSync: () => Promise<void>;
   deleteAllData: () => Promise<{ error: string | null }>;
   deleteAccount: () => Promise<{ error: string | null }>;
@@ -159,6 +160,12 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     showToast({ title: "Sync complete", status: "success" });
   }, [refresh, showToast]);
 
+  const pauseKitaSync = useCallback(async () => {
+    await settingsManager.set(SETTINGS.kitaSync.paused, true);
+    setIsKitaSyncPaused(true);
+    showToast({ title: "Kita Sync paused", status: "success" });
+  }, [showToast]);
+
   const resumeKitaSync = useCallback(async () => {
     await settingsManager.set(SETTINGS.kitaSync.paused, false);
     setIsKitaSyncPaused(false);
@@ -210,6 +217,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         signOut,
         syncNow,
         isKitaSyncPaused,
+        pauseKitaSync,
         resumeKitaSync,
         deleteAllData,
         deleteAccount,

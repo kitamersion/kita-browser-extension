@@ -236,7 +236,34 @@ describe("SyncTab", () => {
     expect(screen.queryByTestId("sync-email-input")).not.toBeInTheDocument();
   });
 
-  test("shows a resume control when Kita Sync is paused", () => {
+  test("shows a pause control that pauses Kita Sync when it's running", () => {
+    const pauseKitaSync = jest.fn();
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      isKitaSyncPaused: false,
+      pauseKitaSync,
+      resumeKitaSync: jest.fn(),
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+    fireEvent.click(screen.getByTestId("sync-toggle-kita-sync-button"));
+
+    expect(screen.getByTestId("sync-toggle-kita-sync-button")).toHaveTextContent("Pause Kita Sync");
+    expect(pauseKitaSync).toHaveBeenCalled();
+  });
+
+  test("shows a resume control that resumes Kita Sync when it's paused", () => {
     const resumeKitaSync = jest.fn();
     (useSyncContext as jest.Mock).mockReturnValue({
       isInitialized: true,
@@ -248,6 +275,7 @@ describe("SyncTab", () => {
       isSyncing: false,
       error: null,
       isKitaSyncPaused: true,
+      pauseKitaSync: jest.fn(),
       resumeKitaSync,
       signUp: jest.fn(),
       signIn: jest.fn(),
@@ -256,8 +284,9 @@ describe("SyncTab", () => {
     });
 
     render(<SyncTab />);
-    fireEvent.click(screen.getByText("Resume Kita Sync"));
+    fireEvent.click(screen.getByTestId("sync-toggle-kita-sync-button"));
 
+    expect(screen.getByTestId("sync-toggle-kita-sync-button")).toHaveTextContent("Resume Kita Sync");
     expect(resumeKitaSync).toHaveBeenCalled();
   });
 });
