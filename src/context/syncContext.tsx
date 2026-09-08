@@ -1,8 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useState, PropsWithChildren } from "react";
 import { getSession, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/api/sync/auth";
+import { deleteAllData as apiDeleteAllData, deleteAccount as apiDeleteAccount } from "@/api/sync/accountManagement";
 import { getQuotaUsage } from "@/api/sync/quota";
 import { runSync } from "@/api/sync/syncEngine";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
+import { settingsManager } from "@/api/settings/manager";
+import { SETTINGS } from "@/api/settings/definitions";
 import { QuotaInfo } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { useToastContext } from "@/context/toastNotificationContext";
@@ -24,6 +27,10 @@ type SyncContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
+  isKitaSyncPaused: boolean;
+  resumeKitaSync: () => Promise<void>;
+  deleteAllData: () => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -45,6 +52,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
+  const [isKitaSyncPaused, setIsKitaSyncPaused] = useState(false);
 
   const refresh = useCallback(async () => {
     const session = await getSession();
@@ -52,6 +60,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     setQuota(session.userId ? await getQuotaUsage() : null);
     setLastSyncedAt(await IndexedDB.getLastSyncedAt());
     setNextSyncAt(await getNextSyncTime());
+    setIsKitaSyncPaused(await settingsManager.get(SETTINGS.kitaSync.paused));
   }, []);
 
   useEffect(() => {
@@ -145,6 +154,39 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     showToast({ title: "Sync complete", status: "success" });
   }, [refresh, showToast]);
 
+  const resumeKitaSync = useCallback(async () => {
+    await settingsManager.set(SETTINGS.kitaSync.paused, false);
+    setIsKitaSyncPaused(false);
+    showToast({ title: "Kita Sync resumed", status: "success" });
+  }, [showToast]);
+
+  const deleteAllData = useCallback(async () => {
+    const { error: deleteError } = await apiDeleteAllData();
+    if (deleteError) {
+      showToast({ title: "Failed to delete data", status: "error", description: deleteError });
+      return { error: deleteError };
+    }
+
+    await settingsManager.set(SETTINGS.kitaSync.paused, true);
+    await refresh();
+    showToast({ title: "All data deleted", status: "success", description: "Kita Sync has been paused." });
+    return { error: null };
+  }, [refresh, showToast]);
+
+  const deleteAccount = useCallback(async () => {
+    const { error: deleteError } = await apiDeleteAccount();
+    if (deleteError) {
+      showToast({ title: "Failed to delete account", status: "error", description: deleteError });
+      return { error: deleteError };
+    }
+
+    await apiSignOut();
+    setError(null);
+    await refresh();
+    showToast({ title: "Account deleted", status: "success" });
+    return { error: null };
+  }, [refresh, showToast]);
+
   return (
     <SyncContext.Provider
       value={{
@@ -162,6 +204,10 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         signIn,
         signOut,
         syncNow,
+        isKitaSyncPaused,
+        resumeKitaSync,
+        deleteAllData,
+        deleteAccount,
       }}
     >
       {children}

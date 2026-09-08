@@ -13,13 +13,23 @@ jest.mock("@/api/sync/quota", () => ({ getQuotaUsage: jest.fn().mockResolvedValu
 jest.mock("@/db/index", () => ({ __esModule: true, default: { getLastSyncedAt: jest.fn().mockResolvedValue(0) } }));
 jest.mock("@/pages/background/syncAlarm", () => ({ getNextSyncTime: jest.fn().mockResolvedValue(null) }));
 jest.mock("@/api/sync/syncEngine", () => ({ runSync: jest.fn().mockResolvedValue({ status: "ok" }) }));
+jest.mock("@/api/sync/accountManagement", () => ({
+  deleteAllData: jest.fn().mockResolvedValue({ error: null }),
+  deleteAccount: jest.fn().mockResolvedValue({ error: null }),
+}));
+jest.mock("@/api/settings/manager", () => ({
+  settingsManager: { get: jest.fn().mockResolvedValue(false), set: jest.fn().mockResolvedValue(undefined) },
+}));
 
 const showToast = jest.fn();
 jest.mock("@/context/toastNotificationContext", () => ({
   useToastContext: () => ({ showToast }),
 }));
 
-import { signIn, signUp, getSession } from "@/api/sync/auth";
+import { signIn, signUp, getSession, signOut } from "@/api/sync/auth";
+import { deleteAllData, deleteAccount } from "@/api/sync/accountManagement";
+import { settingsManager } from "@/api/settings/manager";
+import { SETTINGS } from "@/api/settings/definitions";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
 import { runSync } from "@/api/sync/syncEngine";
 
@@ -34,12 +44,21 @@ const Consumer = () => {
       <button onClick={() => ctx.signIn("a@b.com", "password123")}>sign in</button>
       <button onClick={() => ctx.signUp("a@b.com", "password123")}>sign up</button>
       <button onClick={() => ctx.syncNow()}>sync now</button>
+      <span data-testid="kita-sync-paused">{String(ctx.isKitaSyncPaused)}</span>
+      <button onClick={() => ctx.resumeKitaSync()}>resume kita sync</button>
+      <button onClick={() => ctx.deleteAllData()}>delete all data</button>
+      <button onClick={() => ctx.deleteAccount()}>delete account</button>
     </div>
   );
 };
 
 describe("SyncProvider", () => {
   beforeEach(() => {
+    // Clear call history (but not mockResolvedValue implementations) between
+    // tests. Without this, negative assertions like `.not.toHaveBeenCalledWith`
+    // in the delete-data/delete-account error-path tests see calls made by an
+    // earlier success-path test against the same module-level mock.
+    jest.clearAllMocks();
     (getSession as jest.Mock).mockResolvedValue({ email: null, userId: null });
     (getNextSyncTime as jest.Mock).mockResolvedValue(null);
   });
@@ -184,5 +203,88 @@ describe("SyncProvider", () => {
     await waitFor(() =>
       expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Storage quota exceeded", status: "error" }))
     );
+  });
+
+  test("deleteAllData wipes data, pauses Kita Sync, and shows a success toast", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("delete all data"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "All data deleted", status: "success" })));
+    expect(deleteAllData).toHaveBeenCalled();
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.paused, true);
+  });
+
+  test("deleteAllData shows an error toast and does not pause Kita Sync when the RPC fails", async () => {
+    (deleteAllData as jest.Mock).mockResolvedValueOnce({ error: "permission denied" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("delete all data"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Failed to delete data", status: "error", description: "permission denied" })
+      )
+    );
+    expect(settingsManager.set).not.toHaveBeenCalledWith(SETTINGS.kitaSync.paused, true);
+  });
+
+  test("deleteAccount signs the user out and shows a success toast", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("delete account"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Account deleted", status: "success" })));
+    expect(deleteAccount).toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  test("deleteAccount shows an error toast and does not sign out when the RPC fails", async () => {
+    (deleteAccount as jest.Mock).mockResolvedValueOnce({ error: "permission denied" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("delete account"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Failed to delete account", status: "error", description: "permission denied" })
+      )
+    );
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  test("resumeKitaSync clears the paused flag", async () => {
+    (settingsManager.get as jest.Mock).mockResolvedValue(true);
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("kita-sync-paused")).toHaveTextContent("true"));
+
+    fireEvent.click(screen.getByText("resume kita sync"));
+
+    await waitFor(() => expect(screen.getByTestId("kita-sync-paused")).toHaveTextContent("false"));
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.paused, false);
   });
 });
