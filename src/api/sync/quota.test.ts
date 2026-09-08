@@ -12,7 +12,7 @@ describe("getQuotaUsage", () => {
     (getSupabaseClient as jest.Mock).mockReturnValue({
       from: () => ({
         select: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: { current_bytes: 1234, max_bytes: 5242880 }, error: null }),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { current_bytes: 1234, quota_tiers: { max_bytes: 5242880 } }, error: null }),
       }),
     });
 
