@@ -1,4 +1,5 @@
 import { KitaSchema } from "@/types/kitaschema";
+import { SiteKey } from "@/types/video";
 import { SETTINGS, settingsManager } from "@/api/settings";
 import IndexedDB from "@/db/index";
 import { importFromJSON } from "./index";
@@ -10,10 +11,15 @@ jest.mock("@/db/index", () => ({
     addTag: jest.fn().mockResolvedValue(undefined),
     addVideoTag: jest.fn().mockResolvedValue(undefined),
     addAutoTag: jest.fn().mockResolvedValue(undefined),
+    getVideoByUniqueCode: jest.fn().mockResolvedValue(undefined),
+    deleteVideoById: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
 const mockAddTag = IndexedDB.addTag as jest.Mock;
+const mockAddVideo = IndexedDB.addVideo as jest.Mock;
+const mockGetVideoByUniqueCode = IndexedDB.getVideoByUniqueCode as jest.Mock;
+const mockDeleteVideoById = IndexedDB.deleteVideoById as jest.Mock;
 
 const createChromeStorageStub = () => {
   const store: Record<string, any> = {};
@@ -46,6 +52,9 @@ const createChromeStorageStub = () => {
 beforeEach(() => {
   (global as any).chrome = createChromeStorageStub();
   mockAddTag.mockClear();
+  mockAddVideo.mockClear();
+  mockGetVideoByUniqueCode.mockClear().mockResolvedValue(undefined);
+  mockDeleteVideoById.mockClear();
 });
 
 const buildFile = (data: unknown): File => ({ text: async () => JSON.stringify(data) }) as unknown as File;
@@ -104,6 +113,93 @@ describe("importFromJSON", () => {
         color: "#FF6347",
       })
     );
+  });
+
+  test("tombstones a conflicting local video before importing one that shares its unique_code under a different id", async () => {
+    mockGetVideoByUniqueCode.mockResolvedValue({ id: "local-test-video", unique_code: "SHARED_CODE" });
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Videos: [
+          {
+            id: "imported-video",
+            unique_code: "SHARED_CODE",
+            video_title: "Real Video",
+            video_duration: 100,
+            video_url: "https://example.com",
+            origin: SiteKey.CRUNCHYROLL,
+            created_at: 1700000000000,
+            updated_at: 1700000000000,
+          },
+        ],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockGetVideoByUniqueCode).toHaveBeenCalledWith("SHARED_CODE");
+    expect(mockDeleteVideoById).toHaveBeenCalledWith("local-test-video");
+    expect(mockAddVideo).toHaveBeenCalledWith(expect.objectContaining({ id: "imported-video", unique_code: "SHARED_CODE" }));
+    // The conflicting local video must be cleared before the imported one is written, or the
+    // real IndexedDB unique index on unique_code would reject the write with a ConstraintError.
+    const deleteOrder = mockDeleteVideoById.mock.invocationCallOrder[0];
+    const addOrder = mockAddVideo.mock.invocationCallOrder[0];
+    expect(deleteOrder).toBeLessThan(addOrder);
+  });
+
+  test("does not delete anything when no local video shares the imported one's unique_code", async () => {
+    mockGetVideoByUniqueCode.mockResolvedValue(undefined);
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Videos: [
+          {
+            id: "imported-video",
+            unique_code: "UNIQUE_CODE",
+            video_title: "Real Video",
+            video_duration: 100,
+            video_url: "https://example.com",
+            origin: SiteKey.CRUNCHYROLL,
+            created_at: 1700000000000,
+            updated_at: 1700000000000,
+          },
+        ],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockDeleteVideoById).not.toHaveBeenCalled();
+    expect(mockAddVideo).toHaveBeenCalledWith(expect.objectContaining({ id: "imported-video", unique_code: "UNIQUE_CODE" }));
+  });
+
+  test("does not delete the existing video when the unique_code match is the same video (same id)", async () => {
+    mockGetVideoByUniqueCode.mockResolvedValue({ id: "same-video", unique_code: "SAME_CODE" });
+    const payload: KitaSchema = {
+      ...basePayload,
+      UserItems: {
+        ...basePayload.UserItems,
+        Videos: [
+          {
+            id: "same-video",
+            unique_code: "SAME_CODE",
+            video_title: "Real Video",
+            video_duration: 100,
+            video_url: "https://example.com",
+            origin: SiteKey.CRUNCHYROLL,
+            created_at: 1700000000000,
+            updated_at: 1700000000000,
+          },
+        ],
+      },
+    };
+
+    await importFromJSON(buildFile(payload));
+
+    expect(mockDeleteVideoById).not.toHaveBeenCalled();
+    expect(mockAddVideo).toHaveBeenCalledWith(expect.objectContaining({ id: "same-video" }));
   });
 
   test("applies theme and per-source auto-track/auto-sync settings", async () => {
