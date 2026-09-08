@@ -38,16 +38,16 @@ const DangerZoneTab: React.FC = () => {
 
   const handleConfirmDeleteData = async () => {
     setIsDeletingData(true);
-    await deleteAllData();
+    const { error } = await deleteAllData();
     setIsDeletingData(false);
-    closeDeleteDataModal();
+    if (!error) closeDeleteDataModal();
   };
 
   const handleConfirmDeleteAccount = async () => {
     setIsDeletingAccount(true);
-    await deleteAccount();
+    const { error } = await deleteAccount();
     setIsDeletingAccount(false);
-    closeDeleteAccountModal();
+    if (!error) closeDeleteAccountModal();
   };
 
   if (!isSignedIn) {

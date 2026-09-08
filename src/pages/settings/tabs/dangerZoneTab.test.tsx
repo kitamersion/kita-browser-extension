@@ -49,6 +49,22 @@ describe("DangerZoneTab", () => {
     await waitFor(() => expect(baseContext.deleteAllData).toHaveBeenCalled());
   });
 
+  test("delete-all-data modal stays open when deleteAllData fails", async () => {
+    const failingDeleteAllData = jest.fn().mockResolvedValue({ error: "permission denied" });
+    (useSyncContext as jest.Mock).mockReturnValue({
+      ...baseContext,
+      deleteAllData: failingDeleteAllData,
+    });
+
+    render(<DangerZoneTab />);
+    fireEvent.click(screen.getByTestId("open-delete-data-button"));
+    fireEvent.click(screen.getByTestId("confirm-delete-data-button"));
+
+    await waitFor(() => expect(failingDeleteAllData).toHaveBeenCalled());
+    expect(screen.getByText("Delete all data?")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-delete-data-button")).toBeInTheDocument();
+  });
+
   test("cancelling the delete-all-data modal does not call deleteAllData", () => {
     (useSyncContext as jest.Mock).mockReturnValue(baseContext);
 
