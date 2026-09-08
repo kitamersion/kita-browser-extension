@@ -235,4 +235,29 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-pending-confirmation")).toHaveTextContent("a@b.com");
     expect(screen.queryByTestId("sync-email-input")).not.toBeInTheDocument();
   });
+
+  test("shows a resume control when Kita Sync is paused", () => {
+    const resumeKitaSync = jest.fn();
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      isKitaSyncPaused: true,
+      resumeKitaSync,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+    fireEvent.click(screen.getByText("Resume Kita Sync"));
+
+    expect(resumeKitaSync).toHaveBeenCalled();
+  });
 });

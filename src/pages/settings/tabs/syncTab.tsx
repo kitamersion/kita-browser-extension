@@ -44,6 +44,8 @@ const SyncTab: React.FC = () => {
     isSubmitting,
     isSyncing,
     pendingConfirmationEmail,
+    isKitaSyncPaused,
+    resumeKitaSync,
     signUp,
     signIn,
     signOut,
@@ -116,6 +118,16 @@ const SyncTab: React.FC = () => {
               </Button>
             </HStack>
           </Flex>
+
+          {isKitaSyncPaused && (
+            <Alert status="warning" variant="kita" rounded="lg" fontSize="sm">
+              <AlertIcon />
+              <Text flex="1">Kita Sync is paused.</Text>
+              <Button size="sm" variant="kita-outline" onClick={() => resumeKitaSync()}>
+                Resume Kita Sync
+              </Button>
+            </Alert>
+          )}
 
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>
