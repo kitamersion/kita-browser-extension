@@ -182,6 +182,7 @@ const SETTINGS_SECTION_IDS = new Set([
   "anilist-search",
   "saved-videos",
   "sync",
+  "danger-zone",
 ]);
 
 export const getSettingsSectionFromSearch = (search: string): string => {
