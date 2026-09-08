@@ -110,6 +110,13 @@ export const SETTINGS = {
       validator: isStringValidator,
     } as SettingDefinition<string>,
   },
+  kitaSync: {
+    paused: {
+      key: "kitamersion_kita_sync_paused",
+      defaultValue: false,
+      validator: isBooleanValidator,
+    } as SettingDefinition<boolean>,
+  },
   statistics: {
     totalVideos: {
       key: "kitamersion_total_videos",

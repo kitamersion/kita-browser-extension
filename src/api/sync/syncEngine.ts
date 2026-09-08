@@ -3,6 +3,8 @@ import { getSession } from "./auth";
 import { dedupeByCompositeKey, mergeById, reconcileByNaturalKey, remapForeignKey } from "./reconcile";
 import { SyncRow } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
+import { settingsManager } from "@/api/settings/manager";
+import { SETTINGS } from "@/api/settings/definitions";
 
 const SAFETY_OVERLAP_MS = 5000;
 
@@ -11,7 +13,7 @@ const SAFETY_OVERLAP_MS = 5000;
 // once the cursor advanced past it.
 const PAGE_SIZE = 1000;
 
-type SyncResult = { status: "ok" | "no-session" | "quota-exceeded" | "error"; message?: string };
+type SyncResult = { status: "ok" | "no-session" | "paused" | "quota-exceeded" | "error"; message?: string };
 
 const isQuotaError = (message: string | undefined) => !!message && message.toLowerCase().includes("quota");
 
@@ -65,6 +67,7 @@ const canonicalizeIds = (rows: SyncRow[], idRemap: Map<string, string>): SyncRow
 export const runSync = async (): Promise<SyncResult> => {
   const { userId } = await getSession();
   if (!userId) return { status: "no-session" };
+  if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused" };
 
   try {
     const cursor = await IndexedDB.getLastSyncedAt();

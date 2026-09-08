@@ -1,5 +1,6 @@
 jest.mock("./supabaseClient", () => ({ getSupabaseClient: jest.fn() }));
 jest.mock("./auth", () => ({ getSession: jest.fn() }));
+jest.mock("@/api/settings/manager", () => ({ settingsManager: { get: jest.fn() } }));
 jest.mock("@/db/index", () => ({
   __esModule: true,
   default: {
@@ -18,6 +19,7 @@ jest.mock("@/db/index", () => ({
 
 import { getSupabaseClient } from "./supabaseClient";
 import { getSession } from "./auth";
+import { settingsManager } from "@/api/settings/manager";
 import IndexedDB from "@/db/index";
 import { runSync } from "./syncEngine";
 
@@ -77,6 +79,7 @@ describe("runSync", () => {
     (IndexedDB.replaceAllVideos as jest.Mock).mockResolvedValue(undefined);
     (IndexedDB.replaceAllVideoTags as jest.Mock).mockResolvedValue(undefined);
     (IndexedDB.replaceAllAutoTags as jest.Mock).mockResolvedValue(undefined);
+    (settingsManager.get as jest.Mock).mockResolvedValue(false);
   });
 
   test("returns no-session and touches nothing when the user isn't signed in", async () => {
@@ -85,6 +88,17 @@ describe("runSync", () => {
     const result = await runSync();
 
     expect(result.status).toBe("no-session");
+    expect(getSupabaseClient).not.toHaveBeenCalled();
+    expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
+  });
+
+  test("returns paused and touches nothing when Kita Sync is paused", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (settingsManager.get as jest.Mock).mockResolvedValue(true);
+
+    const result = await runSync();
+
+    expect(result.status).toBe("paused");
     expect(getSupabaseClient).not.toHaveBeenCalled();
     expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
   });
