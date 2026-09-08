@@ -150,6 +150,11 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
       return;
     }
 
+    if (result.status === "paused") {
+      showToast({ title: "Kita Sync is paused", status: "warning", description: "Resume Kita Sync to sync again." });
+      return;
+    }
+
     await refresh();
     showToast({ title: "Sync complete", status: "success" });
   }, [refresh, showToast]);

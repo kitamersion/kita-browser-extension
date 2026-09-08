@@ -92,6 +92,7 @@ export const runSync = async (): Promise<SyncResult> => {
     const tagsPull = await pullTable("tags", cursor);
     if (tagsPull.error) return failureResult(tagsPull.error);
     const tagsMerge = reconcileByNaturalKey(localTags as SyncRow[], tagsPull.rows, "code");
+    if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused" };
     const tagsPush = await pushTable("tags", userId, cursor, canonicalizeIds(localTags as SyncRow[], tagsMerge.idRemap));
     if (tagsPush.error) return failureResult(tagsPush.error);
 

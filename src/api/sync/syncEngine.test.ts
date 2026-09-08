@@ -103,6 +103,20 @@ describe("runSync", () => {
     expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
   });
 
+  test("returns paused and does not push when Kita Sync is paused mid-flight, after the top-of-function check passed", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (settingsManager.get as jest.Mock).mockResolvedValueOnce(false).mockResolvedValue(true);
+    (IndexedDB.getAllTags as jest.Mock).mockResolvedValue([{ id: "t1", name: "Anime", updated_at: 1 }]);
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+    (getSupabaseClient as jest.Mock).mockReturnValue(clientWithTables({ tags: tableMock({ upsert }) }));
+
+    const result = await runSync();
+
+    expect(result.status).toBe("paused");
+    expect(upsert).not.toHaveBeenCalled();
+    expect(IndexedDB.setLastSyncedAt).not.toHaveBeenCalled();
+  });
+
   test("advances the cursor on a clean sync with no data on either side", async () => {
     (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
     (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());

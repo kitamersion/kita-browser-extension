@@ -90,6 +90,23 @@ describe("DangerZoneTab", () => {
     expect(screen.getByTestId("confirm-delete-account-button")).not.toBeDisabled();
   });
 
+  test("delete-account modal stays open when deleteAccount fails", async () => {
+    const failingDeleteAccount = jest.fn().mockResolvedValue({ error: "permission denied" });
+    (useSyncContext as jest.Mock).mockReturnValue({
+      ...baseContext,
+      deleteAccount: failingDeleteAccount,
+    });
+
+    render(<DangerZoneTab />);
+    fireEvent.click(screen.getByTestId("open-delete-account-button"));
+    fireEvent.change(screen.getByTestId("delete-account-confirm-input"), { target: { value: "delete" } });
+    fireEvent.click(screen.getByTestId("confirm-delete-account-button"));
+
+    await waitFor(() => expect(failingDeleteAccount).toHaveBeenCalled());
+    expect(screen.getByText("Delete your account?")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-delete-account-button")).toBeInTheDocument();
+  });
+
   test("delete account runs once confirmed with the typed phrase", async () => {
     (useSyncContext as jest.Mock).mockReturnValue(baseContext);
 

@@ -205,6 +205,22 @@ describe("SyncProvider", () => {
     );
   });
 
+  test("syncNow shows a distinct toast when the sync was skipped because Kita Sync is paused", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "paused" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Kita Sync is paused", status: "warning" }))
+    );
+  });
+
   test("deleteAllData wipes data, pauses Kita Sync, and shows a success toast", async () => {
     render(
       <SyncProvider>
@@ -218,6 +234,7 @@ describe("SyncProvider", () => {
     await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "All data deleted", status: "success" })));
     expect(deleteAllData).toHaveBeenCalled();
     expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.paused, true);
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   test("deleteAllData shows an error toast and does not pause Kita Sync when the RPC fails", async () => {

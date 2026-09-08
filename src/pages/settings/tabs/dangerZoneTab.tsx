@@ -22,6 +22,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useSyncContext } from "@/context/syncContext";
+import KitaSyncPausedAlert from "@/components/kitaSyncPausedAlert";
 
 const DangerZoneTab: React.FC = () => {
   const { isSignedIn, isKitaSyncPaused, resumeKitaSync, deleteAllData, deleteAccount } = useSyncContext();
@@ -78,15 +79,7 @@ const DangerZoneTab: React.FC = () => {
           Danger Zone
         </Heading>
 
-        {isKitaSyncPaused && (
-          <Alert status="warning" variant="kita" rounded="lg" fontSize="sm">
-            <AlertIcon />
-            <Text flex="1">Kita Sync is paused.</Text>
-            <Button size="sm" variant="kita-outline" onClick={() => resumeKitaSync()}>
-              Resume Kita Sync
-            </Button>
-          </Alert>
-        )}
+        {isKitaSyncPaused && <KitaSyncPausedAlert onResume={() => resumeKitaSync()} />}
 
         <Box bg="bg.secondary" border="1px solid" borderColor="red.500" rounded="2xl" p={6}>
           <VStack align="stretch" spacing={4} divider={<Divider borderColor="border.primary" />}>
@@ -130,7 +123,8 @@ const DangerZoneTab: React.FC = () => {
             <Alert status="error" variant="kita" rounded="lg" fontSize="sm">
               <AlertIcon />
               This permanently deletes all your synced videos, tags, and auto-tag rules from the server, and pauses Kita Sync so this device
-              doesn&apos;t immediately re-upload your local data. This cannot be undone.
+              doesn&apos;t immediately re-upload your local data. This cannot be undone. Other devices signed in to this account will keep
+              syncing and may re-upload their own local copies.
             </Alert>
           </ModalBody>
           <ModalFooter gap={2}>

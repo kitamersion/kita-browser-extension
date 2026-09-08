@@ -1,7 +1,8 @@
 -- Wipes the caller's app data across all four synced tables without touching their account or
 -- auth session. Deletes each table explicitly (not via a cascade from auth.users) so the
 -- storage-quota trigger's `select ... from user_quotas` always finds a live row while it fires
--- per deleted row — user_quotas itself is untouched here.
+-- per deleted row. The explicit zeroing of user_quotas at the end is a defense-in-depth
+-- self-correction in case current_bytes had drifted from the trigger's per-row accounting.
 create function kitamersion.delete_own_data()
 returns void
 language plpgsql
@@ -19,9 +20,12 @@ begin
   delete from kitamersion.auto_tags where user_id = uid;
   delete from kitamersion.videos where user_id = uid;
   delete from kitamersion.tags where user_id = uid;
+
+  update kitamersion.user_quotas set current_bytes = 0 where user_id = uid;
 end;
 $$;
 
+revoke execute on function kitamersion.delete_own_data() from public;
 grant execute on function kitamersion.delete_own_data() to authenticated;
 
 -- Deletes the caller's app data via delete_own_data() first (same cascade-order reasoning as
@@ -48,4 +52,5 @@ begin
 end;
 $$;
 
+revoke execute on function kitamersion.delete_own_account() from public;
 grant execute on function kitamersion.delete_own_account() to authenticated;
