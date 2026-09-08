@@ -7,6 +7,7 @@ import { PendingAnilistSync } from "@/types/integrations/seriesMapping";
 const isBooleanValidator = (value: any): value is boolean => typeof value === "boolean";
 const isNumberValidator = (value: any): value is number => typeof value === "number";
 const isStringValidator = (value: any): value is string => typeof value === "string";
+const isNullableStringValidator = (value: any): value is string | null => value === null || typeof value === "string";
 const isAuthStatusValidator = (value: any): value is AuthStatus =>
   ["initial", "pending", "authorized", "unauthorized", "error"].includes(value);
 const isSourceAutoTrackConfigValidator = (value: any): value is SourceAutoTrackConfig =>
@@ -116,6 +117,11 @@ export const SETTINGS = {
       defaultValue: false,
       validator: isBooleanValidator,
     } as SettingDefinition<boolean>,
+    lastSyncedAccountId: {
+      key: "kitamersion_kita_sync_last_synced_account_id",
+      defaultValue: null,
+      validator: isNullableStringValidator,
+    } as SettingDefinition<string | null>,
   },
   statistics: {
     totalVideos: {
