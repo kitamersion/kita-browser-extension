@@ -176,6 +176,45 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-sign-up-button")).toBeDisabled();
   });
 
+  test("clears the email/password fields after signing out", () => {
+    const signOut = jest.fn();
+    const baseProps = {
+      isInitialized: true,
+      email: null,
+      quota: null,
+      lastSyncedAt: 0,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut,
+    };
+
+    (useSyncContext as jest.Mock).mockReturnValue({ ...baseProps, isSignedIn: false });
+    const { rerender } = render(<SyncTab />);
+
+    fireEvent.change(screen.getByTestId("sync-email-input"), { target: { value: "a@b.com" } });
+    fireEvent.change(screen.getByTestId("sync-password-input"), { target: { value: "password123" } });
+
+    (useSyncContext as jest.Mock).mockReturnValue({
+      ...baseProps,
+      isSignedIn: true,
+      email: "a@b.com",
+      nextSyncAt: null,
+      isSyncing: false,
+      syncNow: jest.fn(),
+    });
+    rerender(<SyncTab />);
+
+    fireEvent.click(screen.getByTestId("sync-sign-out-button"));
+    expect(signOut).toHaveBeenCalled();
+
+    (useSyncContext as jest.Mock).mockReturnValue({ ...baseProps, isSignedIn: false });
+    rerender(<SyncTab />);
+
+    expect(screen.getByTestId("sync-email-input")).toHaveValue("");
+    expect(screen.getByTestId("sync-password-input")).toHaveValue("");
+  });
+
   test("shows a waiting message when a signup is pending email confirmation", () => {
     (useSyncContext as jest.Mock).mockReturnValue({
       isInitialized: true,

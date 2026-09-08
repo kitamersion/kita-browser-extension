@@ -103,7 +103,15 @@ const SyncTab: React.FC = () => {
               >
                 Sync now
               </Button>
-              <Button data-testid="sync-sign-out-button" variant="kita-outline" onClick={() => signOut()}>
+              <Button
+                data-testid="sync-sign-out-button"
+                variant="kita-outline"
+                onClick={() => {
+                  signOut();
+                  setFormEmail("");
+                  setFormPassword("");
+                }}
+              >
                 Sign out
               </Button>
             </HStack>
