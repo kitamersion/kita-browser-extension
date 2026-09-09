@@ -122,6 +122,11 @@ export const SETTINGS = {
       defaultValue: null,
       validator: isNullableStringValidator,
     } as SettingDefinition<string | null>,
+    pendingRekeyNotice: {
+      key: "kitamersion_kita_sync_pending_rekey_notice",
+      defaultValue: false,
+      validator: isBooleanValidator,
+    } as SettingDefinition<boolean>,
   },
   statistics: {
     totalVideos: {

@@ -69,13 +69,21 @@ export const runSync = async (): Promise<SyncResult> => {
   const { userId } = await getSession();
   if (!userId) return { status: "no-session" };
 
-  const lastSyncedAccountId = await settingsManager.get(SETTINGS.kitaSync.lastSyncedAccountId);
-  const rekeyed = lastSyncedAccountId !== null && lastSyncedAccountId !== userId;
-  if (rekeyed) {
-    await rekeyLocalDataForNewAccount();
-  }
-  if (lastSyncedAccountId !== userId) {
-    await settingsManager.set(SETTINGS.kitaSync.lastSyncedAccountId, userId);
+  let rekeyed = false;
+  try {
+    const lastSyncedAccountId = await settingsManager.get(SETTINGS.kitaSync.lastSyncedAccountId);
+    rekeyed = lastSyncedAccountId !== null && lastSyncedAccountId !== userId;
+    if (rekeyed) {
+      await rekeyLocalDataForNewAccount();
+      await settingsManager.set(SETTINGS.kitaSync.pendingRekeyNotice, true);
+    }
+    if (lastSyncedAccountId !== userId) {
+      await settingsManager.set(SETTINGS.kitaSync.lastSyncedAccountId, userId);
+    }
+  } catch (error) {
+    // rekeyed is always false here: the atomic re-key (IndexedDB.rekeyAccountData) guarantees a
+    // rejection means it did not complete, so no partial rekey occurred to report.
+    return failureResult(error instanceof Error ? error.message : String(error), false);
   }
 
   if (await settingsManager.get(SETTINGS.kitaSync.paused)) return { status: "paused", rekeyed };

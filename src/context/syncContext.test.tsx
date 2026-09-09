@@ -62,6 +62,10 @@ describe("SyncProvider", () => {
     jest.clearAllMocks();
     (getSession as jest.Mock).mockResolvedValue({ email: null, userId: null });
     (getNextSyncTime as jest.Mock).mockResolvedValue(null);
+    // Also reset any mockImplementation a prior test installed on settingsManager.get (e.g. the
+    // pendingRekeyNotice / isKitaSyncPaused identity-keyed overrides below) back to the module's
+    // default, since clearAllMocks() clears call history but not a previously-set implementation.
+    (settingsManager.get as jest.Mock).mockResolvedValue(false);
   });
 
   test("starts signed out", async () => {
@@ -145,6 +149,41 @@ describe("SyncProvider", () => {
     expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Signed in", status: "success" }));
 
     jest.useRealTimers();
+  });
+
+  test("shows the account-switch toast and clears the flag on mount when a background sync left it pending", async () => {
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.pendingRekeyNotice) return Promise.resolve(true);
+      return Promise.resolve(false);
+    });
+
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Signed in as a different account",
+          status: "warning",
+          description: "Your local data will sync as new to this account.",
+        })
+      )
+    );
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.pendingRekeyNotice, false);
+  });
+
+  test("does not show the account-switch toast on mount when no rekey notice is pending", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    expect(showToast).not.toHaveBeenCalledWith(expect.objectContaining({ title: "Signed in as a different account" }));
   });
 
   test("exposes the next scheduled sync time from the alarm", async () => {
@@ -243,6 +282,24 @@ describe("SyncProvider", () => {
       )
     );
     expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" }));
+  });
+
+  test("syncNow clears the pending rekey notice flag after showing its own toast, so refresh doesn't show a second one", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "ok", rekeyed: true });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" })));
+
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.pendingRekeyNotice, false);
+    const accountSwitchToasts = showToast.mock.calls.filter((call) => call[0].title === "Signed in as a different account");
+    expect(accountSwitchToasts).toHaveLength(1);
   });
 
   test("deleteAllData wipes data, pauses Kita Sync, and shows a success toast", async () => {

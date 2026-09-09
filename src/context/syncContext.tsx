@@ -56,13 +56,22 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isKitaSyncPaused, setIsKitaSyncPaused] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (await settingsManager.get(SETTINGS.kitaSync.pendingRekeyNotice)) {
+      await settingsManager.set(SETTINGS.kitaSync.pendingRekeyNotice, false);
+      showToast({
+        title: "Signed in as a different account",
+        status: "warning",
+        description: "Your local data will sync as new to this account.",
+      });
+    }
+
     const session = await getSession();
     setEmail(session.email);
     setQuota(session.userId ? await getQuotaUsage() : null);
     setLastSyncedAt(await IndexedDB.getLastSyncedAt());
     setNextSyncAt(await getNextSyncTime());
     setIsKitaSyncPaused(await settingsManager.get(SETTINGS.kitaSync.paused));
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     refresh().finally(() => setIsInitialized(true));
@@ -148,6 +157,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         description: "Your local data will sync as new to this account.",
       });
     }
+    await settingsManager.set(SETTINGS.kitaSync.pendingRekeyNotice, false);
 
     if (result.status === "quota-exceeded") {
       showToast({ title: "Storage quota exceeded", status: "error", description: "Free up space to resume syncing." });

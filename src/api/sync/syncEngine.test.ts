@@ -147,8 +147,26 @@ describe("runSync", () => {
 
     expect(rekeyLocalDataForNewAccount).toHaveBeenCalled();
     expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.lastSyncedAccountId, "user-2");
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.pendingRekeyNotice, true);
     expect(result.rekeyed).toBe(true);
     expect(result.status).toBe("ok");
+  });
+
+  test("resolves with status error instead of rejecting when the rekey step throws", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-2", email: "b@b.com" });
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncedAccountId) return Promise.resolve("user-1");
+      return Promise.resolve(false);
+    });
+    (rekeyLocalDataForNewAccount as jest.Mock).mockRejectedValueOnce(new Error("Database not initialized"));
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+
+    const result = await runSync();
+
+    expect(result.status).toBe("error");
+    expect(result.message).toEqual(expect.stringContaining("Database not initialized"));
+    expect(result.rekeyed).toBe(false);
+    expect(settingsManager.set).not.toHaveBeenCalledWith(SETTINGS.kitaSync.lastSyncedAccountId, expect.anything());
   });
 
   test("does not rekey when the signed-in account matches the last synced account", async () => {

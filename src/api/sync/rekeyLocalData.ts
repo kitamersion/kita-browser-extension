@@ -25,7 +25,12 @@ export const rekeyLocalDataForNewAccount = async (): Promise<void> => {
   const videoIdRemap = new Map(videos.map((video) => [video.id, self.crypto.randomUUID()]));
 
   const rekeyedTags: ITag[] = tags.map((tag) => ({ ...tag, id: tagIdRemap.get(tag.id as string) as string, updated_at: now }));
-  const rekeyedVideos: IVideo[] = videos.map((video) => ({ ...video, id: videoIdRemap.get(video.id) as string, updated_at: now }));
+  const rekeyedVideos: IVideo[] = videos.map((video) => ({
+    ...video,
+    id: videoIdRemap.get(video.id) as string,
+    updated_at: now,
+    tags: video.tags?.map((tagId) => tagIdRemap.get(tagId) ?? tagId),
+  }));
 
   const remappedVideoTags = remapForeignKey(
     remapForeignKey(videoTags as unknown as SyncRow[], "video_id", videoIdRemap),
@@ -45,12 +50,5 @@ export const rekeyLocalDataForNewAccount = async (): Promise<void> => {
     tags: autoTag.tags.map((tagId) => tagIdRemap.get(tagId) ?? tagId),
   }));
 
-  await Promise.all([
-    IndexedDB.replaceAllTags(rekeyedTags),
-    IndexedDB.replaceAllVideos(rekeyedVideos),
-    IndexedDB.replaceAllVideoTags(rekeyedVideoTags),
-    IndexedDB.replaceAllAutoTags(rekeyedAutoTags),
-  ]);
-
-  await IndexedDB.setLastSyncedAt(0);
+  await IndexedDB.rekeyAccountData(rekeyedTags, rekeyedVideos, rekeyedVideoTags, rekeyedAutoTags);
 };

@@ -5,11 +5,7 @@ jest.mock("@/db/index", () => ({
     getAllVideos: jest.fn(),
     getAllVideoTags: jest.fn(),
     getAllAutoTags: jest.fn(),
-    replaceAllTags: jest.fn().mockResolvedValue(undefined),
-    replaceAllVideos: jest.fn().mockResolvedValue(undefined),
-    replaceAllVideoTags: jest.fn().mockResolvedValue(undefined),
-    replaceAllAutoTags: jest.fn().mockResolvedValue(undefined),
-    setLastSyncedAt: jest.fn().mockResolvedValue(undefined),
+    rekeyAccountData: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -21,7 +17,7 @@ describe("rekeyLocalDataForNewAccount", () => {
     jest.clearAllMocks();
   });
 
-  test("assigns every row a fresh id and resets the sync cursor", async () => {
+  test("assigns every row a fresh id and rekeys all stores in a single atomic call", async () => {
     (IndexedDB.getAllTags as jest.Mock).mockResolvedValue([{ id: "tag-1", name: "Anime", code: "ANIME", updated_at: 100 }]);
     (IndexedDB.getAllVideos as jest.Mock).mockResolvedValue([
       { id: "video-1", video_title: "Ep 1", video_duration: 100, video_url: "u", origin: "CRUNCHYROLL", created_at: 1, updated_at: 100 },
@@ -31,16 +27,13 @@ describe("rekeyLocalDataForNewAccount", () => {
 
     await rekeyLocalDataForNewAccount();
 
-    const [writtenTags] = (IndexedDB.replaceAllTags as jest.Mock).mock.calls[0];
-    const [writtenVideos] = (IndexedDB.replaceAllVideos as jest.Mock).mock.calls[0];
-    const [writtenVideoTags] = (IndexedDB.replaceAllVideoTags as jest.Mock).mock.calls[0];
-    const [writtenAutoTags] = (IndexedDB.replaceAllAutoTags as jest.Mock).mock.calls[0];
+    expect(IndexedDB.rekeyAccountData).toHaveBeenCalledTimes(1);
+    const [writtenTags, writtenVideos, writtenVideoTags, writtenAutoTags] = (IndexedDB.rekeyAccountData as jest.Mock).mock.calls[0];
 
     expect(writtenTags[0].id).not.toBe("tag-1");
     expect(writtenVideos[0].id).not.toBe("video-1");
     expect(writtenVideoTags[0].id).not.toBe("vt-1");
     expect(writtenAutoTags[0].id).not.toBe("at-1");
-    expect(IndexedDB.setLastSyncedAt).toHaveBeenCalledWith(0);
   });
 
   test("remaps video_tags' video_id and tag_id to the new ids", async () => {
@@ -53,12 +46,34 @@ describe("rekeyLocalDataForNewAccount", () => {
 
     await rekeyLocalDataForNewAccount();
 
-    const [writtenTags] = (IndexedDB.replaceAllTags as jest.Mock).mock.calls[0];
-    const [writtenVideos] = (IndexedDB.replaceAllVideos as jest.Mock).mock.calls[0];
-    const [writtenVideoTags] = (IndexedDB.replaceAllVideoTags as jest.Mock).mock.calls[0];
+    const [writtenTags, writtenVideos, writtenVideoTags] = (IndexedDB.rekeyAccountData as jest.Mock).mock.calls[0];
 
     expect(writtenVideoTags[0].video_id).toBe(writtenVideos[0].id);
     expect(writtenVideoTags[0].tag_id).toBe(writtenTags[0].id);
+  });
+
+  test("remaps a video's tags array to the new tag ids, keeping an unknown id as a fallback", async () => {
+    (IndexedDB.getAllTags as jest.Mock).mockResolvedValue([{ id: "tag-1", name: "Anime", code: "ANIME", updated_at: 100 }]);
+    (IndexedDB.getAllVideos as jest.Mock).mockResolvedValue([
+      {
+        id: "video-1",
+        video_title: "Ep 1",
+        video_duration: 100,
+        video_url: "u",
+        origin: "CRUNCHYROLL",
+        created_at: 1,
+        updated_at: 100,
+        tags: ["tag-1", "tag-unknown"],
+      },
+    ]);
+    (IndexedDB.getAllVideoTags as jest.Mock).mockResolvedValue([]);
+    (IndexedDB.getAllAutoTags as jest.Mock).mockResolvedValue([]);
+
+    await rekeyLocalDataForNewAccount();
+
+    const [writtenTags, writtenVideos] = (IndexedDB.rekeyAccountData as jest.Mock).mock.calls[0];
+
+    expect(writtenVideos[0].tags).toEqual([writtenTags[0].id, "tag-unknown"]);
   });
 
   test("remaps auto_tags' tags array to the new tag ids", async () => {
@@ -69,8 +84,7 @@ describe("rekeyLocalDataForNewAccount", () => {
 
     await rekeyLocalDataForNewAccount();
 
-    const [writtenTags] = (IndexedDB.replaceAllTags as jest.Mock).mock.calls[0];
-    const [writtenAutoTags] = (IndexedDB.replaceAllAutoTags as jest.Mock).mock.calls[0];
+    const [writtenTags, , , writtenAutoTags] = (IndexedDB.rekeyAccountData as jest.Mock).mock.calls[0];
 
     expect(writtenAutoTags[0].tags).toEqual([writtenTags[0].id]);
   });
@@ -85,7 +99,7 @@ describe("rekeyLocalDataForNewAccount", () => {
     await rekeyLocalDataForNewAccount();
     const after = Date.now();
 
-    const [writtenTags] = (IndexedDB.replaceAllTags as jest.Mock).mock.calls[0];
+    const [writtenTags] = (IndexedDB.rekeyAccountData as jest.Mock).mock.calls[0];
     expect(writtenTags[0].updated_at).toBeGreaterThanOrEqual(before);
     expect(writtenTags[0].updated_at).toBeLessThanOrEqual(after);
   });

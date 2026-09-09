@@ -178,6 +178,42 @@ describe("replaceAll* write-back", () => {
   });
 });
 
+describe("rekeyAccountData", () => {
+  test("atomically replaces all four synced stores and resets the sync cursor in one call", async () => {
+    await IndexedDB.addTag({ id: "pre-rekey-tag", name: "Old" });
+    await IndexedDB.addVideoTag({ id: "pre-rekey-vt", video_id: "old-video", tag_id: "old-tag" });
+    await IndexedDB.setLastSyncedAt(1700000000000);
+
+    await IndexedDB.rekeyAccountData(
+      [{ id: "new-tag", name: "New", updated_at: 1 }],
+      [
+        {
+          id: "new-video",
+          video_title: "New Video",
+          video_duration: 100,
+          video_url: "https://example.com/new",
+          origin: SiteKey.YOUTUBE,
+          created_at: 1,
+          updated_at: 1,
+        },
+      ],
+      [{ id: "new-vt", video_id: "new-video", tag_id: "new-tag", updated_at: 1 }],
+      [{ id: "new-autotag", origin: SiteKey.YOUTUBE, tags: ["new-tag"], updated_at: 1 }]
+    );
+
+    expect((await IndexedDB.getAllTags()).map((t) => t.id)).toEqual(["new-tag"]);
+    expect((await IndexedDB.getAllVideos()).map((v) => v.id)).toEqual(["new-video"]);
+    expect((await IndexedDB.getAllVideoTags()).map((vt) => vt.id)).toEqual(["new-vt"]);
+    expect((await IndexedDB.getAllAutoTags()).map((a) => a.id)).toEqual(["new-autotag"]);
+    expect(await IndexedDB.getLastSyncedAt()).toBe(0);
+  });
+
+  test("rejects instead of hanging when the database isn't initialized", async () => {
+    const uninitialized = new (IndexedDB.constructor as any)();
+    await expect(uninitialized.rekeyAccountData([], [], [], [])).rejects.toThrow("Database not initialized");
+  });
+});
+
 describe("updated_at stamping", () => {
   // The sync push filter is `row.updated_at > cursor`, and `undefined > n` is false — an unstamped
   // row would never be pushed at all, so the DB layer stamps it rather than trusting callers.

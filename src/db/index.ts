@@ -1049,6 +1049,32 @@ class IndexedDB {
     return this.replaceAllInStore(OBJECT_STORE_AUTO_TAG, rows);
   }
 
+  // Rekeys all four synced stores plus the sync cursor inside a single IndexedDB transaction, so an
+  // account-switch rekey is fully atomic (all-or-nothing) rather than four independent
+  // single-store transactions that could partially succeed and leave cross-store references
+  // pointing at ids from different "generations."
+  public rekeyAccountData(tags: ITag[], videos: IVideo[], videoTags: IVideoTag[], autoTags: IAutoTag[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return reject(new Error("Database not initialized"));
+      const transaction = this.db.transaction(
+        [OBJECT_STORE_TAGS, OBJECT_STORE_VIDEOS, OBJECT_STORE_VIDEO_TAGS, OBJECT_STORE_AUTO_TAG, OBJECT_STORE_SYNC_META],
+        "readwrite"
+      );
+      const putAll = <T>(storeName: string, rows: T[]) => {
+        const store = transaction.objectStore(storeName);
+        store.clear();
+        for (const row of rows) store.put(row);
+      };
+      putAll(OBJECT_STORE_TAGS, tags);
+      putAll(OBJECT_STORE_VIDEOS, videos);
+      putAll(OBJECT_STORE_VIDEO_TAGS, videoTags);
+      putAll(OBJECT_STORE_AUTO_TAG, autoTags);
+      transaction.objectStore(OBJECT_STORE_SYNC_META).put({ key: "last_synced_at", value: 0 });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
   public requestPersistentStorage(): Promise<boolean> {
     return new Promise((resolve) => {
       if (navigator.storage && navigator.storage.persist) {
