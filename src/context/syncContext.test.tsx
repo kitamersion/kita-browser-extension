@@ -16,6 +16,7 @@ jest.mock("@/api/sync/syncEngine", () => ({ runSync: jest.fn().mockResolvedValue
 jest.mock("@/api/sync/accountManagement", () => ({
   deleteAllData: jest.fn().mockResolvedValue({ error: null }),
   deleteAccount: jest.fn().mockResolvedValue({ error: null }),
+  purgeExpiredTombstones: jest.fn().mockResolvedValue({ purgedCount: 0, error: null }),
 }));
 jest.mock("@/api/settings/manager", () => ({
   settingsManager: { get: jest.fn().mockResolvedValue(false), set: jest.fn().mockResolvedValue(undefined) },
@@ -31,7 +32,7 @@ jest.mock("@/api/eventbus", () => ({ __esModule: true, default: { publish: jest.
 import eventBus from "@/api/eventbus";
 import { VIDEO_REFRESH, TAG_REFRESH, VIDEO_TAG_RELATIONSHIP_REFRESH, AUTO_TAG_REFRESH } from "@/data/events";
 import { signIn, signUp, getSession, signOut } from "@/api/sync/auth";
-import { deleteAllData, deleteAccount } from "@/api/sync/accountManagement";
+import { deleteAllData, deleteAccount, purgeExpiredTombstones } from "@/api/sync/accountManagement";
 import { settingsManager } from "@/api/settings/manager";
 import { SETTINGS } from "@/api/settings/definitions";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
@@ -54,6 +55,7 @@ const Consumer = () => {
       <button onClick={() => ctx.resumeKitaSync()}>resume kita sync</button>
       <button onClick={() => ctx.deleteAllData()}>delete all data</button>
       <button onClick={() => ctx.deleteAccount()}>delete account</button>
+      <button onClick={() => ctx.purgeExpiredTombstones()}>purge expired tombstones</button>
     </div>
   );
 };
@@ -426,6 +428,56 @@ describe("SyncProvider", () => {
       )
     );
     expect(signOut).not.toHaveBeenCalled();
+  });
+
+  test("purgeExpiredTombstones shows how many records were cleared and refreshes", async () => {
+    (purgeExpiredTombstones as jest.Mock).mockResolvedValueOnce({ purgedCount: 3, error: null });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("purge expired tombstones"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Cleared 3 expired records", status: "success" }))
+    );
+  });
+
+  test("purgeExpiredTombstones shows a distinct message when there was nothing to clear", async () => {
+    (purgeExpiredTombstones as jest.Mock).mockResolvedValueOnce({ purgedCount: 0, error: null });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("purge expired tombstones"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "No expired records to clear", status: "success" }))
+    );
+  });
+
+  test("purgeExpiredTombstones shows an error toast when the RPC fails", async () => {
+    (purgeExpiredTombstones as jest.Mock).mockResolvedValueOnce({ purgedCount: null, error: "permission denied" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("purge expired tombstones"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Failed to clear expired tombstones", status: "error", description: "permission denied" })
+      )
+    );
   });
 
   test("pauseKitaSync sets the paused flag", async () => {

@@ -1,6 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState, PropsWithChildren } from "react";
 import { getSession, signIn as apiSignIn, signOut as apiSignOut, signUp as apiSignUp } from "@/api/sync/auth";
-import { deleteAllData as apiDeleteAllData, deleteAccount as apiDeleteAccount } from "@/api/sync/accountManagement";
+import {
+  deleteAllData as apiDeleteAllData,
+  deleteAccount as apiDeleteAccount,
+  purgeExpiredTombstones as apiPurgeExpiredTombstones,
+} from "@/api/sync/accountManagement";
 import { getQuotaUsage } from "@/api/sync/quota";
 import { runSync } from "@/api/sync/syncEngine";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
@@ -35,6 +39,7 @@ type SyncContextType = {
   resumeKitaSync: () => Promise<void>;
   deleteAllData: () => Promise<{ error: string | null }>;
   deleteAccount: () => Promise<{ error: string | null }>;
+  purgeExpiredTombstones: () => Promise<{ error: string | null }>;
 };
 
 const SyncContext = createContext<SyncContextType | undefined>(undefined);
@@ -230,6 +235,22 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     return { error: null };
   }, [refresh, showToast]);
 
+  const purgeExpiredTombstones = useCallback(async () => {
+    const { purgedCount, error: purgeError } = await apiPurgeExpiredTombstones();
+    if (purgeError) {
+      showToast({ title: "Failed to clear expired tombstones", status: "error", description: purgeError });
+      return { error: purgeError };
+    }
+
+    await refresh();
+    const count = purgedCount ?? 0;
+    showToast({
+      title: count === 0 ? "No expired records to clear" : `Cleared ${count} expired record${count === 1 ? "" : "s"}`,
+      status: "success",
+    });
+    return { error: null };
+  }, [refresh, showToast]);
+
   return (
     <SyncContext.Provider
       value={{
@@ -253,6 +274,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         resumeKitaSync,
         deleteAllData,
         deleteAccount,
+        purgeExpiredTombstones,
       }}
     >
       {children}
