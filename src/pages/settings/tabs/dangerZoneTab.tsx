@@ -25,11 +25,13 @@ import { useSyncContext } from "@/context/syncContext";
 import KitaSyncPausedAlert from "@/components/kitaSyncPausedAlert";
 
 const DangerZoneTab: React.FC = () => {
-  const { isSignedIn, isKitaSyncPaused, resumeKitaSync, deleteAllData, deleteAccount } = useSyncContext();
+  const { isSignedIn, isKitaSyncPaused, resumeKitaSync, deleteAllData, deleteAccount, purgeExpiredTombstones } = useSyncContext();
   const { isOpen: isDeleteDataOpen, onOpen: openDeleteDataModal, onClose: closeDeleteDataModal } = useDisclosure();
   const { isOpen: isDeleteAccountOpen, onOpen: openDeleteAccountModal, onClose: closeDeleteAccountModalBase } = useDisclosure();
+  const { isOpen: isPurgeOpen, onOpen: openPurgeModal, onClose: closePurgeModal } = useDisclosure();
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
   const closeDeleteAccountModal = () => {
@@ -49,6 +51,13 @@ const DangerZoneTab: React.FC = () => {
     const { error } = await deleteAccount();
     setIsDeletingAccount(false);
     if (!error) closeDeleteAccountModal();
+  };
+
+  const handleConfirmPurge = async () => {
+    setIsPurging(true);
+    const { error } = await purgeExpiredTombstones();
+    setIsPurging(false);
+    if (!error) closePurgeModal();
   };
 
   if (!isSignedIn) {
@@ -110,6 +119,21 @@ const DangerZoneTab: React.FC = () => {
                 Delete account
               </Button>
             </HStack>
+
+            <HStack justify="space-between" align="center" wrap="wrap" gap={4}>
+              <Box>
+                <Text fontWeight="bold" color="text.primary">
+                  Clear expired tombstones
+                </Text>
+                <Text fontSize="sm" color="text.secondary">
+                  Permanently removes videos, tags, and auto-tag rules that were deleted more than 30 days ago and have already synced.
+                  Doesn&apos;t touch anything currently in your library.
+                </Text>
+              </Box>
+              <Button data-testid="open-purge-tombstones-button" colorScheme="red" variant="outline" onClick={openPurgeModal}>
+                Clear expired tombstones
+              </Button>
+            </HStack>
           </VStack>
         </Box>
       </VStack>
@@ -169,6 +193,28 @@ const DangerZoneTab: React.FC = () => {
               onClick={handleConfirmDeleteAccount}
             >
               Delete account
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isPurgeOpen} onClose={closePurgeModal} size="md">
+        <ModalOverlay bg="rgba(0, 0, 0, 0.8)" />
+        <ModalContent bg="bg.primary" border="1px solid" borderColor="border.primary" boxShadow="2xl">
+          <ModalHeader color="text.primary">Clear expired tombstones?</ModalHeader>
+          <ModalCloseButton color="text.secondary" />
+          <ModalBody>
+            <Alert status="warning" variant="kita" rounded="lg" fontSize="sm">
+              <AlertIcon />
+              This permanently removes already-deleted records older than 30 days from the server to free up storage. This cannot be undone.
+            </Alert>
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button variant="ghost" color="text.secondary" onClick={closePurgeModal}>
+              Cancel
+            </Button>
+            <Button data-testid="confirm-purge-tombstones-button" colorScheme="red" isLoading={isPurging} onClick={handleConfirmPurge}>
+              Okay, clear
             </Button>
           </ModalFooter>
         </ModalContent>

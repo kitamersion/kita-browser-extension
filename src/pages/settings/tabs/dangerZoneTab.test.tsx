@@ -12,6 +12,7 @@ const baseContext = {
   resumeKitaSync: jest.fn(),
   deleteAllData: jest.fn().mockResolvedValue({ error: null }),
   deleteAccount: jest.fn().mockResolvedValue({ error: null }),
+  purgeExpiredTombstones: jest.fn().mockResolvedValue({ error: null }),
 };
 
 describe("DangerZoneTab", () => {
@@ -116,5 +117,43 @@ describe("DangerZoneTab", () => {
     fireEvent.click(screen.getByTestId("confirm-delete-account-button"));
 
     await waitFor(() => expect(baseContext.deleteAccount).toHaveBeenCalled());
+  });
+
+  test("clear expired tombstones only runs after confirming in the modal", async () => {
+    (useSyncContext as jest.Mock).mockReturnValue(baseContext);
+
+    render(<DangerZoneTab />);
+    expect(baseContext.purgeExpiredTombstones).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("open-purge-tombstones-button"));
+    fireEvent.click(screen.getByTestId("confirm-purge-tombstones-button"));
+
+    await waitFor(() => expect(baseContext.purgeExpiredTombstones).toHaveBeenCalled());
+  });
+
+  test("purge-tombstones modal stays open when purgeExpiredTombstones fails", async () => {
+    const failingPurge = jest.fn().mockResolvedValue({ error: "permission denied" });
+    (useSyncContext as jest.Mock).mockReturnValue({
+      ...baseContext,
+      purgeExpiredTombstones: failingPurge,
+    });
+
+    render(<DangerZoneTab />);
+    fireEvent.click(screen.getByTestId("open-purge-tombstones-button"));
+    fireEvent.click(screen.getByTestId("confirm-purge-tombstones-button"));
+
+    await waitFor(() => expect(failingPurge).toHaveBeenCalled());
+    expect(screen.getByText("Clear expired tombstones?")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-purge-tombstones-button")).toBeInTheDocument();
+  });
+
+  test("cancelling the purge-tombstones modal does not call purgeExpiredTombstones", () => {
+    (useSyncContext as jest.Mock).mockReturnValue(baseContext);
+
+    render(<DangerZoneTab />);
+    fireEvent.click(screen.getByTestId("open-purge-tombstones-button"));
+    fireEvent.click(screen.getAllByText("Cancel")[screen.getAllByText("Cancel").length - 1]);
+
+    expect(baseContext.purgeExpiredTombstones).not.toHaveBeenCalled();
   });
 });
