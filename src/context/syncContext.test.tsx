@@ -446,6 +446,22 @@ describe("SyncProvider", () => {
     );
   });
 
+  test("purgeExpiredTombstones shows singular wording when exactly one record was cleared", async () => {
+    (purgeExpiredTombstones as jest.Mock).mockResolvedValueOnce({ purgedCount: 1, error: null });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("purge expired tombstones"));
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Cleared 1 expired record", status: "success" }))
+    );
+  });
+
   test("purgeExpiredTombstones shows a distinct message when there was nothing to clear", async () => {
     (purgeExpiredTombstones as jest.Mock).mockResolvedValueOnce({ purgedCount: 0, error: null });
     render(
