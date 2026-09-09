@@ -2,6 +2,7 @@ jest.mock("./supabaseClient", () => ({ getSupabaseClient: jest.fn() }));
 jest.mock("./auth", () => ({ getSession: jest.fn() }));
 jest.mock("@/api/settings/manager", () => ({ settingsManager: { get: jest.fn(), set: jest.fn().mockResolvedValue(undefined) } }));
 jest.mock("./rekeyLocalData", () => ({ rekeyLocalDataForNewAccount: jest.fn().mockResolvedValue(undefined) }));
+jest.mock("./accountManagement", () => ({ purgeExpiredTombstones: jest.fn().mockResolvedValue({ purgedCount: 0, error: null }) }));
 jest.mock("@/db/index", () => ({
   __esModule: true,
   default: {
@@ -23,6 +24,7 @@ import { getSession } from "./auth";
 import { settingsManager } from "@/api/settings/manager";
 import { SETTINGS } from "@/api/settings/definitions";
 import { rekeyLocalDataForNewAccount } from "./rekeyLocalData";
+import { purgeExpiredTombstones } from "./accountManagement";
 import IndexedDB from "@/db/index";
 import { runSync } from "./syncEngine";
 
@@ -207,6 +209,26 @@ describe("runSync", () => {
 
     expect(result.status).toBe("ok");
     expect(IndexedDB.setLastSyncedAt).toHaveBeenCalledWith(expect.any(Number));
+  });
+
+  test("purges expired tombstones once after a successful sync", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
+    expect(purgeExpiredTombstones).toHaveBeenCalledTimes(1);
+  });
+
+  test("still returns status ok when purging expired tombstones fails", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (getSupabaseClient as jest.Mock).mockReturnValue(emptyClient());
+    (purgeExpiredTombstones as jest.Mock).mockRejectedValueOnce(new Error("network error"));
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
   });
 
   test("returns quota-exceeded and does not advance the cursor when a push is rejected", async () => {

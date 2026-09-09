@@ -1,3 +1,4 @@
+import { logger } from "@kitamersion/kita-logging";
 import { getSupabaseClient } from "./supabaseClient";
 import { getSession } from "./auth";
 import { dedupeByCompositeKey, reconcileByNaturalKey, remapForeignKey } from "./reconcile";
@@ -6,6 +7,7 @@ import IndexedDB from "@/db/index";
 import { settingsManager } from "@/api/settings/manager";
 import { SETTINGS } from "@/api/settings/definitions";
 import { rekeyLocalDataForNewAccount } from "./rekeyLocalData";
+import { purgeExpiredTombstones } from "./accountManagement";
 
 const SAFETY_OVERLAP_MS = 5000;
 
@@ -177,6 +179,12 @@ export const runSync = async (): Promise<SyncResult> => {
     const pulled = tagsPull.rows.length + videosPull.rows.length + autoTagsPull.rows.length + videoTagsPull.rows.length;
     const pushed = tagsPush.count + videosPush.count + autoTagsPush.count + videoTagsPush.count;
     await settingsManager.set(SETTINGS.kitaSync.lastSyncStats, { pulled, pushed });
+
+    try {
+      await purgeExpiredTombstones();
+    } catch (error) {
+      logger.error(`purgeExpiredTombstones during sync failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     return { status: "ok", rekeyed, pulled, pushed };
   } catch (error) {
