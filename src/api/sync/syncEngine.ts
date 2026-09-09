@@ -1,6 +1,6 @@
 import { getSupabaseClient } from "./supabaseClient";
 import { getSession } from "./auth";
-import { dedupeByCompositeKey, mergeById, reconcileByNaturalKey, remapForeignKey } from "./reconcile";
+import { dedupeByCompositeKey, reconcileByNaturalKey, remapForeignKey } from "./reconcile";
 import { SyncRow } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { settingsManager } from "@/api/settings/manager";
@@ -129,10 +129,12 @@ export const runSync = async (): Promise<SyncResult> => {
     const autoTagsPush = await pushTable("auto_tags", userId, cursor, canonicalizeIds(localAutoTags as SyncRow[], autoTagsMerge.idRemap));
     if (autoTagsPush.error) return failureResult(autoTagsPush.error, rekeyed);
 
-    // ---- video_tags (no natural key of its own; identity is the (video_id, tag_id) pair) ----
+    // ---- video_tags (no single natural-key field; identity is the (video_id, tag_id) pair) ----
     // FKs are remapped with the tag/video remaps above before anything is pushed, so links always
-    // reference canonical ids. The pair dedupe runs on the push payload too (not only on the final
-    // merge), so two local rows describing the same link can't become two remote rows.
+    // reference canonical ids. Local duplicates of the same pair are collapsed first, then the
+    // survivor is reconciled against the pulled remote rows by that same pair — otherwise an id
+    // change with no remote-visible cause (a rekey, most notably) would push a second permanent
+    // remote row for a link that already exists there under a different id.
     const videoTagsPull = await pullTable("video_tags", cursor);
     if (videoTagsPull.error) return failureResult(videoTagsPull.error, rekeyed);
     const remappedLocalVideoTags = remapForeignKey(
@@ -140,18 +142,17 @@ export const runSync = async (): Promise<SyncResult> => {
       "video_id",
       videosMerge.idRemap
     );
-    const videoTagsPush = await pushTable(
-      "video_tags",
-      userId,
-      cursor,
-      dedupeByCompositeKey(remappedLocalVideoTags, (row) => `${row.video_id}:${row.tag_id}`)
-    );
+    const videoTagPairKey = (row: SyncRow) => `${row.video_id}:${row.tag_id}`;
+    const dedupedLocalVideoTags = dedupeByCompositeKey(remappedLocalVideoTags, videoTagPairKey);
+    const videoTagsMerge = reconcileByNaturalKey(dedupedLocalVideoTags, videoTagsPull.rows, videoTagPairKey);
+    const videoTagsPush = await pushTable("video_tags", userId, cursor, canonicalizeIds(dedupedLocalVideoTags, videoTagsMerge.idRemap));
     if (videoTagsPush.error) return failureResult(videoTagsPush.error, rekeyed);
 
-    const mergedVideoTags = dedupeByCompositeKey(
-      mergeById(remappedLocalVideoTags, videoTagsPull.rows),
-      (row) => `${row.video_id}:${row.tag_id}`
-    );
+    // reconcileByNaturalKey's merge is keyed by id, so it doesn't collapse remote rows that already
+    // duplicate a pair under different ids (the table has no unique constraint on the pair itself).
+    // A final composite-key dedupe guards against those pre-existing duplicates surviving into the
+    // local write-back.
+    const mergedVideoTags = dedupeByCompositeKey(videoTagsMerge.rows, videoTagPairKey);
 
     await Promise.all([
       IndexedDB.replaceAllTags(tagsMerge.rows.filter((r) => !r.deleted_at) as any),

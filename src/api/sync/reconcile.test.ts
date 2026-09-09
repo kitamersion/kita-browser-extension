@@ -70,6 +70,20 @@ describe("reconcileByNaturalKey", () => {
     expect(rows.map((r) => r.id).sort()).toEqual(["local-uuid", "remote-tombstone"]);
   });
 
+  test("reconciles using a composite key function instead of a single field", () => {
+    // video_tags has no single natural-key field of its own; its identity is the (video_id, tag_id)
+    // pair. A rekey (or any local id churn) can hand a link a fresh id even though the same link
+    // already exists remotely under a different id — this must still be recognised as the same row.
+    const local: SyncRow[] = [{ id: "fresh-vt-id", updated_at: 100, video_id: "v1", tag_id: "t1" }];
+    const remote: SyncRow[] = [{ id: "remote-vt-id", updated_at: 50, video_id: "v1", tag_id: "t1" }];
+
+    const { rows, idRemap } = reconcileByNaturalKey(local, remote, (row) => `${row.video_id}:${row.tag_id}`);
+
+    expect(idRemap.get("fresh-vt-id")).toBe("remote-vt-id");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("remote-vt-id");
+  });
+
   test("deduplicates when two local rows collide on the same remote natural-key match, keeping the newer updated_at", () => {
     // Two local rows both coded "ANIME" (e.g., independently seeded defaults on two devices)
     // Both remap to the same canonical remote id

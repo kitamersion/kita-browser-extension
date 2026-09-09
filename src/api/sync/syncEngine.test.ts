@@ -362,6 +362,33 @@ describe("runSync", () => {
     ]);
   });
 
+  test("pushes the canonical remote id, not a duplicate, for a video_tags link that already exists remotely under a different id", async () => {
+    // A rekey (or any local id churn) can hand this link a fresh id even though the same link
+    // already exists remotely — the push must recognise that by (video_id, tag_id) and update the
+    // existing row, not create a second permanent remote row for the same link.
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (IndexedDB.getAllVideoTags as jest.Mock).mockResolvedValue([{ id: "fresh-vt-id", video_id: "v1", tag_id: "t1", updated_at: 20 }]);
+
+    const videoTagsUpsert = jest.fn().mockResolvedValue({ error: null });
+    const videoTags = tableMock({
+      pages: [[{ id: "remote-vt-id", video_id: "v1", tag_id: "t1", updated_at: 10 }]],
+      upsert: videoTagsUpsert,
+    });
+    (getSupabaseClient as jest.Mock).mockReturnValue(clientWithTables({ video_tags: videoTags }));
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
+    expect(videoTagsUpsert).toHaveBeenCalledTimes(1);
+    const pushed = videoTagsUpsert.mock.calls[0][0];
+    expect(pushed).toHaveLength(1);
+    expect(pushed[0]).toEqual(expect.objectContaining({ id: "remote-vt-id" }));
+    expect(pushed.map((row: { id: string }) => row.id)).not.toContain("fresh-vt-id");
+
+    const writtenBack = (IndexedDB.replaceAllVideoTags as jest.Mock).mock.calls[0][0];
+    expect(writtenBack.map((row: { id: string }) => row.id)).toEqual(["remote-vt-id"]);
+  });
+
   test("pushes only one row per (video_id, tag_id) pair when local rows duplicate a link", async () => {
     (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
     (IndexedDB.getAllVideoTags as jest.Mock).mockResolvedValue([
@@ -378,5 +405,28 @@ describe("runSync", () => {
     const pushed = videoTagsUpsert.mock.calls[0][0];
     expect(pushed).toHaveLength(1);
     expect(pushed[0]).toEqual(expect.objectContaining({ id: "vt-new" }));
+  });
+
+  test("collapses pre-existing remote duplicates of the same (video_id, tag_id) pair on write-back", async () => {
+    // The remote table has no unique constraint on the pair, so two rows for the same link can
+    // already exist there under different ids (e.g. pushed before this reconciliation existed).
+    // The local write-back must still converge to one row per pair, keeping the newer one.
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    const videoTags = tableMock({
+      pages: [
+        [
+          { id: "remote-old", video_id: "v1", tag_id: "t1", updated_at: 5 },
+          { id: "remote-new", video_id: "v1", tag_id: "t1", updated_at: 9 },
+        ],
+      ],
+    });
+    (getSupabaseClient as jest.Mock).mockReturnValue(clientWithTables({ video_tags: videoTags }));
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
+    const writtenBack = (IndexedDB.replaceAllVideoTags as jest.Mock).mock.calls[0][0];
+    expect(writtenBack).toHaveLength(1);
+    expect(writtenBack[0]).toEqual(expect.objectContaining({ id: "remote-new" }));
   });
 });

@@ -18,8 +18,9 @@ export const mergeById = (local: SyncRow[], remote: SyncRow[]): SyncRow[] => {
 export const reconcileByNaturalKey = (
   local: SyncRow[],
   remote: SyncRow[],
-  naturalKeyField: string
+  naturalKey: string | ((row: SyncRow) => string | undefined)
 ): { rows: SyncRow[]; idRemap: Map<string, string> } => {
+  const keyOf = typeof naturalKey === "function" ? naturalKey : (row: SyncRow) => row[naturalKey] as string | undefined;
   const idRemap = new Map<string, string>();
   const remoteByNaturalKey = new Map<string, SyncRow>();
   for (const row of remote) {
@@ -29,12 +30,12 @@ export const reconcileByNaturalKey = (
     // claim the key would bind a freshly re-created local row to a remote tombstone, whose
     // deleted_at then wins on the next pull and silently removes the row the user just created.
     if (row.deleted_at) continue;
-    const key = row[naturalKeyField];
+    const key = keyOf(row);
     if (typeof key === "string" && key.length > 0) remoteByNaturalKey.set(key, row);
   }
 
   const remappedLocal = local.map((row) => {
-    const key = row[naturalKeyField];
+    const key = keyOf(row);
     if (typeof key !== "string" || key.length === 0) return row;
 
     const canonical = remoteByNaturalKey.get(key);
