@@ -94,6 +94,52 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-next-sync-at")).toHaveTextContent(new Date("2024-01-01T00:15:00.000Z").toLocaleString());
   });
 
+  test("shows pulled/pushed stats from the last sync when signed in", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      lastSyncStats: { pulled: 7, pushed: 2 },
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-pulled-stat")).toHaveTextContent("7");
+    expect(screen.getByTestId("sync-pushed-stat")).toHaveTextContent("2");
+  });
+
+  test("shows a placeholder for pulled/pushed stats before any sync has completed", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      lastSyncStats: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-pulled-stat")).toHaveTextContent("—");
+    expect(screen.getByTestId("sync-pushed-stat")).toHaveTextContent("—");
+  });
+
   test("sync now button calls syncNow when clicked", () => {
     const syncNow = jest.fn();
     (useSyncContext as jest.Mock).mockReturnValue({

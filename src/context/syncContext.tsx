@@ -5,7 +5,7 @@ import { getQuotaUsage } from "@/api/sync/quota";
 import { runSync } from "@/api/sync/syncEngine";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
 import { settingsManager } from "@/api/settings/manager";
-import { SETTINGS } from "@/api/settings/definitions";
+import { SETTINGS, SyncStats } from "@/api/settings/definitions";
 import { QuotaInfo } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { useToastContext } from "@/context/toastNotificationContext";
@@ -21,6 +21,7 @@ type SyncContextType = {
   quota: QuotaInfo | null;
   lastSyncedAt: number;
   nextSyncAt: number | null;
+  lastSyncStats: SyncStats | null;
   error: string | null;
   isSubmitting: boolean;
   isSyncing: boolean;
@@ -51,6 +52,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState(0);
   const [nextSyncAt, setNextSyncAt] = useState<number | null>(null);
+  const [lastSyncStats, setLastSyncStats] = useState<SyncStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -73,6 +75,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     setLastSyncedAt(await IndexedDB.getLastSyncedAt());
     setNextSyncAt(await getNextSyncTime());
     setIsKitaSyncPaused(await settingsManager.get(SETTINGS.kitaSync.paused));
+    setLastSyncStats(await settingsManager.get(SETTINGS.kitaSync.lastSyncStats));
   }, [showToast]);
 
   useEffect(() => {
@@ -236,6 +239,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         quota,
         lastSyncedAt,
         nextSyncAt,
+        lastSyncStats,
         error,
         isSubmitting,
         isSyncing,

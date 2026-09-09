@@ -14,7 +14,13 @@ const SAFETY_OVERLAP_MS = 5000;
 // once the cursor advanced past it.
 const PAGE_SIZE = 1000;
 
-type SyncResult = { status: "ok" | "no-session" | "paused" | "quota-exceeded" | "error"; message?: string; rekeyed?: boolean };
+type SyncResult = {
+  status: "ok" | "no-session" | "paused" | "quota-exceeded" | "error";
+  message?: string;
+  rekeyed?: boolean;
+  pulled?: number;
+  pushed?: number;
+};
 
 const isQuotaError = (message: string | undefined) => !!message && message.toLowerCase().includes("quota");
 
@@ -46,14 +52,19 @@ const pullTable = async (tableName: string, cursor: number): Promise<{ rows: Syn
 // Push local rows changed since the cursor. Callers pass rows that already carry canonical
 // (post-reconciliation) ids, which makes this an idempotent upsert onto the row reconciliation
 // picked, rather than an insert of a competing duplicate.
-const pushTable = async (tableName: string, userId: string, cursor: number, localRows: SyncRow[]): Promise<{ error?: string }> => {
+const pushTable = async (
+  tableName: string,
+  userId: string,
+  cursor: number,
+  localRows: SyncRow[]
+): Promise<{ error?: string; count: number }> => {
   const changedLocal = localRows.filter((row) => row.updated_at > cursor);
-  if (changedLocal.length === 0) return {};
+  if (changedLocal.length === 0) return { count: 0 };
 
   const { error } = await getSupabaseClient()
     .from(tableName)
     .upsert(changedLocal.map((row) => ({ ...row, user_id: userId })));
-  return error ? { error: error.message } : {};
+  return error ? { error: error.message, count: 0 } : { count: changedLocal.length };
 };
 
 // Rewrite a row's *own* id through the reconciliation remap (remapForeignKey only rewrites a
@@ -162,7 +173,12 @@ export const runSync = async (): Promise<SyncResult> => {
     ]);
 
     await IndexedDB.setLastSyncedAt(syncStartedAt - SAFETY_OVERLAP_MS);
-    return { status: "ok", rekeyed };
+
+    const pulled = tagsPull.rows.length + videosPull.rows.length + autoTagsPull.rows.length + videoTagsPull.rows.length;
+    const pushed = tagsPush.count + videosPush.count + autoTagsPush.count + videoTagsPush.count;
+    await settingsManager.set(SETTINGS.kitaSync.lastSyncStats, { pulled, pushed });
+
+    return { status: "ok", rekeyed, pulled, pushed };
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : String(error), rekeyed };
   }

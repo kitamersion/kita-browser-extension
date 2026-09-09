@@ -44,6 +44,7 @@ const Consumer = () => {
       <span data-testid="signed-in">{String(ctx.isSignedIn)}</span>
       <span data-testid="pending-confirmation">{ctx.pendingConfirmationEmail ?? ""}</span>
       <span data-testid="next-sync-at">{ctx.nextSyncAt ?? ""}</span>
+      <span data-testid="last-sync-stats">{ctx.lastSyncStats ? `${ctx.lastSyncStats.pulled}/${ctx.lastSyncStats.pushed}` : ""}</span>
       <span data-testid="is-syncing">{String(ctx.isSyncing)}</span>
       <button onClick={() => ctx.signIn("a@b.com", "password123")}>sign in</button>
       <button onClick={() => ctx.signUp("a@b.com", "password123")}>sign up</button>
@@ -232,6 +233,24 @@ describe("SyncProvider", () => {
     expect(eventBus.publish).toHaveBeenCalledWith(TAG_REFRESH, expect.anything());
     expect(eventBus.publish).toHaveBeenCalledWith(VIDEO_TAG_RELATIONSHIP_REFRESH, expect.anything());
     expect(eventBus.publish).toHaveBeenCalledWith(AUTO_TAG_REFRESH, expect.anything());
+  });
+
+  test("syncNow exposes how many rows were pulled and pushed after a successful sync", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "ok", pulled: 3, pushed: 1 });
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.lastSyncStats) return Promise.resolve({ pulled: 3, pushed: 1 });
+      return Promise.resolve(false);
+    });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() => expect(screen.getByTestId("last-sync-stats")).toHaveTextContent("3/1"));
   });
 
   test("syncNow does not rehydrate data contexts when the sync fails", async () => {

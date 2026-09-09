@@ -19,6 +19,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { CheckCircleIcon, EmailIcon, LockIcon, RepeatClockIcon, TimeIcon } from "@chakra-ui/icons";
+import { MdCloudDownload, MdCloudUpload } from "react-icons/md";
 import { useSyncContext } from "@/context/syncContext";
 import SummaryItem from "@/components/summaryItem";
 
@@ -40,6 +41,7 @@ const SyncTab: React.FC = () => {
     quota,
     lastSyncedAt,
     nextSyncAt,
+    lastSyncStats,
     error,
     isSubmitting,
     isSyncing,
@@ -128,7 +130,7 @@ const SyncTab: React.FC = () => {
             </HStack>
           </Flex>
 
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>
               <SummaryItem.Value value={lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"} />
               <SummaryItem.Title>Last Synced</SummaryItem.Title>
@@ -137,6 +139,18 @@ const SyncTab: React.FC = () => {
               <SummaryItem icon={RepeatClockIcon}>
                 <SummaryItem.Value value={nextSyncAt ? new Date(nextSyncAt).toLocaleString() : "Not scheduled"} />
                 <SummaryItem.Title>Next Sync</SummaryItem.Title>
+              </SummaryItem>
+            </Box>
+            <Box data-testid="sync-pulled-stat">
+              <SummaryItem icon={MdCloudDownload}>
+                <SummaryItem.Value value={lastSyncStats ? lastSyncStats.pulled : "—"} />
+                <SummaryItem.Title>Pulled</SummaryItem.Title>
+              </SummaryItem>
+            </Box>
+            <Box data-testid="sync-pushed-stat">
+              <SummaryItem icon={MdCloudUpload}>
+                <SummaryItem.Value value={lastSyncStats ? lastSyncStats.pushed : "—"} />
+                <SummaryItem.Title>Pushed</SummaryItem.Title>
               </SummaryItem>
             </Box>
           </SimpleGrid>

@@ -407,6 +407,34 @@ describe("runSync", () => {
     expect(pushed[0]).toEqual(expect.objectContaining({ id: "vt-new" }));
   });
 
+  test("reports how many rows were pulled and pushed across all four tables", async () => {
+    (getSession as jest.Mock).mockResolvedValue({ userId: "user-1", email: "a@b.com" });
+    (IndexedDB.getAllTags as jest.Mock).mockResolvedValue([{ id: "t1", name: "Anime", code: "ANIME", updated_at: 20 }]);
+    (IndexedDB.getAllVideos as jest.Mock).mockResolvedValue([{ id: "v1", video_title: "Ep 1", unique_code: "EP1", updated_at: 20 }]);
+
+    (getSupabaseClient as jest.Mock).mockReturnValue(
+      clientWithTables({
+        // 2 remote tags pulled; 1 local tag pushed (doesn't match either by code, so no remap).
+        tags: tableMock({
+          pages: [
+            [
+              { id: "remote-tag-1", name: "Manga", code: "MANGA", updated_at: 5 },
+              { id: "remote-tag-2", name: "OVA", code: "OVA", updated_at: 6 },
+            ],
+          ],
+        }),
+        // 0 remote videos pulled; 1 local video pushed.
+        videos: tableMock({ pages: [[]] }),
+      })
+    );
+
+    const result = await runSync();
+
+    expect(result.status).toBe("ok");
+    expect(result.pulled).toBe(2);
+    expect(result.pushed).toBe(2);
+  });
+
   test("collapses pre-existing remote duplicates of the same (video_id, tag_id) pair on write-back", async () => {
     // The remote table has no unique constraint on the pair, so two rows for the same link can
     // already exist there under different ids (e.g. pushed before this reconciliation existed).

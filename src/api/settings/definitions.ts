@@ -20,6 +20,9 @@ const isSourceAutoTrackConfigValidator = (value: any): value is SourceAutoTrackC
 const isSourceAutoSyncConfigValidator = (value: any): value is SourceAutoSyncConfig =>
   typeof value === "object" && value !== null && typeof value.enabled === "boolean";
 const isPendingAnilistSyncArrayValidator = (value: any): value is PendingAnilistSync[] => Array.isArray(value);
+export type SyncStats = { pulled: number; pushed: number };
+const isSyncStatsValidator = (value: any): value is SyncStats | null =>
+  value === null || (typeof value === "object" && typeof value.pulled === "number" && typeof value.pushed === "number");
 
 export const SETTINGS = {
   application: {
@@ -127,6 +130,11 @@ export const SETTINGS = {
       defaultValue: false,
       validator: isBooleanValidator,
     } as SettingDefinition<boolean>,
+    lastSyncStats: {
+      key: "kitamersion_kita_sync_last_sync_stats",
+      defaultValue: null,
+      validator: isSyncStatsValidator,
+    } as SettingDefinition<SyncStats | null>,
   },
   statistics: {
     totalVideos: {
