@@ -26,6 +26,10 @@ jest.mock("@/context/toastNotificationContext", () => ({
   useToastContext: () => ({ showToast }),
 }));
 
+jest.mock("@/api/eventbus", () => ({ __esModule: true, default: { publish: jest.fn() } }));
+
+import eventBus from "@/api/eventbus";
+import { VIDEO_REFRESH, TAG_REFRESH, VIDEO_TAG_RELATIONSHIP_REFRESH, AUTO_TAG_REFRESH } from "@/data/events";
 import { signIn, signUp, getSession, signOut } from "@/api/sync/auth";
 import { deleteAllData, deleteAccount } from "@/api/sync/accountManagement";
 import { settingsManager } from "@/api/settings/manager";
@@ -209,6 +213,40 @@ describe("SyncProvider", () => {
     await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" })));
     expect(runSync).toHaveBeenCalled();
     expect(screen.getByTestId("is-syncing")).toHaveTextContent("false");
+  });
+
+  test("syncNow rehydrates every data context after a successful sync", async () => {
+    // Sync writes straight to IndexedDB; without this, TagContext/VideoTagRelationshipContext/
+    // AutoTagContext (and VideoContext wherever it's read from cache) sit stale until a full reload.
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync complete", status: "success" })));
+    expect(eventBus.publish).toHaveBeenCalledWith(VIDEO_REFRESH, expect.anything());
+    expect(eventBus.publish).toHaveBeenCalledWith(TAG_REFRESH, expect.anything());
+    expect(eventBus.publish).toHaveBeenCalledWith(VIDEO_TAG_RELATIONSHIP_REFRESH, expect.anything());
+    expect(eventBus.publish).toHaveBeenCalledWith(AUTO_TAG_REFRESH, expect.anything());
+  });
+
+  test("syncNow does not rehydrate data contexts when the sync fails", async () => {
+    (runSync as jest.Mock).mockResolvedValueOnce({ status: "error", message: "network error" });
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("sync now"));
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Sync failed" })));
+    expect(eventBus.publish).not.toHaveBeenCalledWith(TAG_REFRESH, expect.anything());
   });
 
   test("syncNow shows an error toast when the sync fails", async () => {

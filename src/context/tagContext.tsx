@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import eventBus from "@/api/eventbus";
 import { ITag } from "@/types/tag";
-import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET } from "@/data/events";
+import { TAG_DELETE_BY_ID, TAG_DELETE_ALL, TAG_SET, TAG_REFRESH } from "@/data/events";
 import { useToastContext } from "./toastNotificationContext";
 import IndexedDB from "@/db/index";
 import { decrementTotalTags, incrementTotalTags } from "@/api/summaryStorage/tag";
@@ -107,6 +107,14 @@ export const TagProvider = ({ children }: PropsWithChildren<unknown>) => {
       eventBus.unsubscribe(TAG_SET, handleSetTag);
     };
   }, [handleSetTag]);
+
+  // handle TAG_REFRESH
+  useEffect(() => {
+    eventBus.subscribe(TAG_REFRESH, handleGetTags);
+    return () => {
+      eventBus.unsubscribe(TAG_REFRESH, handleGetTags);
+    };
+  }, [handleGetTags]);
 
   return <TagContext.Provider value={{ tags, totalTagCount, isInitialized }}>{children}</TagContext.Provider>;
 };

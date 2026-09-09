@@ -9,6 +9,8 @@ import { SETTINGS } from "@/api/settings/definitions";
 import { QuotaInfo } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { useToastContext } from "@/context/toastNotificationContext";
+import eventBus from "@/api/eventbus";
+import { VIDEO_REFRESH, TAG_REFRESH, VIDEO_TAG_RELATIONSHIP_REFRESH, AUTO_TAG_REFRESH } from "@/data/events";
 
 export const CONFIRMATION_POLL_INTERVAL_MS = 3000;
 
@@ -173,6 +175,14 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
       showToast({ title: "Kita Sync is paused", status: "warning", description: "Resume Kita Sync to sync again." });
       return;
     }
+
+    // Sync writes straight to IndexedDB, bypassing every data context's in-memory cache. Without
+    // this, tags/relationships/auto-tags (and videos wherever read from a cached context) sit stale
+    // until the whole page is manually reloaded.
+    eventBus.publish(VIDEO_REFRESH, { message: "sync complete", value: {} });
+    eventBus.publish(TAG_REFRESH, { message: "sync complete", value: {} });
+    eventBus.publish(VIDEO_TAG_RELATIONSHIP_REFRESH, { message: "sync complete", value: {} });
+    eventBus.publish(AUTO_TAG_REFRESH, { message: "sync complete", value: {} });
 
     await refresh();
     showToast({ title: "Sync complete", status: "success" });

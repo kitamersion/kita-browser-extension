@@ -3,6 +3,7 @@ import {
   VIDEO_TAG_ADD_RELATIONSHIP,
   VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID,
   VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID,
+  VIDEO_TAG_RELATIONSHIP_REFRESH,
 } from "@/data/events";
 import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
@@ -108,6 +109,14 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
       eventBus.unsubscribe(VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID, handleVideoTagDeleteRelationshipByVideoId);
     };
   }, [handleVideoTagDeleteRelationshipByVideoId]);
+
+  // handle VIDEO_TAG_RELATIONSHIP_REFRESH
+  useEffect(() => {
+    eventBus.subscribe(VIDEO_TAG_RELATIONSHIP_REFRESH, fetchRelationships);
+    return () => {
+      eventBus.unsubscribe(VIDEO_TAG_RELATIONSHIP_REFRESH, fetchRelationships);
+    };
+  }, [fetchRelationships]);
 
   return (
     <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships, isInitialized: isInitialized }}>
