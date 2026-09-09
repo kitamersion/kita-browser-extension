@@ -130,7 +130,7 @@ const SyncTab: React.FC = () => {
             </HStack>
           </Flex>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>
               <SummaryItem.Value value={lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"} />
               <SummaryItem.Title>Last Synced</SummaryItem.Title>
@@ -141,17 +141,14 @@ const SyncTab: React.FC = () => {
                 <SummaryItem.Title>Next Sync</SummaryItem.Title>
               </SummaryItem>
             </Box>
+          </SimpleGrid>
+
+          <SimpleGrid columns={2} spacing={3} mt={3}>
             <Box data-testid="sync-pulled-stat">
-              <SummaryItem icon={MdCloudDownload}>
-                <SummaryItem.Value value={lastSyncStats ? lastSyncStats.pulled : "—"} />
-                <SummaryItem.Title>Pulled</SummaryItem.Title>
-              </SummaryItem>
+              <SummaryItem.Compact icon={MdCloudDownload} title="Pulled" value={lastSyncStats ? lastSyncStats.pulled : "—"} />
             </Box>
             <Box data-testid="sync-pushed-stat">
-              <SummaryItem icon={MdCloudUpload}>
-                <SummaryItem.Value value={lastSyncStats ? lastSyncStats.pushed : "—"} />
-                <SummaryItem.Title>Pushed</SummaryItem.Title>
-              </SummaryItem>
+              <SummaryItem.Compact icon={MdCloudUpload} title="Pushed" value={lastSyncStats ? lastSyncStats.pushed : "—"} />
             </Box>
           </SimpleGrid>
 
