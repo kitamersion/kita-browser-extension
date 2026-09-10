@@ -75,7 +75,7 @@ describe("SyncTab", () => {
       isInitialized: true,
       isSignedIn: true,
       email: "a@b.com",
-      quota: { currentBytes: 1048576, maxBytes: 5242880 },
+      quota: { currentBytes: 1048576, maxBytes: 5242880, lastSyncedAt: Date.now(), dataRetentionDays: 90 },
       lastSyncedAt: 1700000000000,
       nextSyncAt: null,
       isSyncing: false,
@@ -385,5 +385,49 @@ describe("SyncTab", () => {
 
     expect(screen.getByTestId("sync-toggle-kita-sync-button")).toHaveTextContent("Resume Kita Sync");
     expect(resumeKitaSync).toHaveBeenCalled();
+  });
+
+  test("shows a quiet retention notice when deletion is not imminent", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: { currentBytes: 1234, maxBytes: 5242880, lastSyncedAt: Date.now() - 10 * 24 * 60 * 60 * 1000, dataRetentionDays: 90 },
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent("80 days remaining");
+    expect(screen.getByTestId("sync-retention-notice")).not.toHaveAttribute("role", "alert");
+  });
+
+  test("escalates to an alert when deletion is within 14 days", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: { currentBytes: 1234, maxBytes: 5242880, lastSyncedAt: Date.now() - 84 * 24 * 60 * 60 * 1000, dataRetentionDays: 90 },
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent("6 days");
+    expect(screen.getByTestId("sync-retention-notice")).toHaveAttribute("role", "alert");
   });
 });

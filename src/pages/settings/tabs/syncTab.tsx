@@ -47,6 +47,13 @@ const quotaColorScheme = (currentBytes: number, maxBytes: number) => {
   return "green";
 };
 
+const daysUntilDataWipe = (quota: { lastSyncedAt: number; dataRetentionDays: number }): number => {
+  const daysSinceSync = Math.floor((Date.now() - quota.lastSyncedAt) / (24 * 60 * 60 * 1000));
+  return quota.dataRetentionDays - daysSinceSync;
+};
+
+const RETENTION_WARNING_THRESHOLD_DAYS = 14;
+
 const SyncTab: React.FC = () => {
   const {
     isSignedIn,
@@ -164,6 +171,18 @@ const SyncTab: React.FC = () => {
               </Button>
             </HStack>
           </Flex>
+
+          {quota &&
+            (daysUntilDataWipe(quota) > RETENTION_WARNING_THRESHOLD_DAYS ? (
+              <Text data-testid="sync-retention-notice" fontSize="xs" color="text.tertiary">
+                Data auto-clears after {quota.dataRetentionDays} days of inactivity · {daysUntilDataWipe(quota)} days remaining
+              </Text>
+            ) : (
+              <Alert status="warning" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-retention-notice">
+                <AlertIcon />
+                Your data will be cleared in {daysUntilDataWipe(quota)} days due to inactivity — sync now to keep it.
+              </Alert>
+            ))}
 
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>
