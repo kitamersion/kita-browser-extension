@@ -380,6 +380,17 @@ describe("getAllX includeDeleted parameter", () => {
     expect(withDeleted.find((v) => v.id === id)).toBeDefined();
   });
 
+  test("deleteVideoTagByVideoAndTagId only removes the relationship for that specific video, not every video sharing the tag", async () => {
+    await IndexedDB.addVideoTag({ id: "vt-shared-a", video_id: "video-a", tag_id: "shared-tag" });
+    await IndexedDB.addVideoTag({ id: "vt-shared-b", video_id: "video-b", tag_id: "shared-tag" });
+
+    await IndexedDB.deleteVideoTagByVideoAndTagId("video-a", "shared-tag");
+
+    const remaining = await IndexedDB.getAllVideoTags();
+    expect(remaining.find((vt) => vt.id === "vt-shared-a")).toBeUndefined();
+    expect(remaining.find((vt) => vt.id === "vt-shared-b")).toBeDefined();
+  });
+
   test("getAllVideoTags excludes soft-deleted relationships by default and includes them when includeDeleted is true", async () => {
     const id = "include-deleted-vt";
     await IndexedDB.addVideoTag({ id, video_id: "v-idt", tag_id: "t-idt" });

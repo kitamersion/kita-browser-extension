@@ -3,7 +3,7 @@ import { useTagContext } from "@/context/tagContext";
 import { VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID, VIDEO_UPDATED_BY_ID } from "@/data/events";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo, SiteKey } from "@/types/video";
-import { convertToSeconds, formatDuration, settingsNavigation } from "@/utils";
+import { convertToSeconds, secondsToHms, settingsNavigation } from "@/utils";
 import {
   Button,
   Drawer,
@@ -59,17 +59,11 @@ const UpdateVideo = (videoBase: IVideo) => {
     return JSON.stringify(video, null, 2);
   }, [video]);
 
-  // @todo move to utils + unit tests
-  const durationSplit: number[] = formatDuration(video.video_duration)
-    .split(" ")
-    .map((item) => {
-      const value = item.slice(0, -1);
-      return parseInt(value);
-    });
+  const [initialHour, initialMinute, initialSecond] = secondsToHms(video.video_duration);
 
-  const [hour, setHour] = useState<number>(durationSplit[0]);
-  const [minute, setMinute] = useState(durationSplit[1]);
-  const [second, setSecond] = useState(durationSplit[2]);
+  const [hour, setHour] = useState<number>(initialHour);
+  const [minute, setMinute] = useState(initialMinute);
+  const [second, setSecond] = useState(initialSecond);
 
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value ? e.target.value : "0";
@@ -110,11 +104,11 @@ const UpdateVideo = (videoBase: IVideo) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formatDuration = `${hour} ${minute} ${second}`;
+    const durationHms = `${hour} ${minute} ${second}`;
     const updatedVideo = {
       ...video,
       updated_at: Date.now(),
-      video_duration: convertToSeconds(formatDuration),
+      video_duration: convertToSeconds(durationHms),
     };
 
     eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video", value: updatedVideo });
@@ -134,7 +128,10 @@ const UpdateVideo = (videoBase: IVideo) => {
     }
 
     relationshipToRemove.forEach((tagId) => {
-      eventbus.publish(VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID, { message: "video tag delete relationship", value: tagId });
+      eventbus.publish(VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID, {
+        message: "video tag delete relationship",
+        value: { videoId: video.id, tagId },
+      });
     });
 
     onClose();

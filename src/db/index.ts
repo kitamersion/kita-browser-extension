@@ -558,7 +558,13 @@ class IndexedDB {
     });
   }
 
-  // soft-delete video tag relationships by tag id (tombstoned for sync; excluded from reads)
+  // soft-delete every video tag relationship using this tag id, across every video (tombstoned for
+  // sync; excluded from reads). Intentionally global — used when the tag itself is being deleted
+  // entirely (tagContext.tsx, videoContext.tsx's CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID handler),
+  // where every video that had this tag should lose it. NOT for "remove this tag from one video" —
+  // use deleteVideoTagByVideoAndTagId below for that; using this one there was the root cause of a
+  // real bug where unchecking a tag on one video silently stripped it from every other video that
+  // happened to share it too.
   deleteVideoTagByTagId(tagId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -570,6 +576,35 @@ class IndexedDB {
         const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
           cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // soft-delete the relationship between one specific video and one specific tag (tombstoned for
+  // sync; excluded from reads). Scoped by video_id — iterating that index and filtering by tag_id
+  // in JS, since there's no compound (video_id, tag_id) index — so removing a tag from one video
+  // never touches that same tag's relationship on any other video. Use this for "edit one video's
+  // tags"; use deleteVideoTagByTagId above only when the tag itself is being deleted entirely.
+  deleteVideoTagByVideoAndTagId(videoId: string, tagId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
+      const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
+      const index = videoTagStore.index("video_id");
+      const request = index.openCursor(IDBKeyRange.only(videoId));
+      request.onsuccess = () => {
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          if (cursor.value.tag_id === tagId) {
+            cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
+          }
           cursor.continue();
         } else {
           resolve();

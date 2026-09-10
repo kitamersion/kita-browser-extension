@@ -47,15 +47,15 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, []);
 
   const handleVideoTagDeleteRelationshipByTagId = useCallback(async (eventData: any) => {
-    const tagId = eventData.value as string;
+    const { videoId, tagId } = eventData.value as { videoId: string; tagId: string };
 
-    if (!tagId) {
-      logger.warn("No tag id found from event handler");
+    if (!videoId || !tagId) {
+      logger.warn("No video id or tag id found from event handler");
       return;
     }
 
-    await IndexedDB.deleteVideoTagByTagId(tagId);
-    setRelationships((prev) => prev.filter((item) => item.tag_id !== tagId));
+    await IndexedDB.deleteVideoTagByVideoAndTagId(videoId, tagId);
+    setRelationships((prev) => prev.filter((item) => !(item.video_id === videoId && item.tag_id === tagId)));
   }, []);
 
   const handleVideoTagDeleteRelationshipByVideoId = useCallback(async (eventData: any) => {
