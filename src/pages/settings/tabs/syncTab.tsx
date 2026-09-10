@@ -173,16 +173,31 @@ const SyncTab: React.FC = () => {
           </Flex>
 
           {quota &&
-            (daysUntilDataWipe(quota) > RETENTION_WARNING_THRESHOLD_DAYS ? (
-              <Text data-testid="sync-retention-notice" fontSize="xs" color="text.tertiary">
-                Data auto-clears after {quota.dataRetentionDays} days of inactivity · {daysUntilDataWipe(quota)} days remaining
-              </Text>
-            ) : (
-              <Alert status="warning" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-retention-notice">
-                <AlertIcon />
-                Your data will be cleared in {daysUntilDataWipe(quota)} days due to inactivity — sync now to keep it.
-              </Alert>
-            ))}
+            (() => {
+              const daysLeft = daysUntilDataWipe(quota);
+              if (daysLeft > RETENTION_WARNING_THRESHOLD_DAYS) {
+                return (
+                  <Text data-testid="sync-retention-notice" fontSize="xs" color="text.tertiary">
+                    Data auto-clears after {quota.dataRetentionDays} days of inactivity · {daysLeft} days remaining
+                  </Text>
+                );
+              }
+              if (daysLeft > 0) {
+                return (
+                  <Alert status="warning" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-retention-notice">
+                    <AlertIcon />
+                    Your data will be cleared in {daysLeft} day{daysLeft === 1 ? "" : "s"} due to inactivity —{" "}
+                    {isKitaSyncPaused ? "resume Kita Sync to keep it." : "sync now to keep it."}
+                  </Alert>
+                );
+              }
+              return (
+                <Alert status="warning" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-retention-notice">
+                  <AlertIcon />
+                  Your data has already been cleared due to inactivity — sync now to restore it.
+                </Alert>
+              );
+            })()}
 
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
             <SummaryItem icon={TimeIcon}>
@@ -224,6 +239,8 @@ const SyncTab: React.FC = () => {
 
   return (
     <VStack align="stretch" spacing={4}>
+      {/* No session exists here, so these numbers are hardcoded — keep in sync with the `free` row's
+          data_retention_days/account_retention_days in supabase/migrations/0007_account_retention.sql. */}
       <Alert status="info" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-disclaimer-banner">
         <AlertIcon />
         This is just a small hobby project running on Supabase's free tier, so storage is capped at 2MB per account — sorry, I can't afford

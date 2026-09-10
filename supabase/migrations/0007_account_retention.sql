@@ -5,6 +5,7 @@
 -- Renaming (not dropping+recreating) keeps the existing user_quotas FK intact automatically.
 alter table kitamersion.quota_tiers rename to plans;
 alter table kitamersion.plans rename column tier to plan;
+alter policy "quota_tiers_select" on kitamersion.plans rename to "plans_select";
 alter table kitamersion.plans
   add column data_retention_days int not null default 90,
   add column account_retention_days int not null default 365,
@@ -37,12 +38,17 @@ declare
   target_user_id uuid;
   is_soft_delete boolean := false;
 begin
+  -- NEW is *unassigned* (not null) in a row-level DELETE trigger, so referencing new.user_id there
+  -- — even inside coalesce() — raises 'record "new" is not assigned yet'. Branch on tg_op instead.
   if tg_op = 'DELETE' then
     target_user_id := old.user_id;
     delta := -pg_column_size(old);
   elsif tg_op = 'UPDATE' then
     target_user_id := new.user_id;
     delta := pg_column_size(new) - pg_column_size(old);
+    -- A soft-delete (deleted_at null -> timestamp) is technically a small positive size delta. A
+    -- user already at their cap must still be able to delete things to free space, so this one
+    -- transition is exempt from the quota-exceeded check; the accounting update below still runs.
     is_soft_delete := old.deleted_at is null and new.deleted_at is not null;
   else -- INSERT
     target_user_id := new.user_id;
@@ -87,6 +93,8 @@ set search_path = kitamersion
 as $$
 declare
   uid uuid := auth.uid();
+  -- deleted_at/updated_at are the same ms-since-epoch bigint the client writes with Date.now(),
+  -- not a Postgres timestamp — this converts now() - 30 days into that representation to compare.
   cutoff bigint := (extract(epoch from (now() - interval '30 days')) * 1000)::bigint;
   purged integer := 0;
   deleted integer;
@@ -123,7 +131,7 @@ $$;
 -- accounts entirely past account_retention_days. Temp tables (not a repeated CTE per statement)
 -- keep the affected-user set consistent across the four table deletes and the counter reset
 -- within one run. Safe to run daily even when nothing is due.
-create extension if not exists pg_cron with schema extensions;
+create extension if not exists pg_cron;
 
 create function kitamersion.run_retention_sweep()
 returns table(data_wiped integer, accounts_deleted integer)
@@ -157,9 +165,14 @@ begin
     join kitamersion.plans p on p.plan = uq.plan
     where uq.last_synced_at < now() - (p.account_retention_days || ' days')::interval;
 
+  delete from kitamersion.video_tags where user_id in (select user_id from expired_accounts);
+  delete from kitamersion.auto_tags where user_id in (select user_id from expired_accounts);
+  delete from kitamersion.videos where user_id in (select user_id from expired_accounts);
+  delete from kitamersion.tags where user_id in (select user_id from expired_accounts);
   delete from auth.users where id in (select user_id from expired_accounts);
   select count(*) into deleted_accounts from expired_accounts;
 
+  raise notice 'retention sweep: wiped % accounts data, deleted % accounts', wiped, deleted_accounts;
   return query select wiped, deleted_accounts;
 end;
 $$;

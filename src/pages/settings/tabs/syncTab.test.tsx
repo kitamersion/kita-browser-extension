@@ -432,4 +432,72 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent("6 days");
     expect(screen.getByTestId("sync-retention-notice")).toHaveAttribute("role", "alert");
   });
+
+  test("shows a distinct message once the data-wipe deadline has already passed", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: { currentBytes: 1234, maxBytes: 5242880, lastSyncedAt: Date.now() - 95 * 24 * 60 * 60 * 1000, dataRetentionDays: 90 },
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent(/already been cleared/i);
+    expect(screen.getByTestId("sync-retention-notice")).toHaveAttribute("role", "alert");
+  });
+
+  test("uses singular wording when exactly one day remains", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: { currentBytes: 1234, maxBytes: 5242880, lastSyncedAt: Date.now() - 89 * 24 * 60 * 60 * 1000, dataRetentionDays: 90 },
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent("Your data will be cleared in 1 day due to inactivity");
+  });
+
+  test("points at Resume Kita Sync instead of Sync now when the alert shows while paused", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: { currentBytes: 1234, maxBytes: 5242880, lastSyncedAt: Date.now() - 84 * 24 * 60 * 60 * 1000, dataRetentionDays: 90 },
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      isKitaSyncPaused: true,
+      pauseKitaSync: jest.fn(),
+      resumeKitaSync: jest.fn(),
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-retention-notice")).toHaveTextContent(/resume kita sync/i);
+    expect(screen.getByTestId("sync-retention-notice")).not.toHaveTextContent(/sync now/i);
+  });
 });
