@@ -28,6 +28,26 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-sign-up-button")).toBeInTheDocument();
   });
 
+  test("shows a hobby-project disclaimer banner when signed out", () => {
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: false,
+      email: null,
+      quota: null,
+      lastSyncedAt: 0,
+      error: null,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/hobby project/i);
+    expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/2\s*MB/i);
+    expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/delete your account/i);
+  });
+
   test("submitting sign in calls context signIn with the entered credentials", () => {
     const signIn = jest.fn();
     (useSyncContext as jest.Mock).mockReturnValue({

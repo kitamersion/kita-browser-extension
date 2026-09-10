@@ -115,12 +115,7 @@ const SyncTab: React.FC = () => {
             </VStack>
             <HStack>
               <Menu isLazy>
-                <MenuButton
-                  as={Button}
-                  data-testid="sync-interval-trigger"
-                  variant="kita-outline"
-                  rightIcon={<ChevronDownIcon />}
-                >
+                <MenuButton as={Button} data-testid="sync-interval-trigger" variant="kita-outline" rightIcon={<ChevronDownIcon />}>
                   {SYNC_INTERVAL_LABELS[syncIntervalMinutes]}
                 </MenuButton>
                 <MenuList bg="bg.primary" borderColor="border.primary">
@@ -209,67 +204,79 @@ const SyncTab: React.FC = () => {
   }
 
   return (
-    <Flex align="center" justify="center" minH="70vh">
-      <Box
-        bg="bg.secondary"
-        border="1px solid"
-        borderColor="border.primary"
-        rounded="xl"
-        p={6}
-        maxW="sm"
-        w="full"
-        data-testid="sync-signed-out"
-      >
-        <VStack align="stretch" spacing={4}>
-          <Heading size="md" color="accent.primary">
-            Sync
-          </Heading>
-          <Text fontSize="sm" color="text.secondary">
-            Sign in to sync your videos, tags, and auto-tag rules across devices and browsers.
-          </Text>
-          {error && (
-            <Alert status="error" variant="kita" rounded="lg" fontSize="sm">
-              <AlertIcon />
-              {error}
-            </Alert>
-          )}
-          <FormControl>
-            <FormLabel>Email</FormLabel>
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <EmailIcon color="text.tertiary" />
-              </InputLeftElement>
-              <Input data-testid="sync-email-input" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
-            </InputGroup>
-          </FormControl>
-          <FormControl>
-            <FormLabel>Password</FormLabel>
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <LockIcon color="text.tertiary" />
-              </InputLeftElement>
-              <Input
-                data-testid="sync-password-input"
-                type="password"
-                value={formPassword}
-                onChange={(e) => setFormPassword(e.target.value)}
-              />
-            </InputGroup>
-          </FormControl>
-          <Button data-testid="sync-sign-in-button" variant="kita" isLoading={isSubmitting} onClick={() => signIn(formEmail, formPassword)}>
-            Sign in
-          </Button>
-          <Button
-            data-testid="sync-sign-up-button"
-            variant="kita-outline"
-            isLoading={isSubmitting}
-            onClick={() => signUp(formEmail, formPassword)}
-          >
-            Create account
-          </Button>
-        </VStack>
-      </Box>
-    </Flex>
+    <VStack align="stretch" spacing={4}>
+      <Alert status="info" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-disclaimer-banner">
+        <AlertIcon />
+        This is just a small hobby project running on Supabase's free tier, so storage is capped at 2MB per account — sorry, I can't afford
+        more space right now. You're welcome to delete your account and all your data at any time from the Danger Zone.
+      </Alert>
+      <Flex align="center" justify="center" minH="60vh">
+        <Box
+          bg="bg.secondary"
+          border="1px solid"
+          borderColor="border.primary"
+          rounded="xl"
+          p={6}
+          maxW="sm"
+          w="full"
+          data-testid="sync-signed-out"
+        >
+          <VStack align="stretch" spacing={4}>
+            <Heading size="md" color="accent.primary">
+              Sync
+            </Heading>
+            <Text fontSize="sm" color="text.secondary">
+              Sign in to sync your videos, tags, and auto-tag rules across devices and browsers.
+            </Text>
+            {error && (
+              <Alert status="error" variant="kita" rounded="lg" fontSize="sm">
+                <AlertIcon />
+                {error}
+              </Alert>
+            )}
+            <FormControl>
+              <FormLabel>Email</FormLabel>
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <EmailIcon color="text.tertiary" />
+                </InputLeftElement>
+                <Input data-testid="sync-email-input" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
+              </InputGroup>
+            </FormControl>
+            <FormControl>
+              <FormLabel>Password</FormLabel>
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <LockIcon color="text.tertiary" />
+                </InputLeftElement>
+                <Input
+                  data-testid="sync-password-input"
+                  type="password"
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                />
+              </InputGroup>
+            </FormControl>
+            <Button
+              data-testid="sync-sign-in-button"
+              variant="kita"
+              isLoading={isSubmitting}
+              onClick={() => signIn(formEmail, formPassword)}
+            >
+              Sign in
+            </Button>
+            <Button
+              data-testid="sync-sign-up-button"
+              variant="kita-outline"
+              isLoading={isSubmitting}
+              onClick={() => signUp(formEmail, formPassword)}
+            >
+              Create account
+            </Button>
+          </VStack>
+        </Box>
+      </Flex>
+    </VStack>
   );
 };
 
