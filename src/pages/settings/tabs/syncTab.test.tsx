@@ -46,6 +46,8 @@ describe("SyncTab", () => {
     expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/hobby project/i);
     expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/2\s*MB/i);
     expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/delete your account/i);
+    expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/90 days/i);
+    expect(screen.getByTestId("sync-disclaimer-banner")).toHaveTextContent(/1 year/i);
   });
 
   test("submitting sign in calls context signIn with the entered credentials", () => {
