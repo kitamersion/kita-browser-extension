@@ -164,5 +164,7 @@ begin
 end;
 $$;
 
+revoke execute on function kitamersion.run_retention_sweep() from public;
+
 -- '0 3 * * *' = every day at 03:00 UTC.
 select cron.schedule('kitamersion-retention-sweep', '0 3 * * *', $$select kitamersion.run_retention_sweep();$$);
