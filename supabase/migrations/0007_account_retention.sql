@@ -15,6 +15,11 @@ alter table kitamersion.plans
 update kitamersion.plans set plan = 'free' where plan = 'free_tier_1';
 
 alter table kitamersion.user_quotas rename column tier to plan;
+-- The rename above doesn't touch the column's default, which was still the literal 'free_tier_1'
+-- from when it was created in 0004 — update it to match the renamed value above. Without this,
+-- every new signup's handle_new_user() trigger inserts a bare user_quotas row that falls back to
+-- the stale default, violating user_quotas_tier_fkey since that value no longer exists in plans.
+alter table kitamersion.user_quotas alter column plan set default 'free';
 -- Server-set (via now()), never client-supplied, so there's no clock-skew trust issue. Defaults
 -- to now() so a user who signs up and never completes a first sync still has a starting point —
 -- comparing against null in the sweep's where clause would otherwise silently mean "never expires."
