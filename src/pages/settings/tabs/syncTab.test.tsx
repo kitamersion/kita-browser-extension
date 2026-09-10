@@ -309,6 +309,37 @@ describe("SyncTab", () => {
     expect(pauseKitaSync).toHaveBeenCalled();
   });
 
+  test("shows the sync interval and lets the user change it", () => {
+    const setSyncIntervalMinutes = jest.fn();
+    (useSyncContext as jest.Mock).mockReturnValue({
+      isInitialized: true,
+      isSignedIn: true,
+      email: "a@b.com",
+      quota: null,
+      lastSyncedAt: 0,
+      nextSyncAt: null,
+      isSyncing: false,
+      error: null,
+      isKitaSyncPaused: false,
+      pauseKitaSync: jest.fn(),
+      resumeKitaSync: jest.fn(),
+      syncIntervalMinutes: 15,
+      setSyncIntervalMinutes,
+      signUp: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      syncNow: jest.fn(),
+    });
+
+    render(<SyncTab />);
+
+    expect(screen.getByTestId("sync-interval-trigger")).toHaveTextContent("Every 15 minutes");
+    fireEvent.click(screen.getByTestId("sync-interval-trigger"));
+    fireEvent.click(screen.getByTestId("sync-interval-option-720"));
+
+    expect(setSyncIntervalMinutes).toHaveBeenCalledWith(720);
+  });
+
   test("shows a resume control that resumes Kita Sync when it's paused", () => {
     const resumeKitaSync = jest.fn();
     (useSyncContext as jest.Mock).mockReturnValue({

@@ -9,7 +9,7 @@ import { getQuotaUsage } from "@/api/sync/quota";
 import { runSync } from "@/api/sync/syncEngine";
 import { getNextSyncTime } from "@/pages/background/syncAlarm";
 import { settingsManager } from "@/api/settings/manager";
-import { SETTINGS, SyncStats } from "@/api/settings/definitions";
+import { SETTINGS, SyncIntervalMinutes, SyncStats } from "@/api/settings/definitions";
 import { QuotaInfo } from "@/types/integrations/sync";
 import IndexedDB from "@/db/index";
 import { useToastContext } from "@/context/toastNotificationContext";
@@ -37,6 +37,8 @@ type SyncContextType = {
   isKitaSyncPaused: boolean;
   pauseKitaSync: () => Promise<void>;
   resumeKitaSync: () => Promise<void>;
+  syncIntervalMinutes: SyncIntervalMinutes;
+  setSyncIntervalMinutes: (minutes: SyncIntervalMinutes) => Promise<void>;
   deleteAllData: () => Promise<{ error: string | null }>;
   deleteAccount: () => Promise<{ error: string | null }>;
   purgeExpiredTombstones: () => Promise<{ error: string | null }>;
@@ -63,6 +65,9 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
   const [isKitaSyncPaused, setIsKitaSyncPaused] = useState(false);
+  const [syncIntervalMinutes, setSyncIntervalMinutesState] = useState<SyncIntervalMinutes>(
+    SETTINGS.kitaSync.syncIntervalMinutes.defaultValue
+  );
 
   const refresh = useCallback(async () => {
     if (await settingsManager.get(SETTINGS.kitaSync.pendingRekeyNotice)) {
@@ -81,6 +86,7 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     setNextSyncAt(await getNextSyncTime());
     setIsKitaSyncPaused(await settingsManager.get(SETTINGS.kitaSync.paused));
     setLastSyncStats(await settingsManager.get(SETTINGS.kitaSync.lastSyncStats));
+    setSyncIntervalMinutesState(await settingsManager.get(SETTINGS.kitaSync.syncIntervalMinutes));
   }, [showToast]);
 
   useEffect(() => {
@@ -208,6 +214,11 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
     showToast({ title: "Kita Sync resumed", status: "success" });
   }, [showToast]);
 
+  const setSyncIntervalMinutes = useCallback(async (minutes: SyncIntervalMinutes) => {
+    await settingsManager.set(SETTINGS.kitaSync.syncIntervalMinutes, minutes);
+    setSyncIntervalMinutesState(minutes);
+  }, []);
+
   const deleteAllData = useCallback(async () => {
     const { error: deleteError } = await apiDeleteAllData();
     if (deleteError) {
@@ -272,6 +283,8 @@ export const SyncProvider = ({ children }: PropsWithChildren<unknown>) => {
         isKitaSyncPaused,
         pauseKitaSync,
         resumeKitaSync,
+        syncIntervalMinutes,
+        setSyncIntervalMinutes,
         deleteAllData,
         deleteAccount,
         purgeExpiredTombstones,

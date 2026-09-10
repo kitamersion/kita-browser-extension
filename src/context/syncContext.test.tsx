@@ -53,6 +53,8 @@ const Consumer = () => {
       <span data-testid="kita-sync-paused">{String(ctx.isKitaSyncPaused)}</span>
       <button onClick={() => ctx.pauseKitaSync()}>pause kita sync</button>
       <button onClick={() => ctx.resumeKitaSync()}>resume kita sync</button>
+      <span data-testid="sync-interval-minutes">{ctx.syncIntervalMinutes}</span>
+      <button onClick={() => ctx.setSyncIntervalMinutes(60)}>set sync interval</button>
       <button onClick={() => ctx.deleteAllData()}>delete all data</button>
       <button onClick={() => ctx.deleteAccount()}>delete account</button>
       <button onClick={() => ctx.purgeExpiredTombstones()}>purge expired tombstones</button>
@@ -523,5 +525,34 @@ describe("SyncProvider", () => {
 
     await waitFor(() => expect(screen.getByTestId("kita-sync-paused")).toHaveTextContent("false"));
     expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.paused, false);
+  });
+
+  test("exposes the configured sync interval", async () => {
+    (settingsManager.get as jest.Mock).mockImplementation((setting: unknown) => {
+      if (setting === SETTINGS.kitaSync.syncIntervalMinutes) return Promise.resolve(720);
+      return Promise.resolve(false);
+    });
+
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId("sync-interval-minutes")).toHaveTextContent("720"));
+  });
+
+  test("setSyncIntervalMinutes persists the new interval", async () => {
+    render(
+      <SyncProvider>
+        <Consumer />
+      </SyncProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("signed-in")).toHaveTextContent("false"));
+
+    fireEvent.click(screen.getByText("set sync interval"));
+
+    await waitFor(() => expect(screen.getByTestId("sync-interval-minutes")).toHaveTextContent("60"));
+    expect(settingsManager.set).toHaveBeenCalledWith(SETTINGS.kitaSync.syncIntervalMinutes, 60);
   });
 });

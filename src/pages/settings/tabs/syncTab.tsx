@@ -12,18 +12,31 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Progress,
   SimpleGrid,
   Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { CheckCircleIcon, EmailIcon, LockIcon, RepeatClockIcon, TimeIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, CheckCircleIcon, EmailIcon, LockIcon, RepeatClockIcon, TimeIcon } from "@chakra-ui/icons";
 import { MdCloudDownload, MdCloudUpload } from "react-icons/md";
 import { useSyncContext } from "@/context/syncContext";
 import SummaryItem from "@/components/summaryItem";
+import { SYNC_INTERVAL_MINUTES_OPTIONS, SyncIntervalMinutes } from "@/api/settings/definitions";
 
 const formatBytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+
+const SYNC_INTERVAL_LABELS: Record<SyncIntervalMinutes, string> = {
+  15: "Every 15 minutes",
+  30: "Every 30 minutes",
+  60: "Every hour",
+  720: "Every 12 hours",
+  1440: "Every day",
+};
 
 // Green mirrors the "success" color already used for synced states elsewhere; orange/red give an
 // early warning before a write is rejected by the storage-quota-exceeded error.
@@ -49,6 +62,8 @@ const SyncTab: React.FC = () => {
     isKitaSyncPaused,
     pauseKitaSync,
     resumeKitaSync,
+    syncIntervalMinutes,
+    setSyncIntervalMinutes,
     signUp,
     signIn,
     signOut,
@@ -99,6 +114,31 @@ const SyncTab: React.FC = () => {
               </HStack>
             </VStack>
             <HStack>
+              <Menu isLazy>
+                <MenuButton
+                  as={Button}
+                  data-testid="sync-interval-trigger"
+                  variant="kita-outline"
+                  rightIcon={<ChevronDownIcon />}
+                >
+                  {SYNC_INTERVAL_LABELS[syncIntervalMinutes]}
+                </MenuButton>
+                <MenuList bg="bg.primary" borderColor="border.primary">
+                  {SYNC_INTERVAL_MINUTES_OPTIONS.map((minutes) => (
+                    <MenuItem
+                      key={minutes}
+                      data-testid={`sync-interval-option-${minutes}`}
+                      onClick={() => setSyncIntervalMinutes(minutes)}
+                      bg="bg.primary"
+                      color={minutes === syncIntervalMinutes ? "accent.primary" : "text.primary"}
+                      _hover={{ bg: "kita.primaryAlpha.100" }}
+                      _focus={{ bg: "kita.primaryAlpha.100" }}
+                    >
+                      {SYNC_INTERVAL_LABELS[minutes]}
+                    </MenuItem>
+                  ))}
+                </MenuList>
+              </Menu>
               <Button
                 data-testid="sync-now-button"
                 variant="kita"

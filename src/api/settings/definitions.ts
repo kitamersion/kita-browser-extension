@@ -23,6 +23,10 @@ const isPendingAnilistSyncArrayValidator = (value: any): value is PendingAnilist
 export type SyncStats = { pulled: number; pushed: number };
 const isSyncStatsValidator = (value: any): value is SyncStats | null =>
   value === null || (typeof value === "object" && typeof value.pulled === "number" && typeof value.pushed === "number");
+export const SYNC_INTERVAL_MINUTES_OPTIONS = [15, 30, 60, 720, 1440] as const;
+export type SyncIntervalMinutes = (typeof SYNC_INTERVAL_MINUTES_OPTIONS)[number];
+const isSyncIntervalMinutesValidator = (value: any): value is SyncIntervalMinutes =>
+  SYNC_INTERVAL_MINUTES_OPTIONS.includes(value);
 
 export const SETTINGS = {
   application: {
@@ -135,6 +139,11 @@ export const SETTINGS = {
       defaultValue: null,
       validator: isSyncStatsValidator,
     } as SettingDefinition<SyncStats | null>,
+    syncIntervalMinutes: {
+      key: "kitamersion_kita_sync_interval_minutes",
+      defaultValue: 15,
+      validator: isSyncIntervalMinutesValidator,
+    } as SettingDefinition<SyncIntervalMinutes>,
   },
   statistics: {
     totalVideos: {
