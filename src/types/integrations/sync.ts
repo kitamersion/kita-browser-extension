@@ -8,4 +8,6 @@ export type SyncRow = {
 export type QuotaInfo = {
   currentBytes: number;
   maxBytes: number;
+  lastSyncedAt: number;
+  dataRetentionDays: number;
 };

@@ -8,15 +8,27 @@ import { getSupabaseClient } from "./supabaseClient";
 import { getQuotaUsage } from "./quota";
 
 describe("getQuotaUsage", () => {
-  test("returns the current/max bytes for the signed-in user", async () => {
+  test("returns the current/max bytes and retention info for the signed-in user", async () => {
     (getSupabaseClient as jest.Mock).mockReturnValue({
       from: () => ({
         select: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: { current_bytes: 1234, quota_tiers: { max_bytes: 5242880 } }, error: null }),
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            current_bytes: 1234,
+            last_synced_at: "2026-09-01T00:00:00.000Z",
+            plans: { max_bytes: 5242880, data_retention_days: 90 },
+          },
+          error: null,
+        }),
       }),
     });
 
-    expect(await getQuotaUsage()).toEqual({ currentBytes: 1234, maxBytes: 5242880 });
+    expect(await getQuotaUsage()).toEqual({
+      currentBytes: 1234,
+      maxBytes: 5242880,
+      lastSyncedAt: new Date("2026-09-01T00:00:00.000Z").getTime(),
+      dataRetentionDays: 90,
+    });
   });
 
   test("returns null when there is no quota row", async () => {
