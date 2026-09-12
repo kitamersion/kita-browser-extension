@@ -16,6 +16,7 @@ import {
   parseAnilistAuthFromRedirectUrl,
   pickAutoMatch,
   randomOffset,
+  resolveAnilistProgress,
   secondsToHms,
 } from ".";
 
@@ -273,6 +274,41 @@ describe("pickAutoMatch function", () => {
 
   test("returns undefined for an empty result list", () => {
     expect(pickAutoMatch([], 2021)).toBeUndefined();
+  });
+});
+
+describe("resolveAnilistProgress function", () => {
+  test("advances one past AniList's known progress when the local count is behind it", () => {
+    expect(resolveAnilistProgress(1, 170)).toBe(171);
+  });
+
+  test("still advances from AniList's known progress even when the local count is larger", () => {
+    // AniList is the source of truth once it has a value - the local count never overrides it,
+    // since it's a per-page number (e.g. Crunchyroll's season-relative numbering) that just happens
+    // to be bigger, not a more trustworthy absolute count.
+    expect(resolveAnilistProgress(12, 3)).toBe(4);
+  });
+
+  test("falls back to the local count when AniList has no known progress yet", () => {
+    expect(resolveAnilistProgress(5, null)).toBe(5);
+  });
+
+  test("does not advance when the local count already matches AniList's known progress", () => {
+    // e.g. AniList is at episode 170 and this capture is also 170 - the same episode being logged
+    // again (a rewatch), not a new one, so it shouldn't be pushed to 171.
+    expect(resolveAnilistProgress(170, 170)).toBe(170);
+  });
+
+  test("falls back to 1 when neither a local count nor AniList progress is known", () => {
+    expect(resolveAnilistProgress(undefined, null)).toBe(1);
+  });
+
+  test("clamps the result to the media's total episode count when known", () => {
+    expect(resolveAnilistProgress(1, 291, 291)).toBe(291);
+  });
+
+  test("does not clamp when total episode count is unknown", () => {
+    expect(resolveAnilistProgress(1, 500, null)).toBe(501);
   });
 });
 
