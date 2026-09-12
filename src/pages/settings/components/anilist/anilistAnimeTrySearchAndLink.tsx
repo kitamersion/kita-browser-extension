@@ -146,7 +146,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
             tag_id: tag.id,
             created_at: Date.now(),
           };
-          eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship from anilist", value: [videoTagRelationship] });
+          eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, {
+            message: "video tag add relationship from anilist",
+            value: [videoTagRelationship],
+          });
         }
 
         // Sync to AniList if we have the required data
