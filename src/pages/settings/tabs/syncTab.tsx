@@ -243,9 +243,9 @@ const SyncTab: React.FC = () => {
           data_retention_days/account_retention_days in supabase/migrations/0007_account_retention.sql. */}
       <Alert status="info" variant="kita" rounded="lg" fontSize="sm" data-testid="sync-disclaimer-banner">
         <AlertIcon />
-        This is just a small hobby project running on Supabase's free tier, so storage is capped at 2MB per account — sorry, I can't afford
-        more space right now. Inactive accounts have their data cleared after 90 days, and the account itself after 1 year. You're welcome to
-        delete your account and all your data at any time from the Danger Zone.
+        This is just a small hobby project running on Supabase&apos;s free tier, so storage is capped at 2MB per account — sorry, I
+        can&apos;t afford more space right now. Inactive accounts have their data cleared after 90 days, and the account itself after 1
+        year. You&apos;re welcome to delete your account and all your data at any time from the Danger Zone.
       </Alert>
       <Flex align="center" justify="center" minH="60vh">
         <Box

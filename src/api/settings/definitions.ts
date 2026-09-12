@@ -25,8 +25,7 @@ const isSyncStatsValidator = (value: any): value is SyncStats | null =>
   value === null || (typeof value === "object" && typeof value.pulled === "number" && typeof value.pushed === "number");
 export const SYNC_INTERVAL_MINUTES_OPTIONS = [15, 30, 60, 720, 1440] as const;
 export type SyncIntervalMinutes = (typeof SYNC_INTERVAL_MINUTES_OPTIONS)[number];
-const isSyncIntervalMinutesValidator = (value: any): value is SyncIntervalMinutes =>
-  SYNC_INTERVAL_MINUTES_OPTIONS.includes(value);
+const isSyncIntervalMinutesValidator = (value: any): value is SyncIntervalMinutes => SYNC_INTERVAL_MINUTES_OPTIONS.includes(value);
 
 export const SETTINGS = {
   application: {
