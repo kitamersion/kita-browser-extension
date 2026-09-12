@@ -15,22 +15,6 @@ jobs:
         with:
           fetch-depth: "0"
 
-      - name: Preview next version
-        id: next_version
-        uses: anothrNick/github-tag-action@1.64.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-          INITIAL_VERSION: 1.0.0
-          DRY_RUN: "true"
-
-      - name: Set extension version from previewed release tag
-        run: |
-          VERSION="${{ steps.next_version.outputs.tag }}"
-          VERSION="${VERSION#v}"
-          jq --arg v "$VERSION" '.version = $v' ext/manifest.json > /tmp/manifest.json
-          mv /tmp/manifest.json ext/manifest.json
-
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
