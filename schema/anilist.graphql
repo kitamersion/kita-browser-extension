@@ -1,0 +1,267 @@
+# Vendored, hand-authored subset of AniList's public GraphQL schema
+# (https://graphql.anilist.co), used by `graphql-codegen` (see ../codegen.yml).
+#
+# Why this file exists: codegen previously fetched AniList's live schema over
+# the network on every `npm run dev`/`npm run build`/CI run. That's an
+# anti-pattern regardless of uptime (flaky, slow, non-reproducible, breaks
+# silently if AniList's schema changes) and became a hard outage the day
+# AniList's public API went down. This file replaces the live fetch.
+#
+# This is intentionally NOT AniList's full schema — only the types, fields,
+# enums, and inputs actually touched by the operations in
+# ../src/graphql/queries/*.ts and ../src/graphql/mutation/*.ts. Codegen
+# validates every operation against this file at generation time, so if a
+# future operation references a field that isn't here, `npm run
+# graphql:codegen` fails immediately with a precise "Cannot query field X on
+# type Y" error naming the exact document.
+#
+# To extend this file: add the missing type/field/enum member by hand.
+# Cross-check the exact nullability/args against https://docs.anilist.co or
+# a live introspection of https://graphql.anilist.co if it's back up, then
+# re-run `npm run graphql:codegen` until it validates.
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+scalar Json
+
+type Query {
+  Viewer: User
+  MediaListCollection(userId: Int, type: MediaType, status: MediaListStatus, sort: [MediaListSort]): MediaListCollection
+  Media(id: Int): Media
+  Page(page: Int, perPage: Int): Page
+  MediaTagCollection: [MediaTag]
+  GenreCollection: [String]
+}
+
+type Mutation {
+  SaveMediaListEntry(
+    id: Int
+    mediaId: Int
+    status: MediaListStatus
+    score: Float
+    progress: Int
+    progressVolumes: Int
+    repeat: Int
+    private: Boolean
+    notes: String
+    customLists: [String]
+    hiddenFromStatusLists: Boolean
+    advancedScores: [Float]
+    startedAt: FuzzyDateInput
+    completedAt: FuzzyDateInput
+  ): MediaList
+}
+
+type User {
+  id: Int!
+  name: String!
+  siteUrl: String
+  avatar: UserAvatar
+  statistics: UserStatisticTypes
+}
+
+type UserAvatar {
+  medium: String
+}
+
+type UserStatisticTypes {
+  anime: UserStatistics
+  manga: UserStatistics
+}
+
+type UserStatistics {
+  count: Int!
+  minutesWatched: Int!
+  chaptersRead: Int!
+}
+
+type MediaListCollection {
+  lists: [MediaListGroup]
+}
+
+type MediaListGroup {
+  name: String
+  status: MediaListStatus
+  entries: [MediaList]
+}
+
+type MediaList {
+  id: Int!
+  mediaId: Int!
+  userId: Int!
+  status: MediaListStatus
+  progress: Int
+  progressVolumes: Int
+  score: Float
+  repeat: Int
+  priority: Int
+  private: Boolean
+  notes: String
+  hiddenFromStatusLists: Boolean
+  customLists: Json
+  advancedScores: Json
+  startedAt: FuzzyDate
+  completedAt: FuzzyDate
+  updatedAt: Int
+  createdAt: Int
+  user: User
+  media: Media
+}
+
+type FuzzyDate {
+  year: Int
+  month: Int
+  day: Int
+}
+
+input FuzzyDateInput {
+  year: Int
+  month: Int
+  day: Int
+}
+
+type Media {
+  id: Int!
+  idMal: Int
+  season: MediaSeason
+  seasonYear: Int
+  title: MediaTitle
+  coverImage: MediaCoverImage
+  bannerImage: String
+  type: MediaType
+  format: MediaFormat
+  status(version: Int): MediaStatus
+  episodes: Int
+  duration: Int
+  chapters: Int
+  volumes: Int
+  genres: [String]
+  averageScore: Int
+  popularity: Int
+  favourites: Int
+  isFavourite: Boolean!
+  isAdult: Boolean
+  isLicensed: Boolean
+  studios(isMain: Boolean): StudioConnection
+  nextAiringEpisode: AiringSchedule
+  siteUrl: String
+  mediaListEntry: MediaList
+  startDate: FuzzyDate
+}
+
+type MediaTitle {
+  romaji: String
+  english: String
+  native: String
+  userPreferred: String
+}
+
+type MediaCoverImage {
+  extraLarge: String
+  large: String
+  medium: String
+  color: String
+}
+
+type StudioConnection {
+  edges: [StudioEdge]
+}
+
+type StudioEdge {
+  node: Studio
+  isMain: Boolean!
+}
+
+type Studio {
+  id: Int!
+  name: String!
+}
+
+type AiringSchedule {
+  id: Int!
+  timeUntilAiring: Int!
+  episode: Int!
+}
+
+type Page {
+  pageInfo: PageInfo
+  media(
+    type: MediaType
+    isAdult: Boolean
+    search: String
+    genre_in: [String]
+    tag_in: [String]
+    seasonYear: Int
+    format_in: [MediaFormat]
+    sort: [MediaSort]
+  ): [Media]
+}
+
+type PageInfo {
+  total: Int
+  perPage: Int
+  currentPage: Int
+  lastPage: Int
+  hasNextPage: Boolean
+}
+
+type MediaTag {
+  id: Int!
+  name: String!
+  category: String
+  isAdult: Boolean
+}
+
+enum MediaListStatus {
+  CURRENT
+  PLANNING
+  COMPLETED
+  DROPPED
+  PAUSED
+  REPEATING
+}
+
+enum MediaListSort {
+  UPDATED_TIME_DESC
+}
+
+enum MediaType {
+  ANIME
+  MANGA
+}
+
+enum MediaFormat {
+  TV
+  TV_SHORT
+  MOVIE
+  SPECIAL
+  OVA
+  ONA
+  MUSIC
+  MANGA
+  NOVEL
+  ONE_SHOT
+}
+
+enum MediaStatus {
+  FINISHED
+  RELEASING
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+enum MediaSeason {
+  WINTER
+  SPRING
+  SUMMER
+  FALL
+}
+
+enum MediaSort {
+  SEARCH_MATCH
+  POPULARITY_DESC
+}

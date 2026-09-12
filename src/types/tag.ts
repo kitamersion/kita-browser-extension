@@ -3,6 +3,8 @@ export type ITag = {
   name: string;
   code?: string;
   created_at?: number;
+  updated_at?: number;
+  deleted_at?: number;
   color?: string; // hex color
   owner?: TagOwner;
 };

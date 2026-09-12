@@ -3,6 +3,7 @@ import {
   VIDEO_TAG_ADD_RELATIONSHIP,
   VIDEO_TAG_REMOVE_RELATIONSHIP_BY_TAG_ID,
   VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID,
+  VIDEO_TAG_RELATIONSHIP_REFRESH,
 } from "@/data/events";
 import eventBus from "@/api/eventbus";
 import { IVideoTag } from "@/types/relationship";
@@ -46,15 +47,15 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
   }, []);
 
   const handleVideoTagDeleteRelationshipByTagId = useCallback(async (eventData: any) => {
-    const tagId = eventData.value as string;
+    const { videoId, tagId } = eventData.value as { videoId: string; tagId: string };
 
-    if (!tagId) {
-      logger.warn("No tag id found from event handler");
+    if (!videoId || !tagId) {
+      logger.warn("No video id or tag id found from event handler");
       return;
     }
 
-    await IndexedDB.deleteVideoTagByTagId(tagId);
-    setRelationships((prev) => prev.filter((item) => item.tag_id !== tagId));
+    await IndexedDB.deleteVideoTagByVideoAndTagId(videoId, tagId);
+    setRelationships((prev) => prev.filter((item) => !(item.video_id === videoId && item.tag_id === tagId)));
   }, []);
 
   const handleVideoTagDeleteRelationshipByVideoId = useCallback(async (eventData: any) => {
@@ -108,6 +109,14 @@ export const VideoTagRelationshipProvider = ({ children }: PropsWithChildren<unk
       eventBus.unsubscribe(VIDEO_TAG_REMOVE_RELATIONSHIP_BY_VIDEO_ID, handleVideoTagDeleteRelationshipByVideoId);
     };
   }, [handleVideoTagDeleteRelationshipByVideoId]);
+
+  // handle VIDEO_TAG_RELATIONSHIP_REFRESH
+  useEffect(() => {
+    eventBus.subscribe(VIDEO_TAG_RELATIONSHIP_REFRESH, fetchRelationships);
+    return () => {
+      eventBus.unsubscribe(VIDEO_TAG_RELATIONSHIP_REFRESH, fetchRelationships);
+    };
+  }, [fetchRelationships]);
 
   return (
     <VideoTagRelationshipContext.Provider value={{ videoTagRelationship: relationships, isInitialized: isInitialized }}>

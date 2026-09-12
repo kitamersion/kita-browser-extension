@@ -1,0 +1,49 @@
+project_id = "kita-browser-extension"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "kitamersion"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[auth]
+enabled = true
+site_url = "https://www.kitamersion.com"
+additional_redirect_urls = ["https://www.kitamersion.com/auth/confirm/"]
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+[auth.rate_limit]
+# Default is 30 per 5 minutes per IP - far more than a single legitimate user needs,
+# and enough for a script to burn through the (much smaller) hourly email budget in seconds.
+sign_in_sign_ups = 5
+
+[analytics]
+enabled = false
+port = 54327
+vector_port = 54328
+
+[realtime]
+enabled = true

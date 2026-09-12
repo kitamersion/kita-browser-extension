@@ -3,4 +3,6 @@ export type IVideoTag = {
   video_id: string;
   tag_id: string;
   created_at?: number;
+  updated_at?: number;
+  deleted_at?: number;
 };

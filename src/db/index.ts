@@ -13,6 +13,7 @@ import {
   OBJECT_STORE_AUTO_TAG,
   OBJECT_STORE_SERIES_MAPPINGS,
   OBJECT_STORE_ANILIST_CACHE,
+  OBJECT_STORE_SYNC_META,
 } from "./schema";
 const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 import { setApplicationEnabled } from "@/api/applicationStorage";
@@ -158,7 +159,8 @@ class IndexedDB {
       const request = videoStore.get(id);
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as IVideo | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
 
       request.onerror = () => {
@@ -168,7 +170,7 @@ class IndexedDB {
   }
 
   // get all videos
-  getAllVideos(): Promise<IVideo[]> {
+  getAllVideos(includeDeleted = false): Promise<IVideo[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
@@ -178,7 +180,8 @@ class IndexedDB {
       const request = videoStore.getAll();
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const rows = request.result as IVideo[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
 
       request.onerror = () => {
@@ -195,7 +198,10 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
 
-      const request = videoStore.put(video);
+      // updated_at is stamped here, in the DB layer, rather than trusted from callers: the sync push
+      // filter is `row.updated_at > cursor`, and `undefined > n` is false, so an unstamped row would
+      // silently never sync.
+      const request = videoStore.put({ ...video, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -213,7 +219,7 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
 
-      const request = videoStore.put(video);
+      const request = videoStore.put({ ...video, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -223,37 +229,56 @@ class IndexedDB {
     });
   }
 
-  // delete video by id
+  // soft-delete video by id (tombstoned for sync; excluded from reads)
   deleteVideoById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const getRequest = videoStore.get(id);
 
-      videoStore.delete(id);
-
-      transaction.oncomplete = () => {
-        resolve();
+      getRequest.onsuccess = () => {
+        const video = getRequest.result as IVideo | undefined;
+        if (!video) {
+          resolve();
+          return;
+        }
+        // unique_code is cleared on tombstone: it's a `unique: true` index, and a tombstoned row
+        // keeping its value would make IndexedDB throw ConstraintError when the user later
+        // re-creates the same video. A keyPath evaluating to undefined omits the record from the
+        // index entirely, freeing the slot without a schema change. Safe for sync: natural-key
+        // reconciliation only matters for a row's first-ever contact between two devices, before
+        // either has a stable shared id — a row being deleted has one already and merges by id.
+        const putRequest = videoStore.put({ ...video, unique_code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
-  // delete all videos
+  // soft-delete all videos (bulk/local-only convenience; infrequent, not a hot path)
   deleteAllVideos(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readwrite");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
+      const request = videoStore.openCursor();
 
-      const request = videoStore.clear();
       request.onsuccess = () => {
-        resolve();
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const video = cursor.value as IVideo;
+          if (!video.deleted_at) {
+            // unique_code cleared for the same reason as in deleteVideoById.
+            cursor.update({ ...video, unique_code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
       };
       request.onerror = () => {
         reject(request.error);
@@ -269,10 +294,22 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
       const index = videoStore.index("unique_code");
-      const request = index.get(unique_code);
+      // Cursor rather than index.get(): get() returns an arbitrary match by primary-key order, so a
+      // tombstone sorting ahead of a live row would shadow it and make the live row unreachable.
+      const request = index.openCursor(IDBKeyRange.only(unique_code));
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as IVideo;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
 
       request.onerror = () => {
@@ -281,7 +318,7 @@ class IndexedDB {
     });
   }
 
-  // get videos by pagination
+  // get videos by pagination (excludes soft-deleted rows from both results and the total/page count)
   getVideosByPagination(page: number, pageSize: number): Promise<IPaginatedVideos> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -289,56 +326,35 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_VIDEOS, "readonly");
       const videoStore = transaction.objectStore(OBJECT_STORE_VIDEOS);
       const createdAtIndex = videoStore.index("created_at");
-      const request = videoStore.count();
+      // deleted_at isn't indexed, so a store-wide count() can't distinguish soft-deleted rows.
+      // Walk the whole index once, skipping soft-deleted rows for both the page slice and the total count.
+      const cursorRequest = createdAtIndex.openCursor(null, "prev"); // iterate in desc order
+      const results: IVideo[] = [];
+      let totalRecords = 0;
 
-      request.onsuccess = () => {
-        const totalRecords = request.result;
-        const totalPages = Math.ceil(totalRecords / pageSize);
-        const cursorRequest = createdAtIndex.openCursor(null, "prev"); // open cursor to iterate in desc order
-        const results: IVideo[] = [];
-        let index = 0;
-
-        cursorRequest.onsuccess = () => {
-          const cursor = cursorRequest.result;
-          if (cursor) {
-            if (index >= page * pageSize && index < (page + 1) * pageSize) {
-              results.push(cursor.value);
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+          const video = cursor.value as IVideo;
+          if (!video.deleted_at) {
+            if (totalRecords >= page * pageSize && totalRecords < (page + 1) * pageSize) {
+              results.push(video);
             }
-            index++;
-            if (results.length < pageSize) {
-              cursor.continue();
-            } else {
-              resolve({
-                page,
-                pageSize,
-                results,
-                totalPages,
-              });
-            }
-          } else if (results.length > 0) {
-            resolve({
-              page,
-              pageSize,
-              results,
-              totalPages,
-            });
-          } else {
-            resolve({
-              page,
-              pageSize,
-              results: [],
-              totalPages,
-            });
+            totalRecords++;
           }
-        };
-
-        cursorRequest.onerror = () => {
-          reject(cursorRequest.error);
-        };
+          cursor.continue();
+        } else {
+          resolve({
+            page,
+            pageSize,
+            results,
+            totalPages: Math.ceil(totalRecords / pageSize),
+          });
+        }
       };
 
-      request.onerror = () => {
-        reject(request.error);
+      cursorRequest.onerror = () => {
+        reject(cursorRequest.error);
       };
     });
   }
@@ -348,14 +364,15 @@ class IndexedDB {
   // ================================================================================
 
   // get all tags
-  getAllTags(): Promise<ITag[]> {
+  getAllTags(includeDeleted = false): Promise<ITag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const request = tagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        const rows = request.result as ITag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -371,7 +388,8 @@ class IndexedDB {
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const request = tagStore.get(id);
       request.onsuccess = () => {
-        resolve(request.result);
+        const result = request.result as ITag | undefined;
+        resolve(result?.deleted_at ? undefined : result);
       };
       request.onerror = () => {
         reject(request.error);
@@ -386,9 +404,20 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readonly");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
       const index = tagStore.index("code");
-      const request = index.get(code);
+      // Cursor rather than index.get() — see getVideoByUniqueCode for why.
+      const request = index.openCursor(IDBKeyRange.only(code));
       request.onsuccess = () => {
-        resolve(request.result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as ITag;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
       request.onerror = () => {
         reject(request.error);
@@ -411,6 +440,9 @@ class IndexedDB {
         name,
         code: codeOrFromName,
         created_at: created_at ?? Date.now(),
+        // Always a fresh stamp (not `??`-defaulted): every write is by definition a new update to
+        // this row's state, and the sync push filter (`updated_at > cursor`) skips unstamped rows.
+        updated_at: Date.now(),
         owner: owner ?? "USER",
         color,
       };
@@ -430,7 +462,7 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
-      const request = tagStore.put(tag);
+      const request = tagStore.put({ ...tag, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -440,22 +472,29 @@ class IndexedDB {
     });
   }
 
-  // delete tag by id
+  // soft-delete tag by id (tombstoned for sync; excluded from reads)
   deleteTagById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
 
       const transaction = this.db.transaction(OBJECT_STORE_TAGS, "readwrite");
       const tagStore = transaction.objectStore(OBJECT_STORE_TAGS);
+      const getRequest = tagStore.get(id);
 
-      tagStore.delete(id);
-
-      transaction.oncomplete = () => {
-        resolve();
+      getRequest.onsuccess = () => {
+        const tag = getRequest.result as ITag | undefined;
+        if (!tag) {
+          resolve();
+          return;
+        }
+        // code is cleared on tombstone — see the equivalent comment in deleteVideoById. `tags.code`
+        // is a `unique: true` index, so a tombstone that kept its code would block re-creating a
+        // tag with the same name with a ConstraintError.
+        const putRequest = tagStore.put({ ...tag, code: undefined, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -469,7 +508,7 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
-      const request = videoTagStore.put(videoTag);
+      const request = videoTagStore.put({ ...videoTag, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -480,14 +519,15 @@ class IndexedDB {
   }
 
   // get all video tag relationships
-  getAllVideoTags(): Promise<IVideoTag[]> {
+  getAllVideoTags(includeDeleted = false): Promise<IVideoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readonly");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
       const request = videoTagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        const rows = request.result as IVideoTag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -495,7 +535,7 @@ class IndexedDB {
     });
   }
 
-  // delete video tag relationship by video id
+  // soft-delete video tag relationships by video id (tombstoned for sync; excluded from reads)
   deleteVideoTagByVideoId(videoId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -506,7 +546,7 @@ class IndexedDB {
       request.onsuccess = () => {
         const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          cursor.delete();
+          cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
           cursor.continue();
         } else {
           resolve();
@@ -518,7 +558,13 @@ class IndexedDB {
     });
   }
 
-  // delete video tag relationship by tag id
+  // soft-delete every video tag relationship using this tag id, across every video (tombstoned for
+  // sync; excluded from reads). Intentionally global — used when the tag itself is being deleted
+  // entirely (tagContext.tsx, videoContext.tsx's CASCADE_REMOVE_TAG_FROM_VIDEO_BY_TAG_ID handler),
+  // where every video that had this tag should lose it. NOT for "remove this tag from one video" —
+  // use deleteVideoTagByVideoAndTagId below for that; using this one there was the root cause of a
+  // real bug where unchecking a tag on one video silently stripped it from every other video that
+  // happened to share it too.
   deleteVideoTagByTagId(tagId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
@@ -529,7 +575,7 @@ class IndexedDB {
       request.onsuccess = () => {
         const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
-          cursor.delete();
+          cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
           cursor.continue();
         } else {
           resolve();
@@ -541,15 +587,53 @@ class IndexedDB {
     });
   }
 
-  // delete all video tag relationships
+  // soft-delete the relationship between one specific video and one specific tag (tombstoned for
+  // sync; excluded from reads). Scoped by video_id — iterating that index and filtering by tag_id
+  // in JS, since there's no compound (video_id, tag_id) index — so removing a tag from one video
+  // never touches that same tag's relationship on any other video. Use this for "edit one video's
+  // tags"; use deleteVideoTagByTagId above only when the tag itself is being deleted entirely.
+  deleteVideoTagByVideoAndTagId(videoId: string, tagId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return;
+      const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
+      const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
+      const index = videoTagStore.index("video_id");
+      const request = index.openCursor(IDBKeyRange.only(videoId));
+      request.onsuccess = () => {
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          if (cursor.value.tag_id === tagId) {
+            cursor.update({ ...cursor.value, deleted_at: Date.now(), updated_at: Date.now() });
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // soft-delete all video tag relationships (tombstoned for sync; excluded from reads)
   deleteAllVideoTags(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_VIDEO_TAGS, "readwrite");
       const videoTagStore = transaction.objectStore(OBJECT_STORE_VIDEO_TAGS);
-      const request = videoTagStore.clear();
+      const request = videoTagStore.openCursor();
       request.onsuccess = () => {
-        resolve();
+        const cursor = (request as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          const videoTag = cursor.value as IVideoTag;
+          if (!videoTag.deleted_at) {
+            cursor.update({ ...videoTag, deleted_at: Date.now(), updated_at: Date.now() });
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
       };
       request.onerror = () => {
         reject(request.error);
@@ -569,7 +653,7 @@ class IndexedDB {
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
 
       const itemId = id ?? window.crypto.randomUUID();
-      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags });
+      const request = autoTagStore.put({ id: itemId, origin: origin, tags: tags, updated_at: Date.now() });
       request.onsuccess = () => {
         resolve();
       };
@@ -586,9 +670,22 @@ class IndexedDB {
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
       const index = autoTagStore.index("origin");
-      const request = index.get(origin);
+      // Cursor rather than index.get() — see getVideoByUniqueCode. `origin` is a non-unique index
+      // and never had a unique constraint to protect it, so tombstone shadowing is a live risk here:
+      // the caller treats a falsy result as "auto-tagging disabled for this origin".
+      const request = index.openCursor(IDBKeyRange.only(origin));
       request.onsuccess = () => {
-        resolve(request.result);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(undefined);
+          return;
+        }
+        const result = cursor.value as IAutoTag;
+        if (!result.deleted_at) {
+          resolve(result);
+          return;
+        }
+        cursor.continue();
       };
       request.onerror = () => {
         reject(request.error);
@@ -597,14 +694,15 @@ class IndexedDB {
   }
 
   // get all auto tag
-  getAllAutoTags(): Promise<IAutoTag[]> {
+  getAllAutoTags(includeDeleted = false): Promise<IAutoTag[]> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readonly");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
       const request = autoTagStore.getAll();
       request.onsuccess = () => {
-        resolve(request.result);
+        const rows = request.result as IAutoTag[];
+        resolve(includeDeleted ? rows : rows.filter((row) => !row.deleted_at));
       };
       request.onerror = () => {
         reject(request.error);
@@ -612,19 +710,25 @@ class IndexedDB {
     });
   }
 
-  // delete auto tag by id
+  // soft-delete auto tag by id (tombstoned for sync; excluded from reads)
   deleteAutoTagById(id: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_AUTO_TAG, "readwrite");
       const autoTagStore = transaction.objectStore(OBJECT_STORE_AUTO_TAG);
-      autoTagStore.delete(id);
-      transaction.oncomplete = () => {
-        resolve();
+      const getRequest = autoTagStore.get(id);
+
+      getRequest.onsuccess = () => {
+        const autoTag = getRequest.result as IAutoTag | undefined;
+        if (!autoTag) {
+          resolve();
+          return;
+        }
+        const putRequest = autoTagStore.put({ ...autoTag, deleted_at: Date.now(), updated_at: Date.now() });
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
       };
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
@@ -928,6 +1032,81 @@ class IndexedDB {
         logger.error(`getAniListCacheRaw error: ${request.error}`);
         reject(request.error);
       };
+    });
+  }
+
+  // ====================== Sync cursor =====================
+  public getLastSyncedAt(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve(0);
+      const transaction = this.db.transaction(OBJECT_STORE_SYNC_META, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_SYNC_META);
+      const request = store.get("last_synced_at");
+      request.onsuccess = () => resolve(request.result?.value ?? 0);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public setLastSyncedAt(value: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return reject(new Error("Database not initialized"));
+      const transaction = this.db.transaction(OBJECT_STORE_SYNC_META, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_SYNC_META);
+      const request = store.put({ key: "last_synced_at", value });
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  // ====================== Sync write-back =====================
+  private replaceAllInStore<T>(storeName: string, rows: T[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return reject(new Error("Database not initialized"));
+      const transaction = this.db.transaction(storeName, "readwrite");
+      const store = transaction.objectStore(storeName);
+      store.clear();
+      for (const row of rows) store.put(row);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  public replaceAllTags(rows: ITag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_TAGS, rows);
+  }
+  public replaceAllVideos(rows: IVideo[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_VIDEOS, rows);
+  }
+  public replaceAllVideoTags(rows: IVideoTag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_VIDEO_TAGS, rows);
+  }
+  public replaceAllAutoTags(rows: IAutoTag[]): Promise<void> {
+    return this.replaceAllInStore(OBJECT_STORE_AUTO_TAG, rows);
+  }
+
+  // Rekeys all four synced stores plus the sync cursor inside a single IndexedDB transaction, so an
+  // account-switch rekey is fully atomic (all-or-nothing) rather than four independent
+  // single-store transactions that could partially succeed and leave cross-store references
+  // pointing at ids from different "generations."
+  public rekeyAccountData(tags: ITag[], videos: IVideo[], videoTags: IVideoTag[], autoTags: IAutoTag[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return reject(new Error("Database not initialized"));
+      const transaction = this.db.transaction(
+        [OBJECT_STORE_TAGS, OBJECT_STORE_VIDEOS, OBJECT_STORE_VIDEO_TAGS, OBJECT_STORE_AUTO_TAG, OBJECT_STORE_SYNC_META],
+        "readwrite"
+      );
+      const putAll = <T>(storeName: string, rows: T[]) => {
+        const store = transaction.objectStore(storeName);
+        store.clear();
+        for (const row of rows) store.put(row);
+      };
+      putAll(OBJECT_STORE_TAGS, tags);
+      putAll(OBJECT_STORE_VIDEOS, videos);
+      putAll(OBJECT_STORE_VIDEO_TAGS, videoTags);
+      putAll(OBJECT_STORE_AUTO_TAG, autoTags);
+      transaction.objectStore(OBJECT_STORE_SYNC_META).put({ key: "last_synced_at", value: 0 });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
     });
   }
 

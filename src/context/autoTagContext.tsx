@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, PropsWithChildren, useContext } from "react";
 import eventBus from "@/api/eventbus";
-import { AUTO_TAG_ADD_OR_UPDATE, AUTO_TAG_DELETE_BY_ID, TAG_DELETE_BY_ID } from "@/data/events";
+import { AUTO_TAG_ADD_OR_UPDATE, AUTO_TAG_DELETE_BY_ID, AUTO_TAG_REFRESH, TAG_DELETE_BY_ID } from "@/data/events";
 import { useApplicationContext } from "./applicationContext";
 import { IAutoTag } from "@/types/autotag";
 import IndexedDB from "@/db/index";
@@ -127,6 +127,14 @@ export const AutoTagProvider = ({ children }: PropsWithChildren<unknown>) => {
       eventBus.unsubscribe(TAG_DELETE_BY_ID, handleTagDeletedCascadeRemoveFromAutoTag);
     };
   }, [handleTagDeletedCascadeRemoveFromAutoTag]);
+
+  // handle AUTO_TAG_REFRESH
+  useEffect(() => {
+    eventBus.subscribe(AUTO_TAG_REFRESH, handleGetAutoTags);
+    return () => {
+      eventBus.unsubscribe(AUTO_TAG_REFRESH, handleGetAutoTags);
+    };
+  }, [handleGetAutoTags]);
 
   return (
     <AutoTagContext.Provider

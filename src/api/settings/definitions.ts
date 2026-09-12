@@ -7,6 +7,7 @@ import { PendingAnilistSync } from "@/types/integrations/seriesMapping";
 const isBooleanValidator = (value: any): value is boolean => typeof value === "boolean";
 const isNumberValidator = (value: any): value is number => typeof value === "number";
 const isStringValidator = (value: any): value is string => typeof value === "string";
+const isNullableStringValidator = (value: any): value is string | null => value === null || typeof value === "string";
 const isAuthStatusValidator = (value: any): value is AuthStatus =>
   ["initial", "pending", "authorized", "unauthorized", "error"].includes(value);
 const isSourceAutoTrackConfigValidator = (value: any): value is SourceAutoTrackConfig =>
@@ -19,6 +20,12 @@ const isSourceAutoTrackConfigValidator = (value: any): value is SourceAutoTrackC
 const isSourceAutoSyncConfigValidator = (value: any): value is SourceAutoSyncConfig =>
   typeof value === "object" && value !== null && typeof value.enabled === "boolean";
 const isPendingAnilistSyncArrayValidator = (value: any): value is PendingAnilistSync[] => Array.isArray(value);
+export type SyncStats = { pulled: number; pushed: number };
+const isSyncStatsValidator = (value: any): value is SyncStats | null =>
+  value === null || (typeof value === "object" && typeof value.pulled === "number" && typeof value.pushed === "number");
+export const SYNC_INTERVAL_MINUTES_OPTIONS = [15, 30, 60, 720, 1440] as const;
+export type SyncIntervalMinutes = (typeof SYNC_INTERVAL_MINUTES_OPTIONS)[number];
+const isSyncIntervalMinutesValidator = (value: any): value is SyncIntervalMinutes => SYNC_INTERVAL_MINUTES_OPTIONS.includes(value);
 
 export const SETTINGS = {
   application: {
@@ -109,6 +116,33 @@ export const SETTINGS = {
       defaultValue: "",
       validator: isStringValidator,
     } as SettingDefinition<string>,
+  },
+  kitaSync: {
+    paused: {
+      key: "kitamersion_kita_sync_paused",
+      defaultValue: false,
+      validator: isBooleanValidator,
+    } as SettingDefinition<boolean>,
+    lastSyncedAccountId: {
+      key: "kitamersion_kita_sync_last_synced_account_id",
+      defaultValue: null,
+      validator: isNullableStringValidator,
+    } as SettingDefinition<string | null>,
+    pendingRekeyNotice: {
+      key: "kitamersion_kita_sync_pending_rekey_notice",
+      defaultValue: false,
+      validator: isBooleanValidator,
+    } as SettingDefinition<boolean>,
+    lastSyncStats: {
+      key: "kitamersion_kita_sync_last_sync_stats",
+      defaultValue: null,
+      validator: isSyncStatsValidator,
+    } as SettingDefinition<SyncStats | null>,
+    syncIntervalMinutes: {
+      key: "kitamersion_kita_sync_interval_minutes",
+      defaultValue: 15,
+      validator: isSyncIntervalMinutesValidator,
+    } as SettingDefinition<SyncIntervalMinutes>,
   },
   statistics: {
     totalVideos: {

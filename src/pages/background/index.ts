@@ -1,13 +1,15 @@
 import { getAnilistConfig, getAnilistAuthUrl, setAnilistAuth, setAnilistAuthStatus, setAnilistConfig } from "@/api/integration/anilist";
 import { incrementTotalVideoDuration, incrementTotalVideos } from "@/api/summaryStorage/video";
 import { logger } from "@kitamersion/kita-logging";
-import { INTEGRATION_ANILIST_AUTH_CONNECT, OPEN_ANILIST_PENDING_REVIEW, VIDEO_ADD } from "@/data/events";
+import { INTEGRATION_ANILIST_AUTH_CONNECT, OPEN_ANILIST_PENDING_REVIEW, SYNC_EMAIL_CONFIRMED, VIDEO_ADD } from "@/data/events";
 import IndexedDB from "@/db/index";
 import { AnilistConfig } from "@/types/integrations/anilist";
 import { IVideoTag } from "@/types/relationship";
 import { IVideo } from "@/types/video";
 import { generateUniqueCode, parseAnilistAuthFromRedirectUrl } from "@/utils";
 import { attemptAnilistAutoSync } from "./anilistAutoSync";
+import { initSyncAlarm } from "./syncAlarm";
+import { handleSyncEmailConfirmed } from "./syncConfirmation";
 
 export type RuntimeResponse = {
   status: RuntimeStatus;
@@ -18,6 +20,12 @@ type RuntimeStatus = "error" | "success" | "unknown";
 
 // EVENT HANDLERS
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+  if (request.type === SYNC_EMAIL_CONFIRMED) {
+    const response = await handleSyncEmailConfirmed(request.payload);
+    sendResponse(response);
+    return;
+  }
+
   if (request.type !== VIDEO_ADD && request.type !== INTEGRATION_ANILIST_AUTH_CONNECT) {
     return;
   }
@@ -168,6 +176,8 @@ chrome.runtime.onInstalled.addListener(() => {
     await IndexedDB.openDatabase();
   })();
 });
+
+initSyncAlarm();
 
 // content scripts can't call chrome.tabs themselves, so they message the
 // background to open settings on the Auto Track tab's pending review list.

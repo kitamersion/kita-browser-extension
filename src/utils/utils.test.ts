@@ -16,7 +16,21 @@ import {
   parseAnilistAuthFromRedirectUrl,
   pickAutoMatch,
   randomOffset,
+  secondsToHms,
 } from ".";
+
+describe("secondsToHms function", () => {
+  test.each([
+    [30, [0, 0, 30]],
+    [1500, [0, 25, 0]],
+    [3720, [1, 2, 0]],
+    [3600, [1, 0, 0]],
+    [86400, [24, 0, 0]],
+    [93725, [26, 2, 5]],
+  ])("decomposes %s seconds => %p", (seconds, expected) => {
+    expect(secondsToHms(seconds)).toEqual(expected);
+  });
+});
 
 describe("formatDuration function", () => {
   test.each([

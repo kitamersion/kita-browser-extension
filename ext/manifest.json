@@ -28,7 +28,8 @@
     "permissions": [
         "storage",
         "unlimitedStorage",
-        "identity"
+        "identity",
+        "alarms"
     ],
     "content_scripts": [
         {
@@ -39,6 +40,15 @@
             "js": [
                 "content.js"
             ]
+        },
+        {
+            "matches": [
+                "https://www.kitamersion.com/auth/confirm/*"
+            ],
+            "js": [
+                "confirmBridge.js"
+            ],
+            "run_at": "document_start"
         }
     ],
     "web_accessible_resources": [

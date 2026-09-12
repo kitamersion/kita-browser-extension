@@ -76,6 +76,16 @@ export const formatDurationHuman = (seconds: number) => {
   return `${Math.floor(seconds)}s`;
 };
 
+// Decomposes a duration in seconds into [hours, minutes, seconds] directly, independent of
+// formatDuration's display string (which omits seconds entirely) — an editable h/m/s form needs
+// the real value, not a round-trip through a string meant for read-only display.
+export const secondsToHms = (totalSeconds: number): [number, number, number] => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return [hours, minutes, seconds];
+};
+
 export const convertToSeconds = (time: string) => {
   const timeParts = time.split(" ");
   const hours = parseInt(timeParts[0]) * 3600;
@@ -181,6 +191,8 @@ const SETTINGS_SECTION_IDS = new Set([
   "anilist",
   "anilist-search",
   "saved-videos",
+  "sync",
+  "danger-zone",
 ]);
 
 export const getSettingsSectionFromSearch = (search: string): string => {

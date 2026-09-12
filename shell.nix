@@ -4,5 +4,6 @@ mkShell {
     '';
   buildInputs = [
       nodejs
+      supabase-cli
   ];
 }

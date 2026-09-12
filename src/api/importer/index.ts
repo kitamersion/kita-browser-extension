@@ -79,12 +79,19 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       await processBatchWithProgress(
         videosToAdd,
         async (video: IVideo) => {
-          if (video.unique_code) {
-            await IndexedDB.addVideo(video);
-          } else {
-            const uniqueCode = generateUniqueCode(video.video_title, video.origin);
-            await IndexedDB.addVideo({ ...video, unique_code: uniqueCode });
+          const uniqueCode = video.unique_code || generateUniqueCode(video.video_title, video.origin);
+
+          // A different local video (e.g. from earlier local testing, before this backup existed)
+          // can already own this unique_code under its own id. It's a unique IndexedDB index, so
+          // writing the imported video as-is would throw ConstraintError. The import is a restore,
+          // so the imported copy wins: tombstone the stale local one first to free the slot (the
+          // same clear-unique_code-on-delete mechanism the sync engine's delete path relies on).
+          const existing = await IndexedDB.getVideoByUniqueCode(uniqueCode);
+          if (existing && existing.id !== video.id) {
+            await IndexedDB.deleteVideoById(existing.id);
           }
+
+          await IndexedDB.addVideo({ ...video, unique_code: uniqueCode });
         },
         "Importing videos",
         onProgress
@@ -98,6 +105,16 @@ const importFromJSON = async (file: File, onProgress?: ProgressCallback): Promis
       await processBatchWithProgress(
         tagsToAdd,
         async (tag: ITag) => {
+          // Same collision as videos' unique_code (see the import-videos step above): a different
+          // local tag can already own this code under its own id. addTag derives the same fallback
+          // (name, uppercased/underscored) when code is absent, so that's what has to be checked
+          // here to match what will actually be written.
+          const code = tag.code ?? tag.name.toUpperCase().replace(/ /g, "_");
+          const existing = await IndexedDB.getTagByCode(code);
+          if (existing?.id && existing.id !== tag.id) {
+            await IndexedDB.deleteTagById(existing.id);
+          }
+
           await IndexedDB.addTag(tag);
         },
         "Importing tags",

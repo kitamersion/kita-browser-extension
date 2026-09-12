@@ -3,7 +3,7 @@ import React, { PropsWithChildren, createContext, useContext } from "react";
 
 const TOAST_RESET_DELAY_MS = 1800; // 1.8 seconds
 
-type Status = "success" | "error" | "loading";
+type Status = "success" | "error" | "warning" | "loading";
 
 type IToast = {
   title: string;
@@ -14,7 +14,7 @@ type IToast = {
 
 interface ToastContextType {
   showToast: (toast: IToast) => void;
-  showToastPromise: <T>(promise: Promise<T>, messages: { [status in Status]: IToast }) => Promise<T>;
+  showToastPromise: <T>(promise: Promise<T>, messages: { [status in Exclude<Status, "warning">]: IToast }) => Promise<T>;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -42,7 +42,7 @@ export const ToastProvider = ({ children }: PropsWithChildren<unknown>) => {
     });
   };
 
-  const showToastPromise = async (promise: Promise<any>, messages: { [status in Status]: IToast }) => {
+  const showToastPromise = async (promise: Promise<any>, messages: { [status in Exclude<Status, "warning">]: IToast }) => {
     const loadingToast: UseToastOptions = {
       ...messages.loading,
       status: "loading",
