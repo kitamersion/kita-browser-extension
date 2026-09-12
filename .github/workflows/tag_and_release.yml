@@ -3,15 +3,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "src/**"
-      - "ext/**"
-      - "package.json"
-      - "package-lock.json"
-      - "webpack.config.js"
-      - "codegen.yml"
-      - "schema/**"
-      - "builder/**"
 
 jobs:
   build:
@@ -24,13 +15,21 @@ jobs:
         with:
           fetch-depth: "0"
 
-      - name: Bump version and push tag
-        id: tag
+      - name: Preview next version
+        id: next_version
         uses: anothrNick/github-tag-action@1.64.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           INITIAL_VERSION: 1.0.0
+          DRY_RUN: "true"
+
+      - name: Set extension version from previewed release tag
+        run: |
+          VERSION="${{ steps.next_version.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          jq --arg v "$VERSION" '.version = $v' ext/manifest.json > /tmp/manifest.json
+          mv /tmp/manifest.json ext/manifest.json
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -94,6 +93,14 @@ jobs:
           echo "${{ env.CHECKSUM_ZIP_FF }}  ${{ env.REPOSITORY_NAME }}-firefox.zip" >> SHA256SUM.txt
           echo "${{ env.CHECKSUM_TAR_CH }}  ${{ env.REPOSITORY_NAME }}-chrome.tar.gz" >> SHA256SUM.txt
           echo "${{ env.CHECKSUM_ZIP_CH }}  ${{ env.REPOSITORY_NAME }}-chrome.zip" >> SHA256SUM.txt
+
+      - name: Bump version and push tag
+        id: tag
+        uses: anothrNick/github-tag-action@1.64.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          INITIAL_VERSION: 1.0.0
 
       - name: Get PR title and commit hash
         id: get_pr_info
