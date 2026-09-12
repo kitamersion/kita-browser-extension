@@ -130,19 +130,27 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
           background_cover_image: mapping.background_cover_image || video.background_cover_image,
           banner_image: mapping.banner_image || video.banner_image,
           updated_at: Date.now(),
-          tags: tag?.id ? [tag.id] : [],
-        };
-
-        const videoTagRelationship: IVideoTag = {
-          id: self.crypto.randomUUID(),
-          video_id: video.id,
-          tag_id: tag?.id ?? "",
-          created_at: Date.now(),
+          tags: tag?.id ? [tag.id] : video.tags,
         };
 
         // Update video in storage
         eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: updatedVideo });
-        eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, { message: "video tag add relationship from anilist", value: [videoTagRelationship] });
+
+        // Only link the AniList tag if it actually exists locally — without this guard, a missing
+        // tag (e.g. before the user has connected AniList) pushed a video_tags row with an empty
+        // tag_id, which violates the video_tags_tag_id_fkey constraint during sync.
+        if (tag?.id) {
+          const videoTagRelationship: IVideoTag = {
+            id: self.crypto.randomUUID(),
+            video_id: video.id,
+            tag_id: tag.id,
+            created_at: Date.now(),
+          };
+          eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, {
+            message: "video tag add relationship from anilist",
+            value: [videoTagRelationship],
+          });
+        }
 
         // Sync to AniList if we have the required data
         if (mapping.anilist_series_id && video.watching_episode_number) {
