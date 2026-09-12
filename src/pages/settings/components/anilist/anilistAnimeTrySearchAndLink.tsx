@@ -1,10 +1,5 @@
 import LoadingState from "@/components/states/LoadingState";
-import {
-  MediaListStatus,
-  useGetMediaByIdLazyQuery,
-  useGetMediaBySearchLazyQuery,
-  useSetMediaListEntryByAnilistIdMutation,
-} from "@/graphql";
+import { useGetMediaBySearchLazyQuery } from "@/graphql";
 import { Box, Spinner } from "@chakra-ui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
@@ -12,22 +7,19 @@ import eventbus from "@/api/eventbus";
 import { IVideo } from "@/types/video";
 import { VIDEO_TAG_ADD_RELATIONSHIP, VIDEO_UPDATED_BY_ID } from "@/data/events";
 import { useToastContext } from "@/context/toastNotificationContext";
-import IndexedDB from "@/db/index";
-import { IVideoTag } from "@/types/relationship";
 import { logger } from "@kitamersion/kita-logging";
 import { useAnilistContext } from "@/context/anilistContext";
 import { seriesMappingStorage } from "@/api/seriesMapping";
-import { pickAutoMatch, resolveAnilistProgress } from "@/utils";
+import { syncEpisodeToAnilist } from "@/api/integration/anilistEpisodeSync";
+import { pickAutoMatch } from "@/utils";
 import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
 import SeriesMappingSelection from "@/components/SeriesMappingSelection";
 
 const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { showToast } = useToastContext();
-  const { isInitialized: isAnilistReady } = useAnilistContext();
+  const { isInitialized: isAnilistReady, anilistAuth } = useAnilistContext();
 
   const [getMediaBySearch, { data: searchData, loading: isSearching, error: searchError }] = useGetMediaBySearchLazyQuery();
-  const [getMediaById] = useGetMediaByIdLazyQuery();
-  const [setMedia, { loading: isUpdatingList, error: updateError }] = useSetMediaListEntryByAnilistIdMutation();
 
   const [isSynced, setIsSynced] = useState(!!video.anilist_series_id);
   const [showMappingSelection, setShowMappingSelection] = useState(false);
@@ -51,12 +43,11 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
 
   // Error handling
   useEffect(() => {
-    if (updateError || searchError) {
-      const errorMessage = updateError?.message || searchError?.message || "Unknown error occurred";
-      showToast({ title: errorMessage, status: "error" });
+    if (searchError) {
+      showToast({ title: searchError.message || "Unknown error occurred", status: "error" });
       setSyncStatus("error");
     }
-  }, [updateError, searchError, showToast]);
+  }, [searchError, showToast]);
 
   // Check for existing mapping
   const checkExistingMapping = useCallback(async (): Promise<ISeriesMapping | null> => {
@@ -116,7 +107,10 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     [getSourcePlatform, video.series_title, video.watching_season_year]
   );
 
-  // Sync to AniList using mapping data
+  // Sync to AniList using mapping data. All the actual progress resolution, the push to AniList,
+  // and the local writeback live in syncEpisodeToAnilist (shared with the auto-sync and
+  // pending-review paths) - this just triggers it and republishes what it wrote so this page's
+  // other subscribed views (e.g. a video list showing episode count) refresh immediately.
   const syncToAnilist = useCallback(
     async (mapping: ISeriesMapping): Promise<void> => {
       if (syncStatus === "syncing") return; // Prevent duplicate syncs
@@ -124,74 +118,25 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       setSyncStatus("syncing");
 
       try {
-        const tag = await IndexedDB.getTagByCode("ANILIST");
+        const result = await syncEpisodeToAnilist(video, mapping, anilistAuth.access_token);
 
-        // Read AniList's own progress before pushing anything - the source site's on-page episode
-        // number (e.g. Crunchyroll resetting per season/arc) doesn't necessarily match AniList's
-        // cumulative count for the combined media entry, so a fresh episode can look "behind" AniList
-        // without actually being a rewatch. See resolveAnilistProgress for the full reasoning.
-        let progress = video.watching_episode_number;
-        if (mapping.anilist_series_id && video.watching_episode_number) {
-          const { data: mediaData } = await getMediaById({ variables: { mediaId: mapping.anilist_series_id } });
-          const knownAnilistProgress = mediaData?.Media?.mediaListEntry?.progress ?? null;
-          progress = resolveAnilistProgress(video.watching_episode_number, knownAnilistProgress, mapping.total_episodes);
+        if (result.status === "error") {
+          throw new Error(result.message);
         }
 
-        // Update video with mapping data
-        const updatedVideo: IVideo = {
-          ...video,
-          watching_episode_number: progress,
-          anilist_series_id: mapping.anilist_series_id,
-          mal_series_id: mapping.mal_series_id,
-          series_episode_number: mapping.total_episodes,
-          series_season_year: mapping.season_year,
-          background_cover_image: mapping.background_cover_image || video.background_cover_image,
-          banner_image: mapping.banner_image || video.banner_image,
-          updated_at: Date.now(),
-          tags: tag?.id ? [tag.id] : video.tags,
-        };
-
-        // Update video in storage
-        eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: updatedVideo });
-
-        // Only link the AniList tag if it actually exists locally — without this guard, a missing
-        // tag (e.g. before the user has connected AniList) pushed a video_tags row with an empty
-        // tag_id, which violates the video_tags_tag_id_fkey constraint during sync.
-        if (tag?.id) {
-          const videoTagRelationship: IVideoTag = {
-            id: self.crypto.randomUUID(),
-            video_id: video.id,
-            tag_id: tag.id,
-            created_at: Date.now(),
-          };
-          eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, {
-            message: "video tag add relationship from anilist",
-            value: [videoTagRelationship],
-          });
-        }
-
-        // Sync to AniList if we have the required data
-        if (mapping.anilist_series_id && progress) {
-          const mediaCompletedStatus = progress === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
-
-          await setMedia({
-            variables: {
-              mediaId: mapping.anilist_series_id,
-              status: mediaCompletedStatus,
-              progress,
-            },
-          });
-
-          showToast({
-            title: "AniList media synced!",
-            status: "success",
-          });
-
+        if (result.status === "synced") {
+          eventbus.publish(VIDEO_UPDATED_BY_ID, { message: "updating video with anilist search", value: result.video });
+          if (result.videoTag) {
+            eventbus.publish(VIDEO_TAG_ADD_RELATIONSHIP, {
+              message: "video tag add relationship from anilist",
+              value: [result.videoTag],
+            });
+          }
+          showToast({ title: "AniList media synced!", status: "success" });
           setIsSynced(true);
-          setSyncStatus("complete");
-        } else {
-          setSyncStatus("complete");
         }
+
+        setSyncStatus("complete");
       } catch (error) {
         logger.error(`Error syncing to AniList: ${error}`);
         showToast({
@@ -201,7 +146,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         setSyncStatus("error");
       }
     },
-    [video, getMediaById, setMedia, showToast, syncStatus]
+    [video, anilistAuth.access_token, showToast, syncStatus]
   );
 
   // Main sync function - this is the entry point for all sync operations
@@ -315,7 +260,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
     return <LoadingState />;
   }
 
-  if (isSearching || isUpdatingList) {
+  if (isSearching) {
     return (
       <Box
         bg="kita.primaryAlpha.800"
