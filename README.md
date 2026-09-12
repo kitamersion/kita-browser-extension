@@ -70,6 +70,12 @@ npm install
       ANILIST_ACCESS_TOKEN=your_token_here
       ```
 
+  **For cross-device sync (optional, see [Sync](#sync-optional)):**
+  ```
+  SUPABASE_URL=your_project_url_here
+  SUPABASE_ANON_KEY=your_project_anon_key_here
+  ```
+
 3. **Development workflow**
 
 ```bash
@@ -122,22 +128,12 @@ npm run dev:quick
 
 ### Development Tips
 
+The dev script (`npm run dev`) generates GraphQL types, copies extension files (manifest.json, icons) to `./dist`, builds with Webpack in watch mode, and watches `./ext/` for changes - auto-copying them as they happen.
+
 1. **First time setup:** Run `npm run dev` once to generate the initial build
 2. **Daily workflow:** Just hit refresh on the extension in Chrome after `npm run dev` is running
-3. **GraphQL changes:** The dev script automatically regenerates types
-4. **Manifest changes:** Auto-copied when files in `./ext/` change
-5. **Quick iterations:** Use `npm run dev:quick` for one-off builds
-6. **Debugging:** Source maps are enabled in development mode for easier debugging
-
-### Build Process Explained
-
-The development build process:
-
-1. Generates GraphQL types from schema
-2. Copies extension files (manifest.json, icons) to `./dist`
-3. Builds source code with Webpack (watch mode)
-4. Watches for changes in `./ext/` folder and auto-copies them
-5. Browser extension updates when you refresh in Chrome
+3. **Quick iterations:** Use `npm run dev:quick` for one-off builds
+4. **Debugging:** Source maps are enabled in development mode for easier debugging
 
 ### Project Structure
 
@@ -159,5 +155,20 @@ ext/
 ├── manifest.json      # Base manifest template
 └── icons/            # Extension icons
 
+supabase/
+├── config.toml        # Local Supabase project config
+└── migrations/        # SQL migrations for the sync backend
+
 dist/                 # Built extension (load this in Chrome)
 ```
+
+---
+
+## Sync (optional)
+
+Kita can optionally sync videos, tags, video-tag relationships, and auto-tag rules across devices/browsers, backed by a [Supabase](https://supabase.com) project (email/password auth, Postgres with row-level security, and a per-user storage quota).
+
+- Enable it by sign up/in from **Settings → Sync**, after setting `SUPABASE_URL` and `SUPABASE_ANON_KEY` in your `.env` (see [Environment setup](#development)).
+- Sync runs automatically in the background on an interval, and can also be triggered manually from the Sync tab.
+- **Settings → Danger Zone** lets you pause sync, clear expired tombstones, or delete your synced data/account.
+- To run your own backend, apply the SQL files under `supabase/migrations/` to a Supabase project with `supabase db push`, and expose the `kitamersion` schema under Project Settings → API → Exposed schemas.
