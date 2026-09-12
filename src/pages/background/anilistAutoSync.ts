@@ -3,7 +3,7 @@ import { getAnilistAuth } from "@/api/integration/anilist";
 import { addPendingAnilistSync, getPendingAnilistSyncs, refreshAnilistPendingBadge } from "@/api/integration/anilistPendingSync";
 import { getSourceAutoSyncConfig } from "@/api/sourceTracking";
 import { seriesMappingStorage } from "@/api/seriesMapping";
-import { decideAnilistAutoSyncAction, mapSiteKeyToSourcePlatform } from "@/utils";
+import { decideAnilistAutoSyncAction, mapSiteKeyToSourcePlatform, resolveAnilistProgress } from "@/utils";
 import IndexedDB from "@/db/index";
 import { IVideo } from "@/types/video";
 import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
@@ -126,7 +126,7 @@ const finalizeSync = async (video: IVideo, mapping: ISeriesMapping, accessToken:
   if (!mapping.anilist_series_id || !video.watching_episode_number) return;
 
   const knownAnilistProgress = await getKnownAnilistProgress(accessToken, mapping.anilist_series_id);
-  const progress = Math.max(video.watching_episode_number, knownAnilistProgress ?? 0);
+  const progress = resolveAnilistProgress(video.watching_episode_number, knownAnilistProgress, mapping.total_episodes);
 
   const status = progress === mapping.total_episodes ? "COMPLETED" : "CURRENT";
   await saveMediaListEntry(accessToken, mapping.anilist_series_id, progress, status);

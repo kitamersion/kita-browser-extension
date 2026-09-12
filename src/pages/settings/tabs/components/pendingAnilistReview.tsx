@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Badge, Box, Button, Flex, Heading, Text, VStack } from "@chakra-ui/react";
-import { MediaListStatus, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
+import { MediaListStatus, useGetMediaByIdLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
 import { getPendingAnilistSyncs, refreshAnilistPendingBadge, removePendingAnilistSync } from "@/api/integration/anilistPendingSync";
 import { seriesMappingStorage } from "@/api/seriesMapping";
 import IndexedDB from "@/db/index";
 import { ISeriesMapping, ISeriesSearchResult, PendingAnilistSync } from "@/types/integrations/seriesMapping";
 import { IVideo } from "@/types/video";
 import { useToastContext } from "@/context/toastNotificationContext";
+import { resolveAnilistProgress } from "@/utils";
 import SeriesMappingSelection from "@/components/SeriesMappingSelection";
 
 const PendingAnilistReview = () => {
@@ -14,6 +15,7 @@ const PendingAnilistReview = () => {
   const [pending, setPending] = useState<PendingAnilistSync[]>([]);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
+  const [getMediaById] = useGetMediaByIdLazyQuery();
   const [setMedia] = useSetMediaListEntryByAnilistIdMutation();
 
   const loadPending = useCallback(() => {
@@ -24,23 +26,30 @@ const PendingAnilistReview = () => {
     loadPending();
   }, [loadPending]);
 
+  // `knownProgress` is threaded through by the caller rather than re-queried here, since resolving
+  // a whole backlog of pending episodes for one series (handleSelect below) pushes them one at a
+  // time - each one needs to build on the progress the previous one just set, not on a stale read
+  // of AniList from before this batch started. Returns the progress it resolved so the caller can
+  // pass it into the next call. See resolveAnilistProgress for why "behind AniList" isn't a rewatch.
   const syncVideoToMapping = useCallback(
-    async (video: IVideo, mapping: ISeriesMapping) => {
-      if (!mapping.anilist_series_id || !video.watching_episode_number) return;
+    async (video: IVideo, mapping: ISeriesMapping, knownProgress: number | null): Promise<number | null> => {
+      if (!mapping.anilist_series_id || !video.watching_episode_number) return knownProgress;
 
-      const status = video.watching_episode_number === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
+      const progress = resolveAnilistProgress(video.watching_episode_number, knownProgress, mapping.total_episodes);
+      const status = progress === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
 
       await setMedia({
         variables: {
           mediaId: mapping.anilist_series_id,
           status,
-          progress: video.watching_episode_number,
+          progress,
         },
       });
 
       const tag = await IndexedDB.getTagByCode("ANILIST");
       await IndexedDB.updateVideoById({
         ...video,
+        watching_episode_number: progress,
         anilist_series_id: mapping.anilist_series_id,
         mal_series_id: mapping.mal_series_id,
         series_episode_number: mapping.total_episodes,
@@ -53,6 +62,8 @@ const PendingAnilistReview = () => {
       if (tag?.id) {
         await IndexedDB.addVideoTag({ id: self.crypto.randomUUID(), video_id: video.id, tag_id: tag.id, created_at: Date.now() });
       }
+
+      return progress;
     },
     [setMedia]
   );
@@ -79,13 +90,20 @@ const PendingAnilistReview = () => {
         // episodes of the same series that were skipped while this sat pending -
         // otherwise every one of them would need to be resolved by hand too.
         const allVideos = await IndexedDB.getAllVideos();
-        const matchingVideos = allVideos.filter(
-          (video) =>
-            video.series_title === entry.series_title && video.watching_season_year === entry.season_year && !video.anilist_series_id
-        );
+        const matchingVideos = allVideos
+          .filter(
+            (video) =>
+              video.series_title === entry.series_title && video.watching_season_year === entry.season_year && !video.anilist_series_id
+          )
+          .sort((a, b) => a.created_at - b.created_at);
 
+        // Read AniList's progress once up front, then thread the running value through the whole
+        // backlog in watch order - each entry needs to build on the one just pushed, not a stale
+        // read of AniList from before this batch started.
+        const { data: mediaData } = await getMediaById({ variables: { mediaId: result.id } });
+        let knownProgress = mediaData?.Media?.mediaListEntry?.progress ?? null;
         for (const video of matchingVideos) {
-          await syncVideoToMapping(video, mapping);
+          knownProgress = await syncVideoToMapping(video, mapping, knownProgress);
         }
 
         await removePendingAnilistSync(entry.id);
@@ -105,7 +123,7 @@ const PendingAnilistReview = () => {
         setIsResolving(false);
       }
     },
-    [loadPending, showToast, syncVideoToMapping]
+    [loadPending, showToast, syncVideoToMapping, getMediaById]
   );
 
   if (pending.length === 0) {

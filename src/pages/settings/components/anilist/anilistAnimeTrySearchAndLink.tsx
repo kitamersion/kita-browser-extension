@@ -1,5 +1,10 @@
 import LoadingState from "@/components/states/LoadingState";
-import { MediaListStatus, useGetMediaBySearchLazyQuery, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
+import {
+  MediaListStatus,
+  useGetMediaByIdLazyQuery,
+  useGetMediaBySearchLazyQuery,
+  useSetMediaListEntryByAnilistIdMutation,
+} from "@/graphql";
 import { Box, Spinner } from "@chakra-ui/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { SiAnilist } from "react-icons/si";
@@ -12,7 +17,7 @@ import { IVideoTag } from "@/types/relationship";
 import { logger } from "@kitamersion/kita-logging";
 import { useAnilistContext } from "@/context/anilistContext";
 import { seriesMappingStorage } from "@/api/seriesMapping";
-import { pickAutoMatch } from "@/utils";
+import { pickAutoMatch, resolveAnilistProgress } from "@/utils";
 import { ISeriesMapping, ISeriesSearchResult, SourcePlatform } from "@/types/integrations/seriesMapping";
 import SeriesMappingSelection from "@/components/SeriesMappingSelection";
 
@@ -21,6 +26,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
   const { isInitialized: isAnilistReady } = useAnilistContext();
 
   const [getMediaBySearch, { data: searchData, loading: isSearching, error: searchError }] = useGetMediaBySearchLazyQuery();
+  const [getMediaById] = useGetMediaByIdLazyQuery();
   const [setMedia, { loading: isUpdatingList, error: updateError }] = useSetMediaListEntryByAnilistIdMutation();
 
   const [isSynced, setIsSynced] = useState(!!video.anilist_series_id);
@@ -120,9 +126,21 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
       try {
         const tag = await IndexedDB.getTagByCode("ANILIST");
 
+        // Read AniList's own progress before pushing anything - the source site's on-page episode
+        // number (e.g. Crunchyroll resetting per season/arc) doesn't necessarily match AniList's
+        // cumulative count for the combined media entry, so a fresh episode can look "behind" AniList
+        // without actually being a rewatch. See resolveAnilistProgress for the full reasoning.
+        let progress = video.watching_episode_number;
+        if (mapping.anilist_series_id && video.watching_episode_number) {
+          const { data: mediaData } = await getMediaById({ variables: { mediaId: mapping.anilist_series_id } });
+          const knownAnilistProgress = mediaData?.Media?.mediaListEntry?.progress ?? null;
+          progress = resolveAnilistProgress(video.watching_episode_number, knownAnilistProgress, mapping.total_episodes);
+        }
+
         // Update video with mapping data
         const updatedVideo: IVideo = {
           ...video,
+          watching_episode_number: progress,
           anilist_series_id: mapping.anilist_series_id,
           mal_series_id: mapping.mal_series_id,
           series_episode_number: mapping.total_episodes,
@@ -153,15 +171,14 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         }
 
         // Sync to AniList if we have the required data
-        if (mapping.anilist_series_id && video.watching_episode_number) {
-          const mediaCompletedStatus =
-            video.watching_episode_number === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
+        if (mapping.anilist_series_id && progress) {
+          const mediaCompletedStatus = progress === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
 
           await setMedia({
             variables: {
               mediaId: mapping.anilist_series_id,
               status: mediaCompletedStatus,
-              progress: video.watching_episode_number,
+              progress,
             },
           });
 
@@ -184,7 +201,7 @@ const AnilistAnimeTrySearchAndLink = (video: IVideo) => {
         setSyncStatus("error");
       }
     },
-    [video, setMedia, showToast, syncStatus]
+    [video, getMediaById, setMedia, showToast, syncStatus]
   );
 
   // Main sync function - this is the entry point for all sync operations

@@ -91,7 +91,10 @@ describe("attemptAnilistAutoSync progress reconciliation", () => {
     mockUpdateVideoById.mockResolvedValue(undefined);
   });
 
-  test("uses AniList's existing progress when it is ahead of kita's local count, and caches it", async () => {
+  test("advances one past AniList's existing progress when it is ahead of kita's local count, and caches it", async () => {
+    // A fresh capture behind AniList's progress means the source's on-page numbering doesn't match
+    // AniList's cumulative count (e.g. a season/arc reset) - not that the user rewound - so the
+    // correct move is to advance past AniList's last known value, not get stuck repeating it.
     mockGetAniListCache.mockResolvedValue(undefined);
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
@@ -106,12 +109,32 @@ describe("attemptAnilistAutoSync progress reconciliation", () => {
     await attemptAnilistAutoSync(buildVideo({ watching_episode_number: 1 }));
 
     const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body);
-    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 10, status: "CURRENT" });
-    expect(mockSetAniListCache).toHaveBeenCalledWith("mediaListEntryProgress:813", 10, 6 * 60 * 60 * 1000);
-    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 10 }));
+    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 11, status: "CURRENT" });
+    expect(mockSetAniListCache).toHaveBeenCalledWith("mediaListEntryProgress:813", 11, 6 * 60 * 60 * 1000);
+    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 11 }));
   });
 
-  test("uses kita's local count when it is ahead of AniList's cached progress", async () => {
+  test("clamps advanced progress to the media's total episode count", async () => {
+    mockGetAniListCache.mockResolvedValue(undefined);
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { Media: { mediaListEntry: { progress: 291 } } } }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { SaveMediaListEntry: { id: 1 } } }),
+      });
+
+    await attemptAnilistAutoSync(buildVideo({ watching_episode_number: 1 }));
+
+    const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body);
+    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 291, status: "COMPLETED" });
+  });
+
+  test("still advances from AniList's cached progress even when kita's local count is larger", async () => {
+    // AniList is the source of truth once it has a value - kita's local count (season/arc-relative
+    // on Crunchyroll) never overrides it just for being numerically bigger.
     mockGetAniListCache.mockResolvedValue(3);
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
@@ -122,8 +145,8 @@ describe("attemptAnilistAutoSync progress reconciliation", () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
-    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 12, status: "CURRENT" });
-    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 12 }));
+    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 4, status: "CURRENT" });
+    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 4 }));
   });
 
   test("falls back to kita's local count when the AniList progress lookup fails", async () => {
