@@ -1,21 +1,19 @@
 import { attemptAnilistAutoSync } from "./anilistAutoSync";
-import IndexedDB from "@/db/index";
 import { getAnilistAuth } from "@/api/integration/anilist";
-import { getPendingAnilistSyncs } from "@/api/integration/anilistPendingSync";
+import { getPendingAnilistSyncs, addPendingAnilistSync, refreshAnilistPendingBadge } from "@/api/integration/anilistPendingSync";
 import { getSourceAutoSyncConfig } from "@/api/sourceTracking";
 import { seriesMappingStorage } from "@/api/seriesMapping";
+import { syncEpisodeToAnilist } from "@/api/integration/anilistEpisodeSync";
 import { SiteKey } from "@/types/video";
 import { ISeriesMapping } from "@/types/integrations/seriesMapping";
 
-jest.mock("@/db/index", () => ({
-  __esModule: true,
-  default: {
-    getAniListCache: jest.fn(),
-    setAniListCache: jest.fn(),
-    getTagByCode: jest.fn(),
-    updateVideoById: jest.fn(),
-    addVideoTag: jest.fn(),
-  },
+// This suite only covers attemptAnilistAutoSync's *routing* - which of the four decision branches
+// fires, and what it hands off to syncEpisodeToAnilist/seriesMappingStorage/pendingSync. The actual
+// progress reconciliation (advance/clamp/rewatch-equality) is exercised once, in
+// anilistEpisodeSync.test.ts, rather than re-verified here against a mocked fetch.
+jest.mock("@/api/integration/anilistEpisodeSync", () => ({
+  ...jest.requireActual("@/api/integration/anilistEpisodeSync"),
+  syncEpisodeToAnilist: jest.fn(),
 }));
 
 jest.mock("@/api/integration/anilist", () => ({
@@ -40,16 +38,15 @@ jest.mock("@/api/seriesMapping", () => ({
   },
 }));
 
-const mockGetAniListCache = IndexedDB.getAniListCache as jest.Mock;
-const mockSetAniListCache = IndexedDB.setAniListCache as jest.Mock;
-const mockGetTagByCode = IndexedDB.getTagByCode as jest.Mock;
-const mockUpdateVideoById = IndexedDB.updateVideoById as jest.Mock;
-
 const mockGetAnilistAuth = getAnilistAuth as jest.Mock;
 const mockGetPendingAnilistSyncs = getPendingAnilistSyncs as jest.Mock;
+const mockAddPendingAnilistSync = addPendingAnilistSync as jest.Mock;
+const mockRefreshAnilistPendingBadge = refreshAnilistPendingBadge as jest.Mock;
 const mockGetSourceAutoSyncConfig = getSourceAutoSyncConfig as jest.Mock;
 const mockFindMapping = seriesMappingStorage.findMapping as jest.Mock;
 const mockExtendMappingTTL = seriesMappingStorage.extendMappingTTL as jest.Mock;
+const mockCreateMapping = seriesMappingStorage.createMapping as jest.Mock;
+const mockSyncEpisodeToAnilist = syncEpisodeToAnilist as jest.Mock;
 
 const buildMapping = (overrides: Partial<ISeriesMapping> = {}): ISeriesMapping => ({
   id: "mapping-1",
@@ -77,68 +74,94 @@ const buildVideo = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-describe("attemptAnilistAutoSync progress reconciliation", () => {
+describe("attemptAnilistAutoSync", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn();
-
     mockGetSourceAutoSyncConfig.mockResolvedValue({ enabled: true });
     mockGetAnilistAuth.mockImplementation((cb) => cb({ access_token: "token-123" }));
     mockGetPendingAnilistSyncs.mockResolvedValue([]);
-    mockFindMapping.mockResolvedValue(buildMapping());
     mockExtendMappingTTL.mockResolvedValue(undefined);
-    mockGetTagByCode.mockResolvedValue({ id: "tag-anilist" });
-    mockUpdateVideoById.mockResolvedValue(undefined);
+    mockSyncEpisodeToAnilist.mockResolvedValue({ status: "synced", progress: 1 });
   });
 
-  test("uses AniList's existing progress when it is ahead of kita's local count, and caches it", async () => {
-    mockGetAniListCache.mockResolvedValue(undefined);
-    (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { Media: { mediaListEntry: { progress: 10 } } } }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { SaveMediaListEntry: { id: 1 } } }),
-      });
-
-    await attemptAnilistAutoSync(buildVideo({ watching_episode_number: 1 }));
-
-    const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body);
-    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 10, status: "CURRENT" });
-    expect(mockSetAniListCache).toHaveBeenCalledWith("mediaListEntryProgress:813", 10, 6 * 60 * 60 * 1000);
-    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 10 }));
+  test("skips entirely when there is no series title", async () => {
+    await attemptAnilistAutoSync(buildVideo({ series_title: undefined }));
+    expect(mockGetSourceAutoSyncConfig).not.toHaveBeenCalled();
   });
 
-  test("uses kita's local count when it is ahead of AniList's cached progress", async () => {
-    mockGetAniListCache.mockResolvedValue(3);
+  test("skips when auto-sync is disabled for the source", async () => {
+    mockGetSourceAutoSyncConfig.mockResolvedValue({ enabled: false });
+    mockFindMapping.mockResolvedValue(null);
+
+    await attemptAnilistAutoSync(buildVideo());
+
+    expect(mockSyncEpisodeToAnilist).not.toHaveBeenCalled();
+    expect(mockAddPendingAnilistSync).not.toHaveBeenCalled();
+  });
+
+  test("syncs directly against an existing mapping and extends its TTL", async () => {
+    const mapping = buildMapping();
+    mockFindMapping.mockResolvedValue(mapping);
+
+    const video = buildVideo();
+    await attemptAnilistAutoSync(video);
+
+    expect(mockExtendMappingTTL).toHaveBeenCalledWith(mapping.id);
+    expect(mockSyncEpisodeToAnilist).toHaveBeenCalledWith(video, mapping, "token-123");
+  });
+
+  test("creates a mapping from an exact season-year search match and syncs it", async () => {
+    mockFindMapping.mockResolvedValue(null);
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ data: { SaveMediaListEntry: { id: 1 } } }),
+      json: async () => ({
+        data: {
+          anime: {
+            results: [{ id: 813, idMal: 813, episodes: 291, seasonYear: 2020, title: { english: "Dragon Ball Z" } }],
+          },
+        },
+      }),
     });
+    const createdMapping = buildMapping({ id: "mapping-new" });
+    mockCreateMapping.mockResolvedValue(createdMapping);
 
-    await attemptAnilistAutoSync(buildVideo({ watching_episode_number: 12 }));
+    const video = buildVideo({ watching_season_year: 2020 });
+    await attemptAnilistAutoSync(video);
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
-    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 12, status: "CURRENT" });
-    expect(mockUpdateVideoById).toHaveBeenCalledWith(expect.objectContaining({ watching_episode_number: 12 }));
+    expect(mockCreateMapping).toHaveBeenCalledWith(expect.objectContaining({ anilist_series_id: 813, season_year: 2020 }));
+    expect(mockSyncEpisodeToAnilist).toHaveBeenCalledWith(video, createdMapping, "token-123");
   });
 
-  test("falls back to kita's local count when the AniList progress lookup fails", async () => {
-    mockGetAniListCache.mockResolvedValue(undefined);
-    (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: false, statusText: "rate limited", json: async () => ({}) })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { SaveMediaListEntry: { id: 1 } } }),
-      });
+  test("queues a pending review when search results are ambiguous", async () => {
+    mockFindMapping.mockResolvedValue(null);
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          anime: {
+            results: [
+              { id: 1, seasonYear: 1989, title: { english: "A" } },
+              { id: 2, seasonYear: 1991, title: { english: "B" } },
+            ],
+          },
+        },
+      }),
+    });
 
-    await attemptAnilistAutoSync(buildVideo({ watching_episode_number: 5 }));
+    await attemptAnilistAutoSync(buildVideo({ watching_season_year: 2020 }));
 
-    const syncCallBody = JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body);
-    expect(syncCallBody.variables).toMatchObject({ mediaId: 813, progress: 5 });
-    expect(mockSetAniListCache).toHaveBeenCalledWith("mediaListEntryProgress:813", 5, 6 * 60 * 60 * 1000);
+    expect(mockAddPendingAnilistSync).toHaveBeenCalledWith(expect.objectContaining({ video_id: "video-1" }));
+    expect(mockRefreshAnilistPendingBadge).toHaveBeenCalled();
+    expect(mockSyncEpisodeToAnilist).not.toHaveBeenCalled();
+  });
+
+  test("does not sync when there is no access token", async () => {
+    mockGetAnilistAuth.mockImplementation((cb) => cb(null));
+    mockFindMapping.mockResolvedValue(buildMapping());
+
+    await attemptAnilistAutoSync(buildVideo());
+
+    expect(mockSyncEpisodeToAnilist).not.toHaveBeenCalled();
   });
 });

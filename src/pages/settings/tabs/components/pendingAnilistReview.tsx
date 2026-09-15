@@ -1,20 +1,21 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Badge, Box, Button, Flex, Heading, Text, VStack } from "@chakra-ui/react";
-import { MediaListStatus, useSetMediaListEntryByAnilistIdMutation } from "@/graphql";
 import { getPendingAnilistSyncs, refreshAnilistPendingBadge, removePendingAnilistSync } from "@/api/integration/anilistPendingSync";
 import { seriesMappingStorage } from "@/api/seriesMapping";
+import { syncEpisodeToAnilist } from "@/api/integration/anilistEpisodeSync";
 import IndexedDB from "@/db/index";
 import { ISeriesMapping, ISeriesSearchResult, PendingAnilistSync } from "@/types/integrations/seriesMapping";
 import { IVideo } from "@/types/video";
 import { useToastContext } from "@/context/toastNotificationContext";
+import { useAnilistContext } from "@/context/anilistContext";
 import SeriesMappingSelection from "@/components/SeriesMappingSelection";
 
 const PendingAnilistReview = () => {
   const { showToast } = useToastContext();
+  const { anilistAuth } = useAnilistContext();
   const [pending, setPending] = useState<PendingAnilistSync[]>([]);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
-  const [setMedia] = useSetMediaListEntryByAnilistIdMutation();
 
   const loadPending = useCallback(() => {
     getPendingAnilistSyncs().then(setPending);
@@ -24,37 +25,13 @@ const PendingAnilistReview = () => {
     loadPending();
   }, [loadPending]);
 
+  // Thin wrapper around the shared sync function (also used by auto-sync and search-and-link) -
+  // see anilistEpisodeSync.ts for the actual progress resolution, push, and local writeback.
   const syncVideoToMapping = useCallback(
-    async (video: IVideo, mapping: ISeriesMapping) => {
-      if (!mapping.anilist_series_id || !video.watching_episode_number) return;
-
-      const status = video.watching_episode_number === mapping.total_episodes ? MediaListStatus.Completed : MediaListStatus.Current;
-
-      await setMedia({
-        variables: {
-          mediaId: mapping.anilist_series_id,
-          status,
-          progress: video.watching_episode_number,
-        },
-      });
-
-      const tag = await IndexedDB.getTagByCode("ANILIST");
-      await IndexedDB.updateVideoById({
-        ...video,
-        anilist_series_id: mapping.anilist_series_id,
-        mal_series_id: mapping.mal_series_id,
-        series_episode_number: mapping.total_episodes,
-        series_season_year: mapping.season_year,
-        background_cover_image: mapping.background_cover_image || video.background_cover_image,
-        banner_image: mapping.banner_image || video.banner_image,
-        updated_at: Date.now(),
-        tags: tag?.id ? [tag.id] : video.tags,
-      });
-      if (tag?.id) {
-        await IndexedDB.addVideoTag({ id: self.crypto.randomUUID(), video_id: video.id, tag_id: tag.id, created_at: Date.now() });
-      }
+    async (video: IVideo, mapping: ISeriesMapping): Promise<void> => {
+      await syncEpisodeToAnilist(video, mapping, anilistAuth.access_token);
     },
-    [setMedia]
+    [anilistAuth.access_token]
   );
 
   const handleSelect = useCallback(
@@ -77,12 +54,17 @@ const PendingAnilistReview = () => {
 
         // Resolving one episode also catches up any other already-captured
         // episodes of the same series that were skipped while this sat pending -
-        // otherwise every one of them would need to be resolved by hand too.
+        // otherwise every one of them would need to be resolved by hand too. Sorted into watch
+        // order so, if AniList had no progress yet, the first push seeds it sensibly; each push
+        // after that reads back its own just-updated cache, so the backlog naturally advances in
+        // sequence without this loop needing to thread anything through itself.
         const allVideos = await IndexedDB.getAllVideos();
-        const matchingVideos = allVideos.filter(
-          (video) =>
-            video.series_title === entry.series_title && video.watching_season_year === entry.season_year && !video.anilist_series_id
-        );
+        const matchingVideos = allVideos
+          .filter(
+            (video) =>
+              video.series_title === entry.series_title && video.watching_season_year === entry.season_year && !video.anilist_series_id
+          )
+          .sort((a, b) => a.created_at - b.created_at);
 
         for (const video of matchingVideos) {
           await syncVideoToMapping(video, mapping);

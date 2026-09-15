@@ -181,6 +181,29 @@ export const pickAutoMatch = (results: ISeriesSearchResult[], seasonYear?: numbe
   return results.find((result) => result.seasonYear === seasonYear);
 };
 
+// AniList is the source of truth for "what episode am I on" - the number kita captures per episode
+// is whatever the source site displays on that page, which for multi-season/multi-arc sites (e.g.
+// Crunchyroll's "Season 4 Episode 16" resetting per season) is not the cumulative count AniList
+// expects for a single combined media entry, so it's not trustworthy as anything more than "a new
+// episode happened". Once AniList has a known progress, the answer is "one more than that" - the
+// local number is never allowed to override it upward, even if it happens to be larger - UNLESS it
+// exactly matches AniList's current progress, which means this capture is that same already-logged
+// episode (e.g. a rewatch) rather than a new one, and should be left alone rather than advanced past.
+// Local is only used to seed a series AniList has no progress for yet (first-ever sync). The result
+// is clamped to the media's total episode count (when known) so a deliberate rewatch from an early
+// episode on an already-completed series can't push progress past the end.
+export const resolveAnilistProgress = (
+  localEpisodeNumber: number | undefined,
+  knownAnilistProgress: number | null,
+  totalEpisodes?: number | null
+): number => {
+  const advanced =
+    knownAnilistProgress === null || localEpisodeNumber === knownAnilistProgress
+      ? (localEpisodeNumber ?? knownAnilistProgress ?? 1)
+      : knownAnilistProgress + 1;
+  return typeof totalEpisodes === "number" ? Math.min(advanced, totalEpisodes) : advanced;
+};
+
 const SETTINGS_SECTION_IDS = new Set([
   "integration",
   "autotrack",
