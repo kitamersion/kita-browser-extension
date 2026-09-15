@@ -17,6 +17,8 @@ const LogsTab = React.lazy(() => import("@/pages/settings/tabs/logsTab"));
 const SyncTab = React.lazy(() => import("@/pages/settings/tabs/syncTab"));
 const DangerZoneTab = React.lazy(() => import("@/pages/settings/tabs/dangerZoneTab"));
 
+export const SETTINGS_NAVIGATE = "SETTINGS_NAVIGATE";
+
 export type SettingsNavContext = {
   anilistAuthStatus: AuthStatus;
 };

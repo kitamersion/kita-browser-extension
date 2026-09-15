@@ -4,6 +4,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MdExtension, MdArticle } from "react-icons/md";
 import SettingsLayout from "./settingsLayout";
 import useScreenSize from "@/hooks/useScreenSize";
+import eventbus from "@/api/eventbus";
+import { SETTINGS_NAVIGATE } from "@/data/settingsNav";
 
 jest.mock("@/hooks/useScreenSize");
 const mockUseScreenSize = useScreenSize as jest.Mock;
@@ -62,5 +64,26 @@ describe("SettingsLayout", () => {
     fireEvent.click(screen.getByTestId("settings-nav-item-logs"));
 
     await waitFor(() => expect(screen.getByText("Advanced panel content")).toBeInTheDocument());
+  });
+
+  test("switches to a tab when a SETTINGS_NAVIGATE event names a visible item", async () => {
+    mockUseScreenSize.mockReturnValue({ isMobile: false, isSmallerScreen: false, columns: 3 });
+
+    render(<SettingsLayout initialSelectedId="integration" navContext={navContext} />);
+    expect(screen.getByText("Track panel content")).toBeInTheDocument();
+
+    eventbus.publish(SETTINGS_NAVIGATE, { message: "navigate", value: { id: "logs" } });
+
+    await waitFor(() => expect(screen.getByText("Advanced panel content")).toBeInTheDocument());
+  });
+
+  test("ignores a SETTINGS_NAVIGATE event naming an id that isn't currently visible", () => {
+    mockUseScreenSize.mockReturnValue({ isMobile: false, isSmallerScreen: false, columns: 3 });
+
+    render(<SettingsLayout initialSelectedId="integration" navContext={navContext} />);
+
+    eventbus.publish(SETTINGS_NAVIGATE, { message: "navigate", value: { id: "does-not-exist" } });
+
+    expect(screen.getByText("Track panel content")).toBeInTheDocument();
   });
 });
