@@ -16,6 +16,14 @@ import {
   OBJECT_STORE_SYNC_META,
 } from "./schema";
 const ANILIST_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+export interface AniListCacheRow {
+  key: string;
+  value: unknown;
+  created_at?: number;
+  expires_at: number;
+}
+
 import { setApplicationEnabled } from "@/api/applicationStorage";
 import { logger } from "@kitamersion/kita-logging";
 import { IAutoTag } from "@/types/autotag";
@@ -982,8 +990,9 @@ class IndexedDB {
       if (!this.db) return;
       const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readwrite");
       const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
-      const expires_at = Date.now() + ttl;
-      const request = store.put({ key, value, expires_at });
+      const created_at = Date.now();
+      const expires_at = created_at + ttl;
+      const request = store.put({ key, value, created_at, expires_at });
       request.onsuccess = () => resolve();
       request.onerror = () => {
         logger.error(`setAniListCache error: ${request.error}`);
@@ -1030,6 +1039,50 @@ class IndexedDB {
       };
       request.onerror = () => {
         logger.error(`getAniListCacheRaw error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  // Returns every row in the store, expired or not — used by the Cache
+  // management page, which needs to show stale rows nothing has evicted yet.
+  public getAllAniListCacheEntries(): Promise<AniListCacheRow[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve([]);
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readonly");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => {
+        logger.error(`getAllAniListCacheEntries error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  public deleteAniListCache(key: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve();
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.delete(key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        logger.error(`deleteAniListCache error: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
+  public clearAniListCache(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve();
+      const transaction = this.db.transaction(OBJECT_STORE_ANILIST_CACHE, "readwrite");
+      const store = transaction.objectStore(OBJECT_STORE_ANILIST_CACHE);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        logger.error(`clearAniListCache error: ${request.error}`);
         reject(request.error);
       };
     });

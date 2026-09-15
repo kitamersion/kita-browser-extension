@@ -415,3 +415,51 @@ describe("getAllX includeDeleted parameter", () => {
     expect(withDeleted.find((a) => a.id === id)).toBeDefined();
   });
 });
+
+describe("AniList cache", () => {
+  beforeAll(async () => {
+    await IndexedDB.openDatabase();
+  });
+
+  beforeEach(async () => {
+    await IndexedDB.clearAniListCache();
+  });
+
+  test("setAniListCache stores a created_at timestamp alongside expires_at", async () => {
+    const before = Date.now();
+    await IndexedDB.setAniListCache("profile", { name: "Test User" }, 60_000);
+    const after = Date.now();
+
+    const entries = await IndexedDB.getAllAniListCacheEntries();
+    const entry = entries.find((row) => row.key === "profile");
+
+    expect(entry?.value).toEqual({ name: "Test User" });
+    expect(entry?.created_at).toBeGreaterThanOrEqual(before);
+    expect(entry?.created_at).toBeLessThanOrEqual(after);
+  });
+
+  test("getAllAniListCacheEntries includes expired rows that getAniListCache treats as a miss", async () => {
+    await IndexedDB.setAniListCache("expired-key", { stale: true }, -1000);
+
+    expect(await IndexedDB.getAniListCache("expired-key")).toBeUndefined();
+
+    const entries = await IndexedDB.getAllAniListCacheEntries();
+    expect(entries.find((row) => row.key === "expired-key")?.value).toEqual({ stale: true });
+  });
+
+  test("deleteAniListCache removes a single entry", async () => {
+    await IndexedDB.setAniListCache("delete-me", { a: 1 }, 60_000);
+    await IndexedDB.deleteAniListCache("delete-me");
+
+    expect(await IndexedDB.getAllAniListCacheEntries()).toEqual([]);
+  });
+
+  test("clearAniListCache empties the entire store", async () => {
+    await IndexedDB.setAniListCache("a", { x: 1 }, 60_000);
+    await IndexedDB.setAniListCache("b", { x: 2 }, 60_000);
+
+    await IndexedDB.clearAniListCache();
+
+    expect(await IndexedDB.getAllAniListCacheEntries()).toEqual([]);
+  });
+});
