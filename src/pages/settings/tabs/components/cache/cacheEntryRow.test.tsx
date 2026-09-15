@@ -45,6 +45,26 @@ describe("CacheEntryRow", () => {
     await waitFor(() => expect(onRefresh).toHaveBeenCalledWith("profile"));
   });
 
+  test("delete button returns to a non-loading state after onDelete rejects", async () => {
+    const onDelete = jest.fn().mockRejectedValue(new Error("boom"));
+    render(<CacheEntryRow category="profile" entry={baseEntry} onDelete={onDelete} />);
+
+    const deleteButton = screen.getByTestId(`cache-entry-delete-${baseEntry.key}`);
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => expect(deleteButton).not.toBeDisabled());
+  });
+
+  test("refresh button returns to a non-loading state after onRefresh rejects", async () => {
+    const onRefresh = jest.fn().mockRejectedValue(new Error("boom"));
+    render(<CacheEntryRow category="profile" entry={baseEntry} onDelete={jest.fn()} onRefresh={onRefresh} />);
+
+    const refreshButton = screen.getByTestId(`cache-entry-refresh-${baseEntry.key}`);
+    fireEvent.click(refreshButton);
+
+    await waitFor(() => expect(refreshButton).not.toBeDisabled());
+  });
+
   test("toggling 'View raw JSON' shows and hides the JSON viewer", () => {
     render(<CacheEntryRow category="profile" entry={baseEntry} onDelete={jest.fn()} />);
 

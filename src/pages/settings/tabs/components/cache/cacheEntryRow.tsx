@@ -30,15 +30,29 @@ const CacheEntryRow: React.FC<CacheEntryRowProps> = ({ category, entry, onDelete
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await onDelete(entry.key);
-    setIsDeleting(false);
+    try {
+      await onDelete(entry.key);
+    } catch {
+      // Surfacing/toasting the failure is the caller's responsibility (the
+      // CacheTab-level onDelete handler). This component only guarantees the
+      // row never gets stuck in a loading state.
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
-    await onRefresh(entry.key);
-    setIsRefreshing(false);
+    try {
+      await onRefresh(entry.key);
+    } catch {
+      // Surfacing/toasting the failure is the caller's responsibility (the
+      // CacheTab-level onRefresh handler). This component only guarantees the
+      // row never gets stuck in a loading state.
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
