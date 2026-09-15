@@ -37,7 +37,18 @@ describe("SETTINGS_GROUPS", () => {
 describe("getVisibleItems", () => {
   test("excludes the anilist and anilist-search items when unauthorized", () => {
     const ids = getVisibleItems(SETTINGS_GROUPS, { anilistAuthStatus: "unauthorized" }).map((item) => item.id);
-    expect(ids).toEqual(["integration", "autotrack", "tags", "mappings", "general", "saved-videos", "logs", "cache", "sync", "danger-zone"]);
+    expect(ids).toEqual([
+      "integration",
+      "autotrack",
+      "tags",
+      "mappings",
+      "general",
+      "saved-videos",
+      "logs",
+      "cache",
+      "sync",
+      "danger-zone",
+    ]);
   });
 
   test("includes the anilist and anilist-search items when authorized", () => {
