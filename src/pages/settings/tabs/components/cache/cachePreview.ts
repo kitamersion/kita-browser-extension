@@ -18,8 +18,8 @@ export function getCachePreview(category: AniListCacheCategory, key: string, val
     }
     case "lists": {
       const status = key.split(":")[2] ?? "unknown";
-      const collection = value as { lists?: { entries?: unknown[] }[] } | undefined;
-      const count = (collection?.lists ?? []).reduce((sum, list) => sum + (list.entries?.length ?? 0), 0);
+      const collection = value as { MediaListCollection?: { lists?: { entries?: unknown[] }[] } } | undefined;
+      const count = (collection?.MediaListCollection?.lists ?? []).reduce((sum, list) => sum + (list.entries?.length ?? 0), 0);
       return {
         title: `${status} list`,
         subtitle: `${count} ${count === 1 ? "entry" : "entries"}`,
