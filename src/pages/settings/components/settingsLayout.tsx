@@ -30,13 +30,6 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
 
   const visibleItems = getVisibleItems(SETTINGS_GROUPS, navContext);
   const activeItem = visibleItems.find((item) => item.id === selectedId) ?? visibleItems[0];
-  if (!activeItem) return null;
-  const SelectedComponent = activeItem.component;
-
-  const handleSelect = (id: string) => {
-    setSelectedId(id);
-    onClose();
-  };
 
   useEffect(() => {
     const handleNavigate = (data: { value?: { id?: string } }) => {
@@ -49,6 +42,14 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
     eventbus.subscribe(SETTINGS_NAVIGATE, handleNavigate);
     return () => eventbus.unsubscribe(SETTINGS_NAVIGATE, handleNavigate);
   }, [visibleItems, onClose]);
+
+  if (!activeItem) return null;
+  const SelectedComponent = activeItem.component;
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    onClose();
+  };
 
   return (
     <Flex as="main" direction={isMobile ? "column" : "row"} align="stretch" minH="100vh">

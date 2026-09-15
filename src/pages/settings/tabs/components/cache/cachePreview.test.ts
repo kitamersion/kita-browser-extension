@@ -13,10 +13,7 @@ describe("getCachePreview", () => {
   test("lists: shows the status parsed from the key and a total entry count", () => {
     const value = {
       MediaListCollection: {
-        lists: [
-          { entries: [{}, {}] },
-          { entries: [{}] },
-        ],
+        lists: [{ entries: [{}, {}] }, { entries: [{}] }],
       },
     };
     const preview = getCachePreview("lists", "list:42:CURRENT", value);
