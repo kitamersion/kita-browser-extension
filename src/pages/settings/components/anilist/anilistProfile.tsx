@@ -1,5 +1,5 @@
 import { GetMeQuery, MediaListStatus, useGetUserAnimeListLazyQuery, useSaveMediaListEntryMutation } from "@/graphql";
-import { ExternalLinkIcon, ChevronDownIcon, ChevronUpIcon, SettingsIcon } from "@chakra-ui/icons";
+import { ExternalLinkIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import {
   Avatar,
   Box,
@@ -28,12 +28,6 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  Drawer,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  DrawerCloseButton,
   useDisclosure,
 } from "@chakra-ui/react";
 import React, { useMemo, useEffect, useState, useCallback } from "react";
@@ -76,7 +70,6 @@ const ANILIST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 const AnilistProfile = () => {
   const { isOpen: isEditModalOpen, onOpen: openEditModal, onClose: closeEditModal } = useDisclosure();
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedEntry, setSelectedEntry] = useState<AnimeListEntry | null>(null);
   const [editProgress, setEditProgress] = useState<string>("");
   const [editStatus, setEditStatus] = useState<MediaListStatus>(MediaListStatus.Current);
@@ -88,9 +81,6 @@ const AnilistProfile = () => {
   const [statusData, setStatusData] = useState<Record<string, any>>({});
   const [profile, setProfile] = useState<GetMeQuery["Viewer"] | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileCacheExpires, setProfileCacheExpires] = useState<number | null>(null);
-
-  const [listCacheExpires, setListCacheExpires] = useState<Record<string, number | null>>({});
 
   const toast = useToast();
 
@@ -215,16 +205,13 @@ const AnilistProfile = () => {
       const cachedProfileObj = await db.getAniListCacheRaw(profileKey); // get raw cache object
       if (cachedProfileObj && cachedProfileObj.value) {
         setProfile(cachedProfileObj.value);
-        setProfileCacheExpires(cachedProfileObj.expires_at);
         setProfileLoading(false);
       } else {
         // Only fetch if cache is missing
         const { data: fetchedData } = await refetchMe();
         if (fetchedData?.Viewer && isMounted) {
           setProfile(fetchedData.Viewer);
-          const expiresAt = Date.now() + ANILIST_CACHE_TTL;
           await db.setAniListCache(profileKey, fetchedData.Viewer, ANILIST_CACHE_TTL);
-          setProfileCacheExpires(expiresAt);
         }
         if (isMounted) setProfileLoading(false);
       }
@@ -297,52 +284,6 @@ const AnilistProfile = () => {
     return [MediaListStatus.Current, MediaListStatus.Paused, MediaListStatus.Planning, MediaListStatus.Completed];
   }, []);
 
-  // Add a force refresh button
-  const handleForceRefresh = async () => {
-    setProfileLoading(true);
-    const { data: fetchedData } = await refetchMe();
-    if (fetchedData?.Viewer) {
-      setProfile(fetchedData.Viewer);
-      const expiresAt = Date.now() + ANILIST_CACHE_TTL;
-      await db.setAniListCache("profile", fetchedData.Viewer, ANILIST_CACHE_TTL);
-      setProfileCacheExpires(expiresAt);
-    }
-    setProfileLoading(false);
-  };
-
-  // Refresh handler for media list
-  const handleForceRefreshList = async (status: string) => {
-    if (!profile?.id) return;
-    getAnimeList({
-      variables: {
-        userId: profile.id,
-        status: status as MediaListStatus,
-      },
-      onCompleted: async (data) => {
-        setStatusData((prev) => ({ ...prev, [status]: data }));
-        setLoadedStatuses((prev) => ({ ...prev, [status]: true }));
-        const expiresAt = Date.now() + ANILIST_CACHE_TTL;
-        await db.setAniListCache(`list:${profile.id}:${status}`, data, ANILIST_CACHE_TTL);
-        setListCacheExpires((prev) => ({ ...prev, [status]: expiresAt }));
-      },
-    });
-  };
-
-  // Load cache expiry times for all media lists on profile change
-  useEffect(() => {
-    const fetchAllListCacheExpires = async () => {
-      if (!profile?.id) return;
-      const newExpires: Record<string, number | null> = {};
-      for (const status of displayStatuses) {
-        const listKey = `list:${profile.id}:${status}`;
-        const cached = await db.getAniListCacheRaw(listKey);
-        newExpires[status] = cached?.expires_at ?? null;
-      }
-      setListCacheExpires(newExpires);
-    };
-    fetchAllListCacheExpires();
-  }, [displayStatuses, profile, statusData]);
-
   return (
     <>
       <VStack spacing={4} align="stretch" mb={4}>
@@ -367,52 +308,6 @@ const AnilistProfile = () => {
         transition="all 0.2s"
       >
         <VStack spacing={6} align="stretch">
-          <Drawer isOpen={isOpen} onClose={onClose} size="md">
-            <DrawerOverlay />
-            <DrawerContent bg="bg.primary" color="text.primary">
-              <DrawerHeader color="accent.primary">Cache Controls</DrawerHeader>
-              <DrawerCloseButton />
-              <DrawerBody>
-                <VStack align="stretch" spacing={6}>
-                  <Box>
-                    <Heading as="h3" size="sm" mb={2}>
-                      Profile Cache
-                    </Heading>
-                    <VStack align="stretch" spacing={3}>
-                      <Text fontSize="sm" color="text.secondary">
-                        Expires: {profileCacheExpires ? new Date(profileCacheExpires).toLocaleString() : "-"}
-                      </Text>
-                      <Button size="sm" onClick={handleForceRefresh} isLoading={profileLoading}>
-                        Force refresh profile
-                      </Button>
-                    </VStack>
-                  </Box>
-                  <Divider />
-                  <Box>
-                    <Heading as="h3" size="sm" mb={2}>
-                      Media List Cache
-                    </Heading>
-                    <VStack align="stretch" spacing={3}>
-                      {displayStatuses.map((status) => (
-                        <HStack key={status}>
-                          <Badge>{status}</Badge>
-                          <Text fontSize="sm" color="text.secondary">
-                            {typeof listCacheExpires[status] === "number" && listCacheExpires[status] !== null
-                              ? new Date(listCacheExpires[status]).toLocaleString()
-                              : "-"}
-                          </Text>
-                          <Button size="xs" onClick={() => handleForceRefreshList(status)}>
-                            Force refresh
-                          </Button>
-                        </HStack>
-                      ))}
-                    </VStack>
-                  </Box>
-                </VStack>
-              </DrawerBody>
-            </DrawerContent>
-          </Drawer>
-
           {/* User Profile Section */}
           <Flex justifyContent="space-between" alignItems="center" gap={4}>
             {profileLoading ? (
@@ -439,9 +334,6 @@ const AnilistProfile = () => {
                 </Box>
               </Flex>
             )}
-            <Button variant="kita-outline" size="sm" leftIcon={<SettingsIcon />} onClick={onOpen}>
-              Cache Controls
-            </Button>
           </Flex>
 
           {/* Stats Grid */}
