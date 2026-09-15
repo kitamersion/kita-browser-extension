@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MdExtension, MdArticle } from "react-icons/md";
 import SettingsLayout from "./settingsLayout";
 import useScreenSize from "@/hooks/useScreenSize";
@@ -72,7 +72,9 @@ describe("SettingsLayout", () => {
     render(<SettingsLayout initialSelectedId="integration" navContext={navContext} />);
     expect(screen.getByText("Track panel content")).toBeInTheDocument();
 
-    eventbus.publish(SETTINGS_NAVIGATE, { message: "navigate", value: { id: "logs" } });
+    act(() => {
+      eventbus.publish(SETTINGS_NAVIGATE, { message: "navigate", value: { id: "logs" } });
+    });
 
     await waitFor(() => expect(screen.getByText("Advanced panel content")).toBeInTheDocument());
   });
