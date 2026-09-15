@@ -13,18 +13,17 @@ import db from "@/db";
 // mockResolvedValueOnce/mockRejectedValueOnce, which run long after this
 // module body (and therefore the jest.mock factories) have executed.
 const mockRefetchProfile = jest.fn();
-const mockFetchAnimeList = jest.fn();
+const mockClientQuery = jest.fn();
 
 jest.mock("@/api/anilistCache");
 jest.mock("@/db", () => ({ __esModule: true, default: { setAniListCache: jest.fn() } }));
 jest.mock("@apollo/client", () => ({
   ...jest.requireActual("@apollo/client"),
-  useApolloClient: () => ({ query: jest.fn() }),
+  useApolloClient: () => ({ query: mockClientQuery }),
 }));
 jest.mock("@/graphql", () => ({
   ...jest.requireActual("@/graphql"),
   useGetMeQuery: () => ({ refetch: mockRefetchProfile }),
-  useGetUserAnimeListLazyQuery: () => [mockFetchAnimeList],
 }));
 jest.mock("./components/cache/seriesMappingSummaryCard", () => {
   const MockSeriesMappingSummaryCard = () => <div data-testid="series-mapping-summary-stub" />;
@@ -49,7 +48,7 @@ describe("CacheTab", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRefetchProfile.mockReset();
-    mockFetchAnimeList.mockReset();
+    mockClientQuery.mockReset();
     mockApi.getCategorizedCacheEntries.mockResolvedValue(emptySummaries);
   });
 
@@ -153,5 +152,54 @@ describe("CacheTab", () => {
     await waitFor(() => expect(screen.getByText("Failed to refresh profile")).toBeInTheDocument());
     expect(mockSetAniListCache).not.toHaveBeenCalled();
     expect(screen.getByTestId("cache-entry-refresh-profile")).not.toBeDisabled();
+  });
+
+  const seedListEntry = () =>
+    mockApi.getCategorizedCacheEntries.mockResolvedValue([
+      emptySummaries[0],
+      {
+        ...emptySummaries[1],
+        entries: [{ key: "list:42:CURRENT", value: {}, expires_at: Date.now() + 60_000, sizeBytes: 2 }],
+      },
+      ...emptySummaries.slice(2),
+    ]);
+
+  test("refreshing a list entry queries the client with network-only and shows a success toast", async () => {
+    seedListEntry();
+    mockClientQuery.mockResolvedValueOnce({ data: { MediaListCollection: { lists: [] } } });
+
+    render(
+      <ChakraProvider>
+        <CacheTab />
+      </ChakraProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("cache-entry-refresh-list:42:CURRENT")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId("cache-entry-refresh-list:42:CURRENT"));
+
+    await waitFor(() => expect(mockClientQuery).toHaveBeenCalled());
+    expect(mockClientQuery).toHaveBeenCalledWith(expect.objectContaining({ fetchPolicy: "network-only" }));
+    await waitFor(() =>
+      expect(mockSetAniListCache).toHaveBeenCalledWith("list:42:CURRENT", { MediaListCollection: { lists: [] } }, PROFILE_LIST_CACHE_TTL_MS)
+    );
+    await waitFor(() => expect(screen.getByText("List refreshed")).toBeInTheDocument());
+  });
+
+  test("clearing a category confirms the modal and calls clearCacheCategory with that category", async () => {
+    seedListEntry();
+    mockApi.clearCacheCategory.mockResolvedValue(undefined);
+
+    render(
+      <ChakraProvider>
+        <CacheTab />
+      </ChakraProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("clear-category-lists")).not.toBeDisabled());
+
+    fireEvent.click(screen.getByTestId("clear-category-lists"));
+    fireEvent.click(screen.getByTestId("confirm-clear-category-lists"));
+
+    await waitFor(() => expect(mockApi.clearCacheCategory).toHaveBeenCalledWith("lists"));
+    await waitFor(() => expect(screen.getByText("Category cleared")).toBeInTheDocument());
   });
 });

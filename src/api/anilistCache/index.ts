@@ -47,11 +47,11 @@ export async function getCategorizedCacheEntries(): Promise<AniListCacheCategory
 
   for (const row of rows) {
     const category = categorizeCacheKey(row.key);
-    byCategory.get(category)!.push({ ...row, sizeBytes: sizeOf(row.value) });
+    (byCategory.get(category) ?? []).push({ ...row, sizeBytes: sizeOf(row.value) });
   }
 
   return CACHE_CATEGORY_ORDER.map((category) => {
-    const entries = byCategory.get(category)!;
+    const entries = byCategory.get(category) ?? [];
     return {
       category,
       label: CACHE_CATEGORY_LABELS[category],

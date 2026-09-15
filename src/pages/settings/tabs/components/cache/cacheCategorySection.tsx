@@ -116,6 +116,12 @@ const CacheCategorySection: React.FC<CacheCategorySectionProps> = ({ summary, is
         </Button>
       </HStack>
 
+      {summary.category === "search" && (
+        <Text color="text.tertiary" fontSize="xs" mt={1}>
+          Search results can&apos;t be refreshed individually — delete to clear, or they&apos;ll regenerate next time you search.
+        </Text>
+      )}
+
       <VStack align="stretch" spacing={0} mt={2}>
         {isLoading && <Text color="text.secondary">Loading…</Text>}
         {!isLoading && summary.entries.length === 0 && (

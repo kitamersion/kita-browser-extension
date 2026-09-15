@@ -30,7 +30,7 @@ const SeriesMappingSummaryCard: React.FC = () => {
     try {
       const cleanedCount = await SeriesMappingUtils.cleanExpiredMappings();
       await loadStats();
-      toast({ title: `Removed ${cleanedCount} expiring/expired mappings`, status: "success", duration: 3000 });
+      toast({ title: `Removed ${cleanedCount} expired mappings`, status: "success", duration: 3000 });
     } catch (error) {
       toast({ title: "Failed to clear expired mappings", status: "error", duration: 5000 });
     } finally {
@@ -72,7 +72,7 @@ const SeriesMappingSummaryCard: React.FC = () => {
           <StatNumber color="text.primary">{stats?.total ?? "—"}</StatNumber>
         </Stat>
         <Stat>
-          <StatLabel color="text.secondary">Expiring/expired</StatLabel>
+          <StatLabel color="text.secondary">Expiring soon</StatLabel>
           <StatNumber color="text.primary">{stats?.expiringSoon ?? "—"}</StatNumber>
         </Stat>
       </HStack>

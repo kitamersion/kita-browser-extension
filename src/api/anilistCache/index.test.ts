@@ -31,13 +31,13 @@ describe("getCategorizedCacheEntries / clearCacheCategory / deleteCacheEntry / c
 
     expect(summaries.map((s) => s.category)).toEqual(["profile", "lists", "collections", "search", "other"]);
 
-    const profileSummary = summaries.find((s) => s.category === "profile")!;
-    expect(profileSummary.entries).toHaveLength(1);
-    expect(profileSummary.totalSizeBytes).toBeGreaterThan(0);
+    const profileSummary = summaries.find((s) => s.category === "profile");
+    expect(profileSummary?.entries).toHaveLength(1);
+    expect(profileSummary?.totalSizeBytes).toBeGreaterThan(0);
 
-    const listsSummary = summaries.find((s) => s.category === "lists")!;
-    expect(listsSummary.entries).toHaveLength(0);
-    expect(listsSummary.totalSizeBytes).toBe(0);
+    const listsSummary = summaries.find((s) => s.category === "lists");
+    expect(listsSummary?.entries).toHaveLength(0);
+    expect(listsSummary?.totalSizeBytes).toBe(0);
   });
 
   test("clearCacheCategory deletes only keys belonging to that category", async () => {

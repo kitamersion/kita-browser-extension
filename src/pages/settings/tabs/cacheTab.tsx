@@ -22,9 +22,10 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useApolloClient } from "@apollo/client";
-import { MediaListStatus, useGetMeQuery, useGetUserAnimeListLazyQuery } from "@/graphql";
+import { MediaListStatus, useGetMeQuery } from "@/graphql";
 import { GET_GENRE_COLLECTION } from "@/graphql/queries/getGenreCollection";
 import { GET_MEDIA_TAG_COLLECTION } from "@/graphql/queries/getMediaTagCollection";
+import { GET_USER_ANIME_LIST } from "@/graphql/queries/getUserAnimeList";
 import db from "@/db";
 import {
   AniListCacheCategory,
@@ -57,7 +58,6 @@ const CacheTab: React.FC = () => {
   const [isClearingAll, setIsClearingAll] = useState(false);
 
   const { refetch: refetchProfile } = useGetMeQuery({ skip: true });
-  const [fetchAnimeList] = useGetUserAnimeListLazyQuery();
 
   const closeClearAll = useCallback(() => {
     setClearAllConfirmText("");
@@ -138,23 +138,19 @@ const CacheTab: React.FC = () => {
       const userId = Number(userIdRaw);
       if (!userId || !status) return;
       try {
-        await new Promise<void>((resolve, reject) => {
-          fetchAnimeList({
-            variables: { userId, status: status as MediaListStatus },
-            onCompleted: async (data) => {
-              await db.setAniListCache(key, data, PROFILE_LIST_CACHE_TTL_MS);
-              resolve();
-            },
-            onError: reject,
-          });
+        const res = await client.query({
+          query: GET_USER_ANIME_LIST,
+          variables: { userId, status: status as MediaListStatus },
+          fetchPolicy: "network-only",
         });
+        await db.setAniListCache(key, res.data, PROFILE_LIST_CACHE_TTL_MS);
         await loadCategories();
         toast({ title: "List refreshed", status: "success", duration: 2000 });
       } catch (error) {
         toast({ title: "Failed to refresh list", status: "error", duration: 5000 });
       }
     },
-    [fetchAnimeList, loadCategories, toast]
+    [client, loadCategories, toast]
   );
 
   const handleRefreshCollection = useCallback(
