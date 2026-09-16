@@ -252,18 +252,22 @@ const CacheTab: React.FC = () => {
           it.
         </Text>
         <Box bg="bg.secondary" border="1px solid" borderColor="border.primary" borderRadius="xl" p={4}>
-          <HStack justify="space-between" align="center">
-            <HStack spacing={8}>
+          <HStack justify="space-between" align="center" flexWrap="wrap" gap={4}>
+            <HStack spacing={8} flexShrink={0}>
               <Stat>
-                <StatLabel color="text.secondary">Total cached entries</StatLabel>
+                <StatLabel color="text.secondary" whiteSpace="nowrap">
+                  Total cached entries
+                </StatLabel>
                 <StatNumber color="text.primary">{totalEntries}</StatNumber>
               </Stat>
               <Stat>
-                <StatLabel color="text.secondary">Estimated size</StatLabel>
+                <StatLabel color="text.secondary" whiteSpace="nowrap">
+                  Estimated size
+                </StatLabel>
                 <StatNumber color="text.primary">{formatBytes(totalSizeBytes)}</StatNumber>
               </Stat>
             </HStack>
-            <HStack>
+            <HStack flexShrink={0}>
               <Button
                 colorScheme="orange"
                 variant="outline"
