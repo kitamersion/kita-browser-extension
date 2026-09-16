@@ -82,9 +82,9 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     id: "advanced",
     label: "Advanced",
     items: [
-      { id: "logs", label: "Logs", icon: MdArticle, component: LogsTab },
-      { id: "cache", label: "Cache", icon: MdStorage, component: CacheTab },
       { id: "storage", label: "Storage", icon: MdPieChart, component: StorageTab },
+      { id: "cache", label: "Cache", icon: MdStorage, component: CacheTab },
+      { id: "logs", label: "Logs", icon: MdArticle, component: LogsTab },
     ],
   },
   {

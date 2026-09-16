@@ -28,9 +28,9 @@ describe("SETTINGS_GROUPS", () => {
     expect(data.items.map((item) => item.id)).toEqual(["general", "saved-videos"]);
   });
 
-  test("the advanced group contains logs, cache, and storage", () => {
+  test("the advanced group contains storage, cache, and logs in that order", () => {
     const advanced = findGroup("advanced");
-    expect(advanced.items.map((item) => item.id)).toEqual(["logs", "cache", "storage"]);
+    expect(advanced.items.map((item) => item.id)).toEqual(["storage", "cache", "logs"]);
   });
 });
 
@@ -44,9 +44,9 @@ describe("getVisibleItems", () => {
       "mappings",
       "general",
       "saved-videos",
-      "logs",
-      "cache",
       "storage",
+      "cache",
+      "logs",
       "sync",
       "danger-zone",
     ]);
