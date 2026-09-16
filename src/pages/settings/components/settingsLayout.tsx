@@ -11,10 +11,11 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { HamburgerIcon } from "@chakra-ui/icons";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import LoadingState from "@/components/states/LoadingState";
 import useScreenSize from "@/hooks/useScreenSize";
-import { getVisibleItems, SETTINGS_GROUPS, SettingsNavContext } from "@/data/settingsNav";
+import eventbus from "@/api/eventbus";
+import { getVisibleItems, SETTINGS_GROUPS, SETTINGS_NAVIGATE, SettingsNavContext } from "@/data/settingsNav";
 import SettingsSidebar from "./settingsSidebar";
 
 export type SettingsLayoutProps = {
@@ -29,6 +30,19 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({ initialSelectedId, navC
 
   const visibleItems = getVisibleItems(SETTINGS_GROUPS, navContext);
   const activeItem = visibleItems.find((item) => item.id === selectedId) ?? visibleItems[0];
+
+  useEffect(() => {
+    const handleNavigate = (data: { value?: { id?: string } }) => {
+      const targetId = data?.value?.id;
+      if (targetId && visibleItems.some((item) => item.id === targetId)) {
+        setSelectedId(targetId);
+        onClose();
+      }
+    };
+    eventbus.subscribe(SETTINGS_NAVIGATE, handleNavigate);
+    return () => eventbus.unsubscribe(SETTINGS_NAVIGATE, handleNavigate);
+  }, [visibleItems, onClose]);
+
   if (!activeItem) return null;
   const SelectedComponent = activeItem.component;
 
