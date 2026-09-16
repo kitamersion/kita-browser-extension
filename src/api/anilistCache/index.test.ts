@@ -1,5 +1,12 @@
 import db from "@/db";
-import { categorizeCacheKey, clearAllCache, clearCacheCategory, deleteCacheEntry, getCategorizedCacheEntries } from "./index";
+import {
+  categorizeCacheKey,
+  clearAllCache,
+  clearCacheCategory,
+  clearExpiredCache,
+  deleteCacheEntry,
+  getCategorizedCacheEntries,
+} from "./index";
 
 describe("categorizeCacheKey", () => {
   test.each([
@@ -65,5 +72,26 @@ describe("getCategorizedCacheEntries / clearCacheCategory / deleteCacheEntry / c
     await clearAllCache();
 
     expect(await db.getAllAniListCacheEntries()).toEqual([]);
+  });
+
+  test("clearExpiredCache deletes only entries whose TTL has already passed, and returns how many it removed", async () => {
+    await db.setAniListCache("profile", {}, 60_000); // fresh
+    await db.setAniListCache("search:abc", {}, -1000); // expired
+    await db.setAniListCache("genreCollection", {}, -1); // expired
+
+    const removedCount = await clearExpiredCache();
+
+    expect(removedCount).toBe(2);
+    const remainingKeys = (await db.getAllAniListCacheEntries()).map((row) => row.key);
+    expect(remainingKeys).toEqual(["profile"]);
+  });
+
+  test("clearExpiredCache is a no-op when nothing has expired", async () => {
+    await db.setAniListCache("profile", {}, 60_000);
+
+    const removedCount = await clearExpiredCache();
+
+    expect(removedCount).toBe(0);
+    expect(await db.getAllAniListCacheEntries()).toHaveLength(1);
   });
 });

@@ -185,6 +185,38 @@ describe("CacheTab", () => {
     await waitFor(() => expect(screen.getByText("List refreshed")).toBeInTheDocument());
   });
 
+  test("clear-expired button is disabled when nothing has expired", async () => {
+    mockApi.getCategorizedCacheEntries.mockResolvedValue([
+      { ...emptySummaries[0], entries: [{ key: "profile", value: {}, expires_at: Date.now() + 60_000, sizeBytes: 2 }] },
+      ...emptySummaries.slice(1),
+    ]);
+
+    render(<CacheTab />);
+
+    await waitFor(() => expect(screen.getByTestId("clear-expired-cache-button")).toBeDisabled());
+  });
+
+  test("clear-expired button calls clearExpiredCache and shows a toast with the removed count", async () => {
+    mockApi.getCategorizedCacheEntries.mockResolvedValue([
+      { ...emptySummaries[0], entries: [{ key: "profile", value: {}, expires_at: Date.now() - 1000, sizeBytes: 2 }] },
+      ...emptySummaries.slice(1),
+    ]);
+    mockApi.clearExpiredCache.mockResolvedValue(3);
+
+    render(
+      <ChakraProvider>
+        <CacheTab />
+      </ChakraProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("clear-expired-cache-button")).not.toBeDisabled());
+
+    fireEvent.click(screen.getByTestId("clear-expired-cache-button"));
+
+    await waitFor(() => expect(mockApi.clearExpiredCache).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText("Removed 3 expired entries")).toBeInTheDocument());
+    expect(mockApi.getCategorizedCacheEntries).toHaveBeenCalledTimes(2);
+  });
+
   test("clearing a category confirms the modal and calls clearCacheCategory with that category", async () => {
     seedListEntry();
     mockApi.clearCacheCategory.mockResolvedValue(undefined);

@@ -74,3 +74,11 @@ export async function clearCacheCategory(category: AniListCacheCategory): Promis
 export async function clearAllCache(): Promise<void> {
   await db.clearAniListCache();
 }
+
+export async function clearExpiredCache(): Promise<number> {
+  const rows = await db.getAllAniListCacheEntries();
+  const now = Date.now();
+  const expiredKeys = rows.filter((row) => row.expires_at <= now).map((row) => row.key);
+  await Promise.all(expiredKeys.map((key) => db.deleteAniListCache(key)));
+  return expiredKeys.length;
+}

@@ -32,12 +32,13 @@ import {
   AniListCacheCategorySummary,
   clearAllCache,
   clearCacheCategory,
+  clearExpiredCache,
   deleteCacheEntry,
   getCategorizedCacheEntries,
 } from "@/api/anilistCache";
 import CacheCategorySection from "./components/cache/cacheCategorySection";
 import SeriesMappingSummaryCard from "./components/cache/seriesMappingSummaryCard";
-import { formatBytes } from "./components/cache/cacheFormatting";
+import { formatBytes, getExpiryStatus } from "./components/cache/cacheFormatting";
 
 const CLEAR_ALL_CONFIRM_TEXT = "CLEAR";
 // Matches COLLECTION_CACHE_TTL_MS in anilistSearch.tsx, which writes these same
@@ -56,6 +57,7 @@ const CacheTab: React.FC = () => {
   const { isOpen: isClearAllOpen, onOpen: openClearAll, onClose: closeClearAllBase } = useDisclosure();
   const [clearAllConfirmText, setClearAllConfirmText] = useState("");
   const [isClearingAll, setIsClearingAll] = useState(false);
+  const [isClearingExpired, setIsClearingExpired] = useState(false);
 
   const { refetch: refetchProfile } = useGetMeQuery({ skip: true });
 
@@ -118,6 +120,19 @@ const CacheTab: React.FC = () => {
       setIsClearingAll(false);
     }
   }, [loadCategories, toast, closeClearAll]);
+
+  const handleClearExpired = useCallback(async () => {
+    setIsClearingExpired(true);
+    try {
+      const removedCount = await clearExpiredCache();
+      await loadCategories();
+      toast({ title: `Removed ${removedCount} expired ${removedCount === 1 ? "entry" : "entries"}`, status: "success", duration: 2000 });
+    } catch (error) {
+      toast({ title: "Failed to clear expired cache", status: "error", duration: 5000 });
+    } finally {
+      setIsClearingExpired(false);
+    }
+  }, [loadCategories, toast]);
 
   const handleRefreshProfile = useCallback(async () => {
     try {
@@ -186,6 +201,10 @@ const CacheTab: React.FC = () => {
 
   const totalSizeBytes = useMemo(() => categories.reduce((sum, category) => sum + category.totalSizeBytes, 0), [categories]);
   const totalEntries = useMemo(() => categories.reduce((sum, category) => sum + category.entries.length, 0), [categories]);
+  const expiredCount = useMemo(
+    () => categories.reduce((sum, category) => sum + category.entries.filter((entry) => getExpiryStatus(entry) === "expired").length, 0),
+    [categories]
+  );
 
   return (
     <>
@@ -234,23 +253,37 @@ const CacheTab: React.FC = () => {
         </Text>
         <Box bg="bg.secondary" border="1px solid" borderColor="border.primary" borderRadius="xl" p={4}>
           <HStack justify="space-between" align="center">
-            <Stat>
-              <StatLabel color="text.secondary">Total cached entries</StatLabel>
-              <StatNumber color="text.primary">{totalEntries}</StatNumber>
-            </Stat>
-            <Stat textAlign="right">
-              <StatLabel color="text.secondary">Estimated size</StatLabel>
-              <StatNumber color="text.primary">{formatBytes(totalSizeBytes)}</StatNumber>
-            </Stat>
-            <Button
-              colorScheme="red"
-              variant="outline"
-              onClick={openClearAll}
-              isDisabled={totalEntries === 0}
-              data-testid="open-clear-all-button"
-            >
-              Clear all cache
-            </Button>
+            <HStack spacing={8}>
+              <Stat>
+                <StatLabel color="text.secondary">Total cached entries</StatLabel>
+                <StatNumber color="text.primary">{totalEntries}</StatNumber>
+              </Stat>
+              <Stat>
+                <StatLabel color="text.secondary">Estimated size</StatLabel>
+                <StatNumber color="text.primary">{formatBytes(totalSizeBytes)}</StatNumber>
+              </Stat>
+            </HStack>
+            <HStack>
+              <Button
+                colorScheme="orange"
+                variant="outline"
+                onClick={handleClearExpired}
+                isLoading={isClearingExpired}
+                isDisabled={expiredCount === 0}
+                data-testid="clear-expired-cache-button"
+              >
+                Clear all expired cache
+              </Button>
+              <Button
+                colorScheme="red"
+                variant="outline"
+                onClick={openClearAll}
+                isDisabled={totalEntries === 0}
+                data-testid="open-clear-all-button"
+              >
+                Clear all cache
+              </Button>
+            </HStack>
           </HStack>
         </Box>
       </VStack>
