@@ -42,9 +42,10 @@ export function getCachePreview(category: AniListCacheCategory, key: string, val
         | undefined;
       const first = page?.media?.[0];
       const total = page?.pageInfo?.total ?? page?.media?.length ?? 0;
+      const hash = key.startsWith("search:") ? key.slice("search:".length) : key;
       return {
-        title: first?.title?.userPreferred ?? "Search results",
-        subtitle: `${total} ${total === 1 ? "result" : "results"}`,
+        title: hash,
+        subtitle: `Hashed search query · ${total} ${total === 1 ? "result" : "results"}`,
         imageUrl: first?.coverImage?.large,
       };
     }

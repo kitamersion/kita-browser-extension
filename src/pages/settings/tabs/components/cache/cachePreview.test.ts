@@ -30,13 +30,18 @@ describe("getCachePreview", () => {
     expect(preview).toEqual({ title: "Tag collection", subtitle: "1 tags" });
   });
 
-  test("search: shows the first result's title/cover and the total result count", () => {
+  test("search: shows the key's hash as the title, labeled as a hashed search, with the first result's cover and the total result count", () => {
     const value = {
       media: [{ title: { userPreferred: "Frieren" }, coverImage: { large: "https://x/f.png" } }],
       pageInfo: { total: 57 },
     };
-    const preview = getCachePreview("search", "search:abc", value);
-    expect(preview).toEqual({ title: "Frieren", subtitle: "57 results", imageUrl: "https://x/f.png" });
+    const preview = getCachePreview("search", "search:abc123", value);
+    expect(preview).toEqual({ title: "abc123", subtitle: "Hashed search query · 57 results", imageUrl: "https://x/f.png" });
+  });
+
+  test("search: falls back to the raw key as the title when it has no 'search:' prefix", () => {
+    const preview = getCachePreview("search", "abc123", { media: [], pageInfo: { total: 0 } });
+    expect(preview.title).toBe("abc123");
   });
 
   test("other: falls back to the raw key", () => {
