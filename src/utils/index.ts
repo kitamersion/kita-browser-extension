@@ -216,6 +216,7 @@ const SETTINGS_SECTION_IDS = new Set([
   "saved-videos",
   "sync",
   "danger-zone",
+  "cache",
 ]);
 
 export const getSettingsSectionFromSearch = (search: string): string => {
