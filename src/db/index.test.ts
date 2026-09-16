@@ -1,7 +1,7 @@
 import IndexedDB from "./index";
 import { IVideo, SiteKey } from "@/types/video";
 import { IVideoTag } from "@/types/relationship";
-import { DB_NAME, OBJECT_STORE_VIDEO_TAGS } from "./schema";
+import { DB_NAME, OBJECT_STORE_TAGS, OBJECT_STORE_VIDEO_TAGS } from "./schema";
 
 // Reads a row directly from the underlying store, bypassing the deleted_at read-filter,
 // so tests can assert a row was tombstoned (soft-deleted) rather than physically removed.
@@ -461,5 +461,31 @@ describe("AniList cache", () => {
     await IndexedDB.clearAniListCache();
 
     expect(await IndexedDB.getAllAniListCacheEntries()).toEqual([]);
+  });
+});
+
+describe("IndexedDB.getObjectStoreByteSize", () => {
+  beforeAll(async () => {
+    await IndexedDB.openDatabase();
+  });
+
+  test("grows when a row is added to the store", async () => {
+    const before = await IndexedDB.getObjectStoreByteSize(OBJECT_STORE_TAGS);
+
+    await IndexedDB.addTag({ id: "byte-size-growth-tag", name: "Byte Size Growth Tag" });
+
+    const after = await IndexedDB.getObjectStoreByteSize(OBJECT_STORE_TAGS);
+
+    expect(after).toBeGreaterThan(before);
+  });
+
+  test("returned total is at least the serialized size of a known row", async () => {
+    const tag = { id: "byte-size-lower-bound-tag", name: "Byte Size Lower Bound Tag" };
+    await IndexedDB.addTag(tag);
+    const savedTag = await IndexedDB.getTagById(tag.id);
+
+    const bytes = await IndexedDB.getObjectStoreByteSize(OBJECT_STORE_TAGS);
+
+    expect(bytes).toBeGreaterThanOrEqual(JSON.stringify(savedTag).length);
   });
 });

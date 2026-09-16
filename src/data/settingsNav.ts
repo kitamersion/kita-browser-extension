@@ -1,6 +1,6 @@
 import React from "react";
 import { SearchIcon, SettingsIcon, WarningTwoIcon } from "@chakra-ui/icons";
-import { MdExtension, MdSync, MdCompareArrows, MdArticle, MdVideoLibrary, MdCloudSync, MdStorage } from "react-icons/md";
+import { MdExtension, MdSync, MdCompareArrows, MdArticle, MdVideoLibrary, MdCloudSync, MdStorage, MdPieChart } from "react-icons/md";
 import { IoIosPricetags } from "react-icons/io";
 import { SiAnilist } from "react-icons/si";
 import { AuthStatus } from "@/types/kitaschema";
@@ -15,6 +15,7 @@ const GeneralTab = React.lazy(() => import("@/pages/settings/tabs/generalTab"));
 const SavedVideosTab = React.lazy(() => import("@/pages/settings/tabs/savedVideosTab"));
 const LogsTab = React.lazy(() => import("@/pages/settings/tabs/logsTab"));
 const CacheTab = React.lazy(() => import("@/pages/settings/tabs/cacheTab"));
+const StorageTab = React.lazy(() => import("@/pages/settings/tabs/storageTab"));
 const SyncTab = React.lazy(() => import("@/pages/settings/tabs/syncTab"));
 const DangerZoneTab = React.lazy(() => import("@/pages/settings/tabs/dangerZoneTab"));
 
@@ -83,6 +84,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     items: [
       { id: "logs", label: "Logs", icon: MdArticle, component: LogsTab },
       { id: "cache", label: "Cache", icon: MdStorage, component: CacheTab },
+      { id: "storage", label: "Storage", icon: MdPieChart, component: StorageTab },
     ],
   },
   {

@@ -1074,6 +1074,32 @@ class IndexedDB {
     });
   }
 
+  // Walks every row in the given store and sums each row's serialized size —
+  // used by the Storage usage page to estimate per-store disk footprint,
+  // since IndexedDB has no built-in "bytes used by this store" query.
+  public getObjectStoreByteSize(storeName: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) return resolve(0);
+      const transaction = this.db.transaction(storeName, "readonly");
+      const store = transaction.objectStore(storeName);
+      let totalBytes = 0;
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+          totalBytes += JSON.stringify(cursor.value).length;
+          cursor.continue();
+        } else {
+          resolve(totalBytes);
+        }
+      };
+      request.onerror = () => {
+        logger.error(`getObjectStoreByteSize error for ${storeName}: ${request.error}`);
+        reject(request.error);
+      };
+    });
+  }
+
   public clearAniListCache(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.db) return resolve();
